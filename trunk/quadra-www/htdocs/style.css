@@ -1,0 +1,22 @@
+body {
+  color: black;
+  background: white;
+  margin-left: 5%;
+  margin-right: 5%;
+  font-family: sans-serif;
+}
+h1 {
+  margin-left: -3%;
+  font-family: sans-serif;
+}
+h2,h3,h4,h5,h6 {
+  margin-left: -1%;
+  font-family: sans-serif;
+}
+p {
+  text-indent: 1em;
+  font-family: sans-serif;
+}
+ul {
+  font-family: sans-serif;
+}
