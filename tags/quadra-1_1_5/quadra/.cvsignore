@@ -1,0 +1,17 @@
+.depends
+*.ncb
+*.opt
+*.cfg
+*.sco
+*.aps
+*.plg
+*.res
+output.txt
+*.rec
+*.lnk
+*.PIF
+*.pif
+Debug
+Release
+qsnoop
+quadra-*

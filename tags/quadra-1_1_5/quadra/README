@@ -1,0 +1,21 @@
+
+Quadra Source Release
+---------------------
+$Id$
+
+This is a raw source release. Do not smoke near this package.
+
+Basic instructions:
+
+ - type 'make'
+
+There you go! There is a 'quadra' binary and a 'quadra.res' resource
+file in the quadra/source directory. If not, then something went
+wrong. :-)
+
+You can run this with the following command (in bash):
+
+QUADRADIR=. LD_LIBRARY_PATH=../skelton/lib ./quadra
+
+Good luck!
+
