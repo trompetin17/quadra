@@ -1,0 +1,58 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_REVISION($Id$)
+
+AC_INIT(source/quadra.cpp)
+
+AC_PATH_XTRA
+AC_ARG_WITH(svgalib,
+  [  --without-svgalib       Svgalib support])
+AC_ARG_ENABLE(debug,
+  [  --enable-debug          debugging options])
+
+dnl Checks for programs.
+AC_PROG_CXX
+AC_PROG_INSTALL
+
+dnl Checks for libraries.
+AC_CHECK_LIB(z, compress, AC_DEFINE(HAVE_LIBZ), nozlib=1)
+AC_CHECK_LIB(png, png_create_read_struct, AC_DEFINE(HAVE_LIBPNG), nolibpng=1)
+AC_CHECK_LIB(vga, vga_init, AC_DEFINE(HAVE_LIBVGA), nosvgalib=1)
+AC_CHECK_LIB(vgagl, gl_setcontext, AC_DEFINE(HAVE_LIBVGAGL), nosvgalib=1, -lvga)
+
+dnl Checks for header files.
+AC_CHECK_HEADERS(vga.h vgagl.h vgamouse.h vgakeyboard.h,, nosvgalib=1)
+AC_CHECK_HEADER(zlib.h,, nozlib=1)
+AC_CHECK_HEADER(png.h,, nolibpng=1)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+
+dnl Checks for library functions.
+
+if test "$with_svgalib" = "yes" -a -n "$nosvgalib"; then
+	AC_MSG_ERROR(Svgalib could not be found.)
+fi
+
+if test -z "$with_svgalib" -a -z "$nosvgalib"; then
+	with_svgalib=yes
+else
+	with_svgalib=no
+fi
+
+if test -z "$with_x" -a "$have_x" = "yes"; then
+	with_x=yes
+fi
+
+if test -n "$nozlib"; then
+	AC_MSG_ERROR(zlib is required and could not be found!)
+fi
+
+if test -n "$nolibpng"; then
+	AC_MSG_ERROR(libpng is required and could not be found!)
+fi
+
+AC_SUBST(with_x)
+AC_SUBST(with_svgalib)
+AC_SUBST(enable_debug)
+
+AC_OUTPUT(config/config.mk)
+
