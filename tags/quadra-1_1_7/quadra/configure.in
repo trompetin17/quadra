@@ -1,0 +1,28 @@
+dnl Process this file with autoconf to produce a configure script.
+AC_REVISION($Id$)
+
+AC_INIT(source/quadra.cpp)
+
+AC_ARG_ENABLE(debug,
+  [  --enable-debug          Debugging options],
+  debug=yes, debug=no)
+
+AC_SUBST(debug)
+
+dnl Checks for programs.
+AC_PROG_CXX
+AC_PROG_INSTALL
+
+dnl Checks for libraries.
+AC_CHECK_LIB(vga, vga_init)
+AC_CHECK_LIB(vgagl, gl_setcontext)
+
+dnl Checks for header files.
+AC_CHECK_HEADERS(vga.h vgagl.h vgamouse.h vgakeyboard.h)
+
+dnl Checks for typedefs, structures, and compiler characteristics.
+
+dnl Checks for library functions.
+
+AC_OUTPUT(config/config.mk)
+

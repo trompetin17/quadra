@@ -1,0 +1,54 @@
+$Id$
+
+Quadra 1.1.7
+
+ * Ongoing work to clean up the distribution.
+
+ * Registration code now completely removed.
+
+ * All image resources have been converted to PNG format (the disk
+   space requirements of Quadra have been cut in half!).
+
+ * Various bugs fixed.
+
+Quadra 1.1.6
+
+ * Version numbering will now be of the "major.minor.patchlevel"
+   format, where an even "minor" number means a stable release and
+   an odd "minor" number means a development release (similar to the
+   Linux kernel version numbering).
+
+ * Fixed possible security holes.
+
+ * Quadra is not SUID root anymore, to avoid security
+   problems. Only the Svgalib driver requires root privileges. You can
+   either run "chmod 4711 /usr/games/quadra" or play the game as root.
+
+ * Svgalib is no longer strictly required, but will be used if
+   available.
+
+ * Partial PNG support in resource file.
+
+ * Improved README file.
+
+Quadra 1.1.5
+
+ * Fixed portability problems to Win32.
+
+ * 'skelton' is now built automatically.
+
+ * Started removal of the registration system.
+
+ * ISO C99 support, for gcc 2.96.
+    - Bernhard Rosenkraenzer <bero@redhat.de>
+
+ * Red Hat 7.0 support.
+    - Bernhard Rosenkraenzer <bero@redhat.de>
+
+ * Fixed building on some distributions.
+    - Simon Cahuk <simon.cahuk@uni-mb.si>
+
+Quadra 1.1.4
+
+ * First open source version.
+
