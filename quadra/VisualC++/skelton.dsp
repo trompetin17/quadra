@@ -8,12 +8,12 @@ CFG=Skelton - Win32 Debug
 !MESSAGE This is not a valid makefile. To build this project using NMAKE,
 !MESSAGE use the Export Makefile command and run
 !MESSAGE 
-!MESSAGE NMAKE /f "Skelton.mak".
+!MESSAGE NMAKE /f "skelton.mak".
 !MESSAGE 
 !MESSAGE You can specify a configuration when running NMAKE
 !MESSAGE by defining the macro CFG on the command line. For example:
 !MESSAGE 
-!MESSAGE NMAKE /f "Skelton.mak" CFG="Skelton - Win32 Debug"
+!MESSAGE NMAKE /f "skelton.mak" CFG="Skelton - Win32 Debug"
 !MESSAGE 
 !MESSAGE Possible choices for configuration are:
 !MESSAGE 
@@ -41,7 +41,7 @@ RSC=rc.exe
 # PROP Intermediate_Dir "Release"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /O2 /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /W3 /WX /GX /O2 /Ob2 /I "..\skelton\include" /I "..\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "UGS_DIRECTX" /FD /c
+# ADD CPP /nologo /W3 /WX /GX /O2 /Ob2 /I "..\skelton\include" /D "NDEBUG" /D "WIN32" /D "_WINDOWS" /D "UGS_DIRECTX" /FD /c
 # SUBTRACT CPP /YX
 # ADD BASE RSC /l 0xc0c
 # ADD RSC /l 0xc0c
@@ -65,7 +65,7 @@ LIB32=link.exe -lib
 # PROP Intermediate_Dir "Debug"
 # PROP Target_Dir ""
 # ADD BASE CPP /nologo /W3 /GX /Z7 /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /FD /c
-# ADD CPP /nologo /W3 /Gi /GX /Zi /Od /Ob1 /Gf /I "..\skelton\include" /I "..\include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "UGS_DIRECTX" /D "_CRTDBG_MAP_ALLOC" /Fr /YX /FD /c
+# ADD CPP /nologo /W3 /Gi /GX /Zi /Od /Ob1 /Gf /I "..\skelton\include" /D "_DEBUG" /D "WIN32" /D "_WINDOWS" /D "UGS_DIRECTX" /D "_CRTDBG_MAP_ALLOC" /Fr /YX /FD /c
 # SUBTRACT CPP /Gy
 # ADD BASE RSC /l 0xc0c
 # ADD RSC /l 0xc0c
@@ -147,10 +147,6 @@ SOURCE=..\skelton\common\id.cpp
 # End Source File
 # Begin Source File
 
-SOURCE=..\skelton\common\image_png.cpp
-# End Source File
-# Begin Source File
-
 SOURCE=..\skelton\directx\input.cpp
 # End Source File
 # Begin Source File
@@ -196,6 +192,10 @@ SOURCE=..\skelton\directx\palette.cpp
 # Begin Source File
 
 SOURCE=..\skelton\common\pcx.cpp
+# End Source File
+# Begin Source File
+
+SOURCE=..\skelton\common\pcx24.cpp
 # End Source File
 # Begin Source File
 
@@ -259,6 +259,10 @@ SOURCE=..\skelton\common\video_dumb.cpp
 # End Source File
 # Begin Source File
 
+SOURCE=..\skelton\directx\video_dx16.cpp
+# End Source File
+# Begin Source File
+
 SOURCE=..\skelton\directx\video_new.cpp
 # End Source File
 # Begin Source File
@@ -280,10 +284,6 @@ SOURCE=..\skelton\include\bitmap.h
 # Begin Source File
 
 SOURCE=..\skelton\include\buf.h
-# End Source File
-# Begin Source File
-
-SOURCE=..\skelton\include\byteorder.h
 # End Source File
 # Begin Source File
 
@@ -347,10 +347,6 @@ SOURCE=..\skelton\include\image.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\skelton\include\image_png.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\skelton\include\input.h
 # End Source File
 # Begin Source File
@@ -408,6 +404,10 @@ SOURCE=..\skelton\include\palette.h
 # Begin Source File
 
 SOURCE=..\skelton\include\pcx.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\skelton\include\pcx24.h
 # End Source File
 # Begin Source File
 
@@ -484,6 +484,10 @@ SOURCE=..\skelton\include\video.h
 # Begin Source File
 
 SOURCE=..\skelton\include\video_dx.h
+# End Source File
+# Begin Source File
+
+SOURCE=..\skelton\include\video_dx16.h
 # End Source File
 # Begin Source File
 

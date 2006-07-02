@@ -1,5 +1,5 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
-* 
+ * 
  * Quadra, an action puzzle game
  * Copyright (C) 1998-2000  Ludus Design
  * 
@@ -18,12 +18,7 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef UGS_LINUX_SVGA
-
-#include "types.h"
 #include "wraplib.h"
-
-RCSID("$Id$")
 
 class SvgalibImpl: public Svgalib {
 public:
@@ -108,6 +103,3 @@ public:
 extern "C" Svgalib* createSvgalib() {
   return new SvgalibImpl;
 }
-
-#endif /* UGS_LINUX_SVGA */
-

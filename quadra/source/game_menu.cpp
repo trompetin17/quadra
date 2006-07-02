@@ -35,8 +35,6 @@
 #include "clock.h"
 #include "game_menu.h"
 
-RCSID("$Id$")
-
 int Create_game::game_end_y=0;
 
 Create_game::Create_game(Bitmap *bit, Font *font, Font *font2, const Palette& p, bool pnet_game, bool plocal_net) {
@@ -105,6 +103,7 @@ Create_game::Create_game(Bitmap *bit, Font *font, Font *font2, const Palette& p,
 
 	game_end = config.info.game_end;
 	game_end_value = config.info.game_end_value;
+	game_end_watch = NULL;
 	game_end_selector = NULL;
 	game_end_text = NULL;
 	game_end_num = NULL;
@@ -125,6 +124,25 @@ Create_game::Create_game(Bitmap *bit, Font *font, Font *font2, const Palette& p,
 	z_record_name = NULL;
 	y+=inc;
 
+	slog = 0;
+	if(!Config::xtreme) {
+		(void)new Zone_text(fteam[7], inter, ST_SLOG, 20, y);
+		temp = new Zone_state_text2(inter, &slog, 20+z->w+10, y);
+		temp->add_string(ST_NO);
+		temp->add_string(ST_YES);
+		slog_watch = temp;
+		slog_watch->add_watch(this);
+		slog_zone = temp;
+		z_slog_name = NULL;
+		strcpy(slog_name, Clock::absolute_time());
+		z_slog_name = NULL;
+		y+=inc;
+	}
+	else {
+		slog_watch = NULL;
+		slog_zone = NULL;
+	}
+
 	save = new Zone_text_button2(inter, bit, font2, ST_SAVESETTING, 20, 450);
 	start = new Zone_text_button2(inter, bit, font2, ST_STARTGAME, 400, 450);
 	cancel = new Zone_text_button2(inter, bit, font2, ST_BACK, 560, 450);
@@ -133,18 +151,20 @@ Create_game::Create_game(Bitmap *bit, Font *font, Font *font2, const Palette& p,
 }
 
 Create_game::~Create_game() {
-	if(game_end_selector)
-		game_end_selector->remove_watch(this);
+	if(game_end_watch)
+		game_end_watch->remove_watch(this);
 	if(game_type)
 		game_type->remove_watch(this);
 	if(record_watch)
 		record_watch->remove_watch(this);
+	if(slog_watch)
+		slog_watch->remove_watch(this);
 	if(game_descriptions)
 		delete game_descriptions;
 }
 
 void Create_game::recreate_game_end() {
-	static int old_selected = -1;
+	static int old_selected=-1;
 	//If changed to peace and not endnever, adjust for missing option
 	if(selected==2 && old_selected!=2 && game_end)
 		game_end--;
@@ -152,21 +172,24 @@ void Create_game::recreate_game_end() {
 	if(selected!=2 && old_selected==2 && game_end)
 		game_end++;
 	old_selected=selected;
-	if(game_end_selector) {
-		game_end_selector->remove_watch(this);
+	if(game_end_watch)
+		game_end_watch->remove_watch(this);
+	if(game_end_selector)
 		delete game_end_selector;
-	}
 	int y=game_end_y;
 	Zone *z;
 	z=new Zone_text(fteam[7], inter, ST_SETGAMEEND, 20, y);
-	game_end_selector = new Zone_state_text2(inter, &game_end, z->x+z->w+10, y);
-	game_end_selector->add_string(ST_GAMEEND1);
+	Zone_state_text2 *temp = new Zone_state_text2(inter, &game_end, z->x+z->w+10, y);
+	temp->add_string(ST_GAMEEND1);
 	if(selected!=2) //endfrags only when !peace
-		game_end_selector->add_string(ST_GAMEEND2);
-	game_end_selector->add_string(ST_GAMEEND3);
-	game_end_selector->add_string(ST_GAMEEND4);
-	game_end_selector->add_watch(this);
-	z=game_end_selector;
+		temp->add_string(ST_GAMEEND2);
+	temp->add_string(ST_GAMEEND3);
+	temp->add_string(ST_GAMEEND4);
+	//temp->add_string(ST_GAMEEND5);
+	game_end_selector = temp;
+	game_end_watch = temp;
+	game_end_watch->add_watch(this);
+	z=temp;
 	if(game_end_text)
 		delete game_end_text;
 	if(game_end_num)
@@ -199,31 +222,36 @@ void Create_game::recreate_game_end() {
 }
 
 void Create_game::notify() {
-	notified = true;
+	video->need_paint = 2;
+	int base=selected*10;
+	int i;
+	for(i=0; i<10; i++)
+		if(game_desc[i])
+			game_desc[i]->set_text(game_descriptions->get(base+i));
+	recreate_game_end();
+	if(record_watch) {
+		if(z_record_name)
+			delete z_record_name;
+		if(record_game == 1) {
+			int x=record_zone->x+record_zone->w+10;
+			z_record_name = new Zone_text_input(inter, pal, record_name, 32, x, record_zone->y, 220);
+		}
+		else 
+			z_record_name = NULL;
+	}
+	if(slog_watch) {
+		if(z_slog_name)
+			delete z_slog_name;
+		if(slog == 1) {
+			int x=slog_zone->x+slog_zone->w+10;
+			z_slog_name = new Zone_text_input(inter, pal, slog_name, 32, x, slog_zone->y, 220);
+		}
+		else 
+			z_slog_name = NULL;
+	}
 }
 
 void Create_game::step() {
-	if(notified) {
-		video->need_paint = 2;
-		int base=selected*10;
-		int i;
-		for(i=0; i<10; i++)
-			if(game_desc[i])
-				game_desc[i]->set_text(game_descriptions->get(base+i));
-		recreate_game_end();
-		if(record_watch) {
-			if(z_record_name)
-				delete z_record_name;
-			if(record_game == 1) {
-				int x=record_zone->x+record_zone->w+10;
-				z_record_name = new Zone_text_input(inter, pal, record_name, 32, x, record_zone->y, 220);
-			}
-			else 
-				z_record_name = NULL;
-		}
-		notified = false;
-	}
-
 	Menu::step();
 	if(input->quel_key == 1 || result==cancel || quitting) {
 		input->quel_key = 0;
@@ -232,7 +260,7 @@ void Create_game::step() {
 	if(result==start) {
 		call(new Fade_in(pal));
 		bool publi = false;
-		if(net_game && !local_net) // force a non-Internet game to "public=false" always
+		if(net_game && !local_net) // force une game non-internet a "public=false" toujours
 			publi = game_public? true:false;
 		if(!name[0])
 			strcpy(name, ST_GAMENONAME);
@@ -253,10 +281,10 @@ void Create_game::step() {
 		p.game_public=publi;
 		p.network=net_game;
 		(void)new Game(&p);
-		if(record_game == 1) {
+		if(record_game == 1)
 			game->prepare_recording(record_name);
-			game->prepare_logging();
-		}
+		if(slog==1)
+			game->prepare_logging(slog_name);
 		call(new Create_game_start(pal, bit_, inter->font));
 	}
 	if(result==save)
@@ -334,7 +362,7 @@ Create_game_end::~Create_game_end() {
 }
 
 void Create_game_end::init() {
-	if(!game->game_public) { // if the game isn't public, abort everything
+	if(!game->game_public) { // si partie pu publique, abort tout!
 		ret();
 		return;
 	}
@@ -462,8 +490,8 @@ Join_game::~Join_game() {
 	if(net->connected()) {
 		Packet_bye p;
 		net->sendtcp(&p);
+		net->stop_client();
 	}
-	net->stop_client();
 	if(eping)
 		delete eping;
 	if(game) {

@@ -18,9 +18,9 @@
 #
 # $Id$
 
-WADDER_OBJECTS:=$(patsubst %.cpp,%.o,$(wildcard skelton/tools/wadder/*.cpp))
+TARGETS+=skelton/tools/wadder/wadder
 
-CLEAN+=$(WADDER_OBJECTS) skelton/tools/wadder/wadder
+WADDER_OBJECTS:=$(patsubst %.cpp,%.o,$(wildcard skelton/tools/wadder/*.cpp))
 
 CXXDEPS+=$(wildcard skelton/tools/wadder/*.cpp)
 

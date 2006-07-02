@@ -21,11 +21,6 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <mmsystem.h>
-
-#undef DIRECTDRAW_VERSION
-#define DIRECTDRAW_VERSION 0x0300
-#include <ddraw.h>
-
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
@@ -37,13 +32,11 @@
 #include "input.h"
 #include "video.h"
 
-RCSID("$Id$")
-
-#ifndef NDEBUG
+#ifdef _DEBUG
 int copper=0;
 #endif
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 	bool _debug = true;
 #else
 	bool _debug = false;
@@ -51,7 +44,7 @@ int copper=0;
 
 bool skelton_debug = true;
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 void COPPER(int a, int b, int c) {
 	if(copper) {
 		_outp(0x3c8,0);
@@ -62,7 +55,15 @@ void COPPER(int a, int b, int c) {
 }
 #endif
 
-static void output_msg(char *m) {
+void output_msg(char *m) {
+	static Res_dos* out=NULL;
+	if(!out) {
+		out = new Res_dos("output.txt", RES_CREATE);
+		if(out && !out->exist) {
+			delete out;
+			out=NULL;
+		}
+	}
 	OutputDebugString(m);
 	int siz=strlen(m);
 	if(m[siz-1] ==10) {
@@ -70,9 +71,8 @@ static void output_msg(char *m) {
 		m[siz] = 10;
 		siz++;
 	}
-	static Res_dos out("output.txt", RES_CREATE);
-	if(out.exist) // so we don't crash if creating 'output.txt' didn't work!
-		out.write(m, siz);
+	if(out && out->exist) // pour pas planter si la creation de 'output.txt' a pas marcher!
+		out->write(m, siz);
 }
 
 void lock_msgbox(const char* m, ...) {
@@ -110,7 +110,7 @@ void skelton_msgbox(const char* m, ...) {
 	}
 }
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 void debug_point() {
 	Dword tim = getmsec();
 	while(getmsec() - tim < 5000) {

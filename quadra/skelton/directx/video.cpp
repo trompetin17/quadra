@@ -31,14 +31,11 @@
 #include "palette.h"
 #include "sprite.h"
 #include "video_dx.h"
-#include "raw.h"
-
-RCSID("$Id$")
 
 extern LRESULT CALLBACK windowproc(HWND hwnd, UINT msg,
 				   WPARAM wparam, LPARAM lparam);
 
-/* internal singleton */
+/* singleton interne */
 DirectX_Video *directx_video = NULL;
 
 DirectX_Video::DirectX_Video(int w, int h, int b, const char *wname) {
@@ -120,7 +117,7 @@ DirectX_Video::~DirectX_Video() {
 		lpdd->Release();
 		lpdd=NULL;
 	}
-	SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, 64, 48, SWP_HIDEWINDOW);
+	ShowWindow(hwnd, SW_HIDE);
 	DestroyWindow(hwnd);
 	UnregisterClass("SkeltonClass", hinst);
 	ShowCursor(TRUE);
@@ -211,7 +208,7 @@ void DirectX_Video::flip() {
 
 	calldx(lpddsprimary->Flip(lpddsback, DDFLIP_WAIT));
 	if(newpal) {
-		// new method for palette:
+		// Nouvelle methode pour palette:
 		int boo;
 		lpdd->GetVerticalBlankStatus(&boo);
 		if(!boo)
@@ -276,9 +273,6 @@ void DirectX_Video::snap_shot(int x, int y, int w, int h) {
 	unlock();
 
 	skelton_msgbox("ok\n");
-}
-
-void DirectX_Video::toggle_fullscreen() {
 }
 
 void DirectX_Video::start_frame() {
@@ -350,8 +344,8 @@ void DirectX_Video_bitmap::rect(const int x,const int y,const int w,const int h,
 	RECT rect;
 	rect.top = clip_y1+pos_y;
 	rect.left = clip_x1+pos_x;
-	rect.right = clip_x2+pos_x+1;  // damn, this sucks
-	rect.bottom = clip_y2+pos_y+1; // the last pixel is "excluded", shit
+	rect.right = clip_x2+pos_x+1;  // maudit que c'est poche
+	rect.bottom = clip_y2+pos_y+1; // le dernier pixel est 'exclu' bordel
 	DDBLTFX ddbltfx;
 	ddbltfx.dwSize = sizeof(ddbltfx);
 	ddbltfx.dwFillColor = color;

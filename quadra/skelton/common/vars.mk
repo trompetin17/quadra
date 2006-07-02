@@ -20,7 +20,5 @@
 
 UGS_OBJECTS+=$(patsubst %.cpp,%.o,$(wildcard skelton/common/*.cpp))
 
-CLEAN+=$(UGS_OBJECTS)
-
 CXXDEPS+=$(wildcard skelton/common/*.cpp)
 

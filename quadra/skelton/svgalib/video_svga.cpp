@@ -18,8 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef UGS_LINUX_SVGA
-
 #include "wraplib.h"
 #include "video_svga.h"
 #include "utils.h"
@@ -27,8 +25,6 @@
 #include "input.h"
 #include "main.h"
 #include "cursor.h"
-
-RCSID("$Id$")
 
 static Svgalib* lib;
 
@@ -286,8 +282,8 @@ void Svgalib_Video::end_frame() {
 void Svgalib_Video::restore() {
   newpal = true;
   need_paint = 2;
-  /* FIXME: shouldn't be necessary, probably related to the
-     problems with signals in Input_Svgalib. */
+  /* FIXME: ne devrait pas être nécessaire, probablement lié au
+     trouble de signals dans Input_Svgalib. */
   lib->vga_setmode(10 /* G640x480x256 */);
 }
 
@@ -296,6 +292,3 @@ void Svgalib_Video::clean_up() {
 
 void Svgalib_Video::snap_shot(int x, int y, int w, int h) {
 }
-
-#endif /* UGS_LINUX_SVGA */
-

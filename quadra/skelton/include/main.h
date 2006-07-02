@@ -31,11 +31,6 @@
 	extern HWND hwnd;
 #endif
 
-#ifdef UGS_LINUX
-extern int ux_argc;
-extern char** ux_argv;
-#endif
-
 enum Time_mode {
 	TIME_NORMAL,
 	TIME_FREEZE,

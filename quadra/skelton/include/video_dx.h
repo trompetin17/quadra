@@ -22,7 +22,6 @@
 #define _HEADER_VIDEO_DX
 
 #include "video.h"
-#include "array.h"
 
 class DirectX_Surface {
 public:
@@ -33,7 +32,7 @@ public:
 	}
 };
 
-class DirectX_Video_bitmap: public Video_bitmap {
+class DirectX_Video_bitmap: Video_bitmap {
 public:
   Bitmap* currentpage;
   DirectX_Video_bitmap(const int px, const int py, const int w, const int h,
@@ -80,7 +79,6 @@ public:
   void restore();
   void clean_up();
   void snap_shot(int x, int y, int w, int h);
-  void toggle_fullscreen();
 };
 
 #endif /* _HEADER_VIDEO_DX */

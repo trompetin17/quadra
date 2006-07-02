@@ -23,7 +23,7 @@
 
 #include "bitmap.h"
 
-/* pieces of Tetris from 0 to 6 :
+/* morceaux de Tetris de 0 a 6 :
    0 = Cube
 	 ...
 */

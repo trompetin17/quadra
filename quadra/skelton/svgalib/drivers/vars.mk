@@ -20,7 +20,5 @@
 
 SVGADRV_OBJECTS+=skelton/svgalib/drivers/drv_svga.o
 
-CLEAN+=$(SVGADRV_OBJECTS)
-
 CXXDEPS+=$(wildcard skelton/svgalib/drivers/*.cpp)
 

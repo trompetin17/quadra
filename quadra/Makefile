@@ -25,7 +25,7 @@ default: all
 -include config/config.mk
 
 DISTCLEAN+=config.cache config.log config.status
-REALCLEAN+=configure quadra.spec
+REALCLEAN+=configure
 
 include $(wildcard */vars.mk)
 

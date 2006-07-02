@@ -45,13 +45,13 @@ RSC=rc.exe
 # ADD CPP /nologo /W3 /WX /GX /O2 /Ob2 /I "..\include" /I "..\skelton\include" /D "NDEBUG" /D "DEMO_VERSION" /D "WIN32" /D "UGS_DIRECTX" /FD /c
 # SUBTRACT CPP /Fr /YX
 # ADD BASE RSC /l 0xc0c /d "NDEBUG"
-# ADD RSC /l 0x1009 /i "..\include" /d "NDEBUG"
+# ADD RSC /l 0x1009 /d "NDEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /machine:I386
-# ADD LINK32 gdi32.lib winspool.lib comdlg32.lib ole32.lib oleaut32.lib uuid.lib winmm.lib ddraw.lib dxguid.lib dinput.lib dsound.lib kernel32.lib user32.lib shell32.lib advapi32.lib skelton.lib wsock32.lib zlib.lib libpng.lib shlwapi.lib /nologo /subsystem:windows /map /machine:I386 /out:"..\quadra.exe" /libpath:"release" /libpath:"../../zlib/zlib/release"
+# ADD LINK32 gdi32.lib winspool.lib comdlg32.lib advapi32.lib ole32.lib oleaut32.lib uuid.lib winmm.lib ddraw.lib dxguid.lib dinput.lib dsound.lib kernel32.lib user32.lib shell32.lib skelton.lib wsock32.lib zlib.lib /nologo /subsystem:windows /machine:I386 /out:"..\quadra.exe" /libpath:"release" /libpath:"../../zlib/zlib/release"
 # SUBTRACT LINK32 /pdb:none
 
 !ELSEIF  "$(CFG)" == "Quadra - Win32 Debug"
@@ -71,14 +71,14 @@ LINK32=link.exe
 # ADD CPP /nologo /W3 /GX /Zi /Od /Ob1 /I "..\include" /I "..\skelton\include" /D "_DEBUG" /D "_CRTDBG_MAP_ALLOC" /D "WIN32" /D "UGS_DIRECTX" /Fr /YX /FD /c
 # SUBTRACT CPP /Gf
 # ADD BASE RSC /l 0xc0c /d "_DEBUG"
-# ADD RSC /l 0xc0c /i "..\include" /d "_DEBUG"
+# ADD RSC /l 0xc0c /d "_DEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:console /debug /machine:I386 /pdbtype:sept
-# ADD LINK32 winmm.lib ddraw.lib dxguid.lib dinput.lib dsound.lib kernel32.lib user32.lib shell32.lib advapi32.lib skelton.lib wsock32.lib zlib.lib libpng.lib shlwapi.lib /nologo /subsystem:windows /incremental:no /map /debug /machine:I386 /nodefaultlib:"libc.lib" /out:"..\quadra.exe" /pdbtype:sept /libpath:"debug" /libpath:"../../zlib/zlib/debug"
-# SUBTRACT LINK32 /verbose /profile /pdb:none /force
+# ADD LINK32 winmm.lib ddraw.lib dxguid.lib dinput.lib dsound.lib kernel32.lib user32.lib shell32.lib advapi32.lib skelton.lib wsock32.lib zlib.lib /nologo /subsystem:windows /map /debug /machine:I386 /out:"..\quadra.exe" /pdbtype:sept /libpath:"debug" /libpath:"../../zlib/zlib/debug"
+# SUBTRACT LINK32 /verbose /profile /pdb:none /incremental:no /force
 
 !ENDIF 
 
@@ -323,10 +323,6 @@ SOURCE=..\include\texte.h
 # End Source File
 # Begin Source File
 
-SOURCE=..\include\version.h
-# End Source File
-# Begin Source File
-
 SOURCE=..\include\zone.h
 # End Source File
 # Begin Source File
@@ -337,10 +333,6 @@ SOURCE=..\include\zone_list.h
 # Begin Group "Resource files"
 
 # PROP Default_Filter "wav;spr;raw;pcx;pcc;ico;idx;txt;rec"
-# Begin Source File
-
-SOURCE=..\images\window.ico
-# End Source File
 # Begin Source File
 
 SOURCE=.\images\window.ico

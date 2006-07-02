@@ -20,17 +20,22 @@
 
 #include <string.h>
 #include "types.h"
+#include "raw.h"
+#include "pcx.h"
 #include "video.h"
 #include "res.h"
-#include "image_png.h"
 #include "bitmap.h"
 
-RCSID("$Id$")
-
-Bitmap* Bitmap::loadPng(const char* n) {
+Bitmap* Bitmap::loadPcx(const char* n) {
 	Res_doze res(n);
-	Png png(res);
-	return new Bitmap(png);
+	Pcx pcx(res);
+	return new Bitmap(pcx);
+}
+
+Bitmap* Bitmap::loadRaw(const char* n) {
+	Res_doze res(n);
+	Raw raw(res);
+	return new Bitmap(raw);
 }
 
 Bitmap::Bitmap(int w, int h, int rw):

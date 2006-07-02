@@ -22,8 +22,6 @@
 #include "video.h"
 #include "cursor_self.h"
 
-RCSID("$Id$")
-
 Cursor_Self::Cursor_Self(Sprite* s) {
   change_cursor(s);
   set_pos(video->width/2, video->height/2);
@@ -36,7 +34,7 @@ Cursor_Self::Cursor_Self(Sprite* s) {
   set_speed(64);
   restore_back(true);
   mouse_rate=0;
-  smooth_mode=true; // enable the smoothing by default
+  smooth_mode=true; // enable le smooth par defaut
   visible = true;
 }
 
@@ -73,10 +71,10 @@ void Cursor_Self::set_speed(const Byte s) {
 }
 
 void Cursor_Self::move() {
-  int nx, ny; // new pos x,y
+  int nx, ny; // nouvelle pos x,y
   pool_x += input->mouse.dx * speed;
   pool_y += input->mouse.dy * speed;
-  int temp_x, temp_y; // ajusted value of pool_x and pool_y
+  int temp_x, temp_y; // valeur ajuste de pool_x et pool_y
   temp_x = (pool_x) >> 6;
   temp_y = (pool_y) >> 6;
   pool_x -= (temp_x << 6);
@@ -91,21 +89,21 @@ void Cursor_Self::move() {
     ny = ly2;
   if(ny < ly1)
     ny = ly1;
-  if(smooth_mode) { // smooth mode: movements interpolation (for 35 updates/second serial mouses)
+  if(smooth_mode) { // mode smooth: interpolation des mouvements (pour serial mouse a 35 update/seconde)
     if(sx != nx || sy != ny) {
       x = (sx+nx) >> 1;
       sx = nx;
       y = (sy+ny) >> 1;
       sy = ny;
       mouse_rate++;
-      if(mouse_rate > 45) // if the mouse is updated at more than 40 fps
-	smooth_mode = false; // deactivate smoothing
+      if(mouse_rate > 45) // si la souris s'update plus que 40 frame/seconde,
+	smooth_mode = false; // desactive le smoothing
     } else {
       x = nx;
       y = ny;
       mouse_rate=0;
     }
-  } else { // normal mode: for fast bus mouses
+  } else { // mode normal: pour bus mouse rapide
     x = sx = nx;
     y = sy = ny;
   }

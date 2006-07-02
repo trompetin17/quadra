@@ -25,9 +25,8 @@
 #include "res.h"
 #include "pcx.h"
 
-RCSID("$Id$")
+/* Ceci est un test */
 
-/* This is a test */
 
 void start_game() {
 	Res_dos foo("testpic.pcx", RES_READ);
@@ -36,8 +35,8 @@ void start_game() {
 	int i = 0;
 	Sprite *cur;
 	{
-		Res_dos res("cursor.png");
-		Png raw(res);
+		Res_dos res("cursor.raw");
+		Raw raw(res);
 		Bitmap bit(raw);
 		cur = new Sprite(bit);
 	}

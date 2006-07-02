@@ -19,9 +19,6 @@
  */
 
 #include "pcx.h"
-#include "byteorder.h"
-
-RCSID("$Id$")
 
 Pcx::Pcx(Res& res) {
 	Error *error;
@@ -42,7 +39,7 @@ Pcx::Pcx(Res& res) {
 	Byte c, num;
 	Byte* out = pic_;
 	int x,i;
-	if(width_ == h.byteperline) { // unpack faster if it is the right width
+	if(width_ == h.byteperline) { // depack plus rapidement si bonne largeur
 		for(i=0; i < height_; i++) {
 			x = 0;
 			while(x < width_) {
@@ -59,7 +56,7 @@ Pcx::Pcx(Res& res) {
 				}
 			}
 		}
-	} else { // damn shitty PCX with bad bytes at the end of the lines!
+	} else { // maudit PCX de merde avec des mauvais bytes au bout des lignes!!
 		for(i=0; i < height_; i++) {
 			x = 0;
 			while(x < h.byteperline) {

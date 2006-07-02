@@ -20,6 +20,7 @@
 
 #include "inter.h"
 #include "bitmap.h"
+#include "pcx.h"
 #include "dict.h"
 #include "clock.h"
 #include "res_compress.h"
@@ -29,13 +30,10 @@
 #include "zone.h"
 #include "global.h"
 #include "quadra.h"
-#include "image_png.h"
 #include "recording.h"
 #include "game.h"
 #include "multi_player.h"
 #include "menu_demo_central.h"
-
-RCSID("$Id$")
 
 class Zone_change_dir: public Zone_text_input {
 	Menu_demo_central *menu_demo_central;
@@ -72,8 +70,8 @@ Menu_demo_central::Player_infos::Player_infos(int pplayer) {
 
 Menu_demo_central::Menu_demo_central() {
 	{
-		Res_doze res("multi.png");
-		Png img(res);
+		Res_doze res("Multi.raw");
+		Raw img(res);
 		bit = new Bitmap(img);
 		pal.load(img);
 	}
@@ -339,7 +337,7 @@ void Menu_demo_central::step() {
 		Listitem *e = (Listitem *) z_list->get_selected();
 		if(e && e->isfolder) {
 			if(!strcmp(e->list_name, "..")) {
-				// treat the .. differently
+				// traite le .. differemment
 				char *t = strrchr(find_directory, '/');
 				if(t)
 					*t = 0;
@@ -365,7 +363,7 @@ void Menu_demo_central::step() {
 				call(new Fade_in(pal));
 				call(new Call_setfont(pal, new Demo_multi_player(play)));
 				call(new Fade_out(pal));
-				// the 'delete play' is done by ~Demo_multi_player
+				// le 'delete play' est fait par ~Demo_multi_player
 				play = NULL;
 			}
 		}
@@ -418,7 +416,7 @@ void Menu_demo_central::reload() {
 		while(!find_file->eof()) {
 			Find_file_entry ff = find_file->get_next_entry();
 			if(ff.is_folder) {
-				if(ff.name[0] == '.' && ff.name[1] == 0) // ignore the "." directory
+				if(ff.name[0] == '.' && ff.name[1] == 0) // ignore le repertoire "."
 					continue;
 				Listitem *e = new Listitem(ff.name, fteam[1]);
 				e->isfolder = true;
@@ -431,7 +429,7 @@ void Menu_demo_central::reload() {
 
 	snprintf(temp_search, sizeof(temp_search) - 1, "%s/*.rec", find_directory);
 
-	msgbox("Menu_demo_central::find_all: Finding files in [%s]...\n", find_directory);
+	msgbox("Menu_demo_central::find_all: Finding files in [%s]...\n", temp_search);
 	{
 		Find_file *find_file = Find_file::New(temp_search);
 		z_list->init_sort();
@@ -445,22 +443,7 @@ void Menu_demo_central::reload() {
 				z_list->add_sort(e);
 			}
 		}
-		delete find_file;
-
-		snprintf(temp_search, sizeof(temp_search) - 1, "%s/*.qrec", find_directory);
-		find_file = Find_file::New(temp_search);
-		while(!find_file->eof()) {
-			Find_file_entry ff = find_file->get_next_entry();
-			if(!ff.is_folder) {
-				Listitem *e = new Listitem(ff.name, fteam[5]);
-				e->file_size = ff.size;
-				strcpy(e->file_date, ff.date);
-				e->isfolder = false;
-				z_list->add_sort(e);
-			}
-		}
-		delete find_file;
-
 		z_list->end_sort();
+		delete find_file;
 	}
 }

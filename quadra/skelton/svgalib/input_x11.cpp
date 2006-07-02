@@ -18,16 +18,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef UGS_LINUX_X11
-
 #include <X11/keysym.h>
 #include "cursor.h"
 #include "main.h"
 #include "input_x11.h"
 #include "video_x11.h"
 #include <X11/Xutil.h>
-
-RCSID("$Id$")
 
 static KeyCode xlate[256];
 
@@ -47,7 +43,8 @@ Input_X11::Input_X11() {
 
   clear_key();
 
-  /* Here, I'm just about to go mad. */
+  /* J'ai le gros nerf du cou toute sorti et j'ai les cheveux d'rette
+     sur la tête. */
   for(i = 0; i < 256; i++)
     xlate[i] = 0;
 
@@ -136,42 +133,40 @@ void Input_X11::check() {
       switch(event.type) {
       case KeyPress:
       case KeyRelease:
-        process_key(event);
-        break;
+	process_key(event);
+	break;
 
       case ButtonPress:
       case ButtonRelease:
       case LeaveNotify:
       case MotionNotify:
-        process_mouse(event);
-        break;
+	process_mouse(event);
+	break;
 
       case FocusIn:
-        videox11->focus_in(event.xfocus.window);
-        alt_tab = false;
-        break;
+	alt_tab = false;
+	break;
 
       case FocusOut:
-        videox11->focus_out(event.xfocus.window);
-        alt_tab = true;
-        break;
+	alt_tab = true;
+	break;
 
       case ClientMessage:
-        if((Atom)event.xclient.data.l[0] == videox11->delete_win)
-          quit_game();
-        break;
-
+	if((Atom)event.xclient.data.l[0] == videox11->delete_win)
+	  quit_game();
+	break;
+      
       case Expose:
-        if(videox11)
-          videox11->dirty2(event.xexpose.x,
-                           event.xexpose.y,
-                           event.xexpose.x+event.xexpose.width,
-                           event.xexpose.y+event.xexpose.height);
-        break;
+	if(videox11)
+	  videox11->dirty2(event.xexpose.x,
+			   event.xexpose.y,
+			   event.xexpose.x+event.xexpose.width,
+			   event.xexpose.y+event.xexpose.height);
+	break;
 
       default:
-        skelton_msgbox("Unknown XEvent (%i)\n", event.type);
-        break;
+	skelton_msgbox("Unknown XEvent (%i)\n", event.type);
+	break;
       }
   }
 }
@@ -186,58 +181,53 @@ void Input_X11::process_key(XEvent event) {
   switch(event.type) {
   case KeyPress:
     keys[key] |= PRESSED;
-
-    if(event.xkey.state == Mod1Mask && XLookupKeysym(&event.xkey, 0) == XK_Return) {
-      video->toggle_fullscreen();
-      return;
-    }
     
     if(!key)
       skelton_msgbox("Unknown KeyCode: %i\n", event.xkey.keycode);
-
+    
     if(israw) {
       switch(key) {
       case KEY_RSHIFT:
       case KEY_LSHIFT:
-        shift_key |= SHIFT;
-        break;
+	shift_key |= SHIFT;
+	break;
       case KEY_RALT:
       case KEY_LALT:
-        shift_key |= ALT;
-        break;
+	shift_key |= ALT;
+	break;
       case KEY_RCTRL:
       case KEY_LCTRL:
-        shift_key |= CONTROL;
-        break;
+	shift_key |= CONTROL;
+	break;
       case 101:
       case 119:
-        pause = true;
-        break;
+	pause = true;
+	break;
       default:
-        quel_key = key;
+	quel_key = key;
       }
     } else {
       if(ic) {
-        num = XmbLookupString(ic, &event.xkey, buf, 20, &keysym, &status);
+	num = XmbLookupString(ic, &event.xkey, buf, 20, &keysym, &status);
       } else {
-        num = XLookupString(&event.xkey, buf, 20, &keysym, NULL);
+	num = XLookupString(&event.xkey, buf, 20, &keysym, NULL);
       }
       if(num) {
-        switch(buf[0]) {
-        case 27:
-          quel_key = KEY_ESCAPE;
-          break;
-        case 10:
-        case 13:
-          quel_key = KEY_ENTER;
-          break;
-        default:
-          if(key_pending < MAXKEY) {
-            key_buf[key_pending].c = buf[0];
-            key_buf[key_pending].special = false;
-            key_pending++;
-          }
-        }
+	switch(buf[0]) {
+	case 27:
+	  quel_key = KEY_ESCAPE;
+	  break;
+	case 10:
+	case 13:
+	  quel_key = KEY_ENTER;
+	  break;
+	default:
+	  if(key_pending < MAXKEY) {
+	    key_buf[key_pending].c = buf[0];
+	    key_buf[key_pending].special = false;
+	    key_pending++;
+	  }
+	}
       }
     }
     break;
@@ -324,6 +314,4 @@ void Input_X11::deraw() {
 void Input_X11::reraw() {
   israw = true;
 }
-
-#endif /* UGS_LINUX_X11 */
 

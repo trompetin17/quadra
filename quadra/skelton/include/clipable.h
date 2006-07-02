@@ -32,7 +32,7 @@ public:
     width = w;
     height = h;
   }
-  /* 'true' if out of range */
+  /* 'true' si out of range */
   bool clip(const int x, const int y, const int w, const int h) const;
   bool clip(const int x, const int y, const Bitmap &b) const;
   bool clip(const int x, const int y, const Bitmap *b) const;

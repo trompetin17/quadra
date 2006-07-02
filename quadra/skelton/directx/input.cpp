@@ -23,8 +23,6 @@
 #include "input_dx.h"
 #include "input_dumb.h"
 
-RCSID("$Id$")
-
 Input *input = NULL;
 
 Input* Input::New(bool dumb) {
@@ -131,7 +129,7 @@ Input_DX::~Input_DX() {
 }
 
 void Input_DX::clear_key() {
-	process_key(); // empties the key queue
+	process_key(); // vide la queue de touche 
 	shift_key = 0;
 	quel_key = -1;
 	key_pending = 0;
@@ -164,7 +162,7 @@ void Input_DX::process_key() {
 			keys[od.dwOfs] |= PRESSED;  // bit #1 -> 0:not pressed 1:pressed
 		else
 			keys[od.dwOfs] = RELEASED;  // bit #2 -> 0:rien        1:was released
-		if(butt) { // if a key was pressed
+		if(butt) { // si pese une touche
 			switch(od.dwOfs) {
 				case KEY_RSHIFT:
 				case KEY_LSHIFT:
@@ -178,21 +176,21 @@ void Input_DX::process_key() {
 				case KEY_LCTRL:
 					shift_key |= CONTROL;
 					break;
-				#ifndef NDEBUG
-					case DIK_F10: // toggle copper (doesn't work on many video cards)
+				#ifdef _DEBUG
+					case DIK_F10: // toggle copper (marche pas sur plusieurs carte video)
 						COPPER(0,0,0);
 						copper = !copper;
 						break;
-					case DIK_F11: // toggle msgbox() of skelton
+					case DIK_F11: // toggle msgbox() du skelton
 						skelton_debug = !skelton_debug;
 						break;
-					case DIK_F1: // "eats" the F1 key for the screenshots
+					case DIK_F1: // croque la touche F1 pour les screens shots
 						break;
 				#endif
 				default:
 					quel_key = od.dwOfs;
 			}
-		} else { // if a key was released
+		} else { // si lache une touche
 			switch(od.dwOfs) {
 				case KEY_RSHIFT:
 				case KEY_LSHIFT:
@@ -211,7 +209,7 @@ void Input_DX::process_key() {
 	}
 	if(keys[KEY_F4] & PRESSED && (keys[KEY_LALT] & PRESSED || keys[KEY_RALT] & PRESSED))
 		quit_game();
-	if(keys[KEY_LCTRL] && keys[DIK_NUMLOCK]) { // ignore control+num_lock since "pause" conflicts
+	if(keys[KEY_LCTRL] && keys[DIK_NUMLOCK]) { // ignore control+num_lock car "PAUSE" conflict
 		keys[KEY_LCTRL] = 0;
 		keys[DIK_NUMLOCK] = 0;
 	}

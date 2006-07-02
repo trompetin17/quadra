@@ -21,8 +21,6 @@
 #ifndef _HEADER_WRAPLIB
 #define _HEADER_WRAPLIB
 
-#ifdef UGS_LINUX_SVGA
-
 #define Palette gl_palette
 #include <vga.h>
 #include <vgagl.h>
@@ -61,7 +59,5 @@ public:
 };
 
 Svgalib* getSvgalib();
-
-#endif /* UGS_LINUX_SVGA */
 
 #endif /* _HEADER_WRAPLIB */

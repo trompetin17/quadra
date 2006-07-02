@@ -25,8 +25,6 @@
 #include "cursor.h"
 #include "listbox.h"
 
-RCSID("$Id$")
-
 Zone_listbox::Zone_listbox(Inter* in, Bitmap *fond, Font *f, int *pval, int px, int py, int pw, int ph):
 	Zone_watch_int(in, pval, px, py, pw, ph) {
 	if(fond) 
@@ -314,7 +312,7 @@ void Zone_listtext::clicked(int quel) {
 	parent->unselect();
 	if(this->quel < parent->elements.size()) {
 		parent->select(this->quel + parent->first_item);
-		//inter->clicked = parent; // eww!
+		//inter->clicked = parent; // yark!
 		parent->clicked(quel);
 	}
 }
@@ -338,8 +336,8 @@ void Zone_listtext::dirt() {
 void Zone_listtext::entered() {
 	Zone_text::entered();
 	if(parent->val && kb_focusable) {
-        /* kb_focusable also indicates that this zone_listtext
-           currently contains something */
+	// kb_focusable indique en meme temps que cette zone_listtext contient
+	// actuellement quelque chose
 		high=true;
 		dirt();
 	}
@@ -348,8 +346,8 @@ void Zone_listtext::entered() {
 void Zone_listtext::leaved() {
 	Zone_text::leaved();
 	if(parent->val && kb_focusable) {
-        /* kb_focusable also indicates that this zone_listtext
-           currently contains something */
+	// kb_focusable indique en meme temps que cette zone_listtext contient
+	// actuellement quelque chose
 		high=false;
 		dirt();
 	}

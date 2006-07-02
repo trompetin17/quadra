@@ -19,24 +19,12 @@
 # $Id$
 
 CLEAN+=config/depends.mk
-DISTCLEAN+=config/config.mk ChangeLog.bak gmon.out
-REALCLEAN+=ChangeLog
+DISTCLEAN+=config/config.mk
 
-TARGETS+=Quadra.desktop
-
-CXXFLAGS+=-Wall -pipe -Iinclude -Iskelton/include -Iimages -DLIBGAMESDIR=\"$(libgamesdir)\" -DDATAGAMESDIR=\"$(datagamesdir)\"
+CXXFLAGS+=-Wall -pedantic -pipe -Iinclude -Iskelton/include -Iimages
 
 ARFLAGS=rcs
 
-# FIXME: this should be the reverse, config.cpp should get values from
-# this makefile using some -D options to the compiler.
-MAJOR:=$(shell grep 'VERSION_MAJOR' include/version.h | cut -d" " -f3 | bc)
-MINOR:=$(shell grep 'VERSION_MINOR' include/version.h | cut -d" " -f3 | bc)
-PATCHLEVEL:=$(shell grep 'VERSION_PATCHLEVEL' include/version.h | cut -d" " -f3 | bc)
-VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
-
-CXXFLAGS+=-DVERSION="$(VERSION)" -DVERSION_MAJOR=$(MAJOR) -DVERSION_MINOR=$(MINOR) -DVERSION_PATCHLEVEL=$(PATCHLEVEL)
-
 # FIXME: temporary hack, until we properly detect stuff
-CXXFLAGS+=-DUGS_LINUX
+CXXFLAGS+=-DUGS_LINUX -DUGS_LINUX_X11 -DUGS_LINUX_SVGA
 

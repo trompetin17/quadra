@@ -20,8 +20,6 @@
 
 UGS_OBJECTS+=$(patsubst %.cpp,%.o,$(wildcard skelton/svgalib/*.cpp))
 
-CLEAN+= $(UGS_OBJECTS)
-
 CXXDEPS+=$(wildcard skelton/svgalib/*.cpp)
 
 include $(wildcard skelton/svgalib/*/vars.mk)

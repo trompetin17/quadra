@@ -21,7 +21,7 @@
 #ifndef __HEADER_DEBUG_H
 #define __HEADER_DEBUG_H
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -208,7 +208,7 @@ Debug::logMessage(__FILE__, __LINE__, __FUNCNAME__, msg)
 #define INIT_DEBUG \
 Debug::init()
 
-#else /* NDEBUG */
+#else /* !_DEBUG */
 
 #define ASSERT(cond) ((void)0)
 #define VERIFY(cond) (cond)
@@ -217,6 +217,6 @@ Debug::init()
 #define DELETE(object) delete object
 #define INIT_DEBUG ((void)0)
 
-#endif /* !NDEBUG */
+#endif /* !_DEBUG */
 
 #endif /* !__HEADER_DEBUG_H */

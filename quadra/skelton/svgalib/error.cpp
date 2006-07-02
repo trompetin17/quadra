@@ -24,13 +24,11 @@
 #include "error.h"
 #include "video.h"
 
-RCSID("$Id$")
-
-#ifndef NDEBUG
+#ifdef _DEBUG
 	int copper=0;
 #endif
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 	bool _debug = true;
 #else
 	bool _debug = false;

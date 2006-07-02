@@ -21,13 +21,10 @@
 #ifndef _HEADER_VIDEO_X11
 #define _HEADER_VIDEO_X11
 
-#ifdef UGS_LINUX_X11
-
 #define Font XFont
 #define Cursor XCursor
 #include <X11/Xlib.h>
 #include <X11/extensions/XShm.h>
-#include <X11/extensions/xf86vmode.h>
 #undef Font
 #undef Cursor
 
@@ -74,13 +71,6 @@ public:
   short min_x[480], max_x[480];
   int min_x2, max_x2, min_y2, max_y2;
   Window window;
-  Window fullscreen_window;
-  int modecount;
-  XF86VidModeModeInfo** modes;
-  XF86VidModeModeInfo* fullscreen_mode;
-  bool allow_fullscreen;
-  bool fullscreen;
-  bool restore_fullscreen;
   GC gc;
   Visual *visual;
   Atom delete_win;
@@ -101,9 +91,6 @@ public:
   virtual void restore();
   virtual void clean_up();
   virtual void snap_shot(int x, int y, int w, int h);
-  void focus_in(Window w);
-  void focus_out(Window w);
-  virtual void toggle_fullscreen();
 };
 
 class Video_X11_8: public Video_X11 {
@@ -139,7 +126,4 @@ public:
   virtual void dosetpal(PALETTEENTRY pal[256], int size);
 };
 
-#endif /* UGS_LINUX_X11 */
-
 #endif /* _HEADER_VIDEO_X11 */
-

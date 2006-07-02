@@ -30,8 +30,6 @@
 #include "net.h"
 #include "video_dumb.h"
 
-RCSID("$Id$")
-
 bool video_is_dumb=false; //Defaults to false
 
 Dumb_Video_bitmap* Dumb_Video_bitmap::New(const int px, const int py,
@@ -212,7 +210,7 @@ void Video_Dumb::flip() {
   }
 
 #ifdef UGS_LINUX
-  usleep(1);
+  sleep(0);
 #endif
 
   framecount++;
@@ -252,7 +250,3 @@ void Video_Dumb::clean_up() {
 
 void Video_Dumb::snap_shot(int x, int y, int w, int h) {
 }
-
-void Video_Dumb::toggle_fullscreen() {
-}
-
