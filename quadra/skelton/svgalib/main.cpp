@@ -19,16 +19,13 @@
  */
 
 /* version Linux */
-#include "autoconf.h"
 #ifdef SOCKS
 #include <stdio.h>
 #include <socks.h>
 extern "C" int SOCKSinit(char *);
 #endif
-#ifdef HAVE_MCHECK_H
-#ifndef NDEBUG
+#ifdef _DEBUG
 #include <mcheck.h>
-#endif
 #endif
 #include <stdlib.h>
 #include <signal.h>
@@ -48,10 +45,6 @@ extern "C" int SOCKSinit(char *);
 #include "command.h"
 #include "main.h"
 
-RCSID("$Id$")
-
-int ux_argc;
-char** ux_argv;
 bool alt_tab = false;
 Time_mode time_control = TIME_NORMAL;
 char cmd_line[1024];
@@ -73,10 +66,8 @@ char exe_directory[1024];
 static bool ignore_sigpipe=false;
 
 int main(int ARGC, char **ARGV, char **ENV) {
-#ifdef HAVE_MCHECK_H
-#ifndef NDEBUG
+#ifdef _DEBUG
   mcheck(NULL);
-#endif
 #endif
   INIT_DEBUG;
 #ifdef SOCKS
@@ -96,9 +87,6 @@ int main(int ARGC, char **ARGV, char **ENV) {
 		}
 		else
 			skelton_msgbox("SIGPIPE handler isn't default, ignoring.\n");
-
-  ux_argc = ARGC;
-  ux_argv = ARGV;
 
 	//Copy the whole thing
 	strncpy(exe_directory, ARGV[0], sizeof(exe_directory));

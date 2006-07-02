@@ -29,8 +29,6 @@
 #include "nglog.h"
 #include "net_server.h"
 
-RCSID("$Id$")
-
 Net_client::Net_client() {
 	msgbox("Net_client::Net_client\n");
 	net->addwatch(P_GAMESTAT, this);
@@ -125,25 +123,19 @@ void Net_client::pause(Packet *p2) {
 	if(game->paused) {
 		if(game->delay_start==500) {
 			message(-1, ST_GAMEWILLSTART);
-			game->delay_start = 499; // starts the countdown
+			game->delay_start = 499; // debut le compte a rebours
 			msgbox("Net_client::pause: starting countdown...\n");
-			Packet_serverlog log("game_start");
-			if(game->net_server)
-				game->net_server->record_packet(&log);
-			return; // doesn't remove game->paused immediately
+			log_step("game_start");
+			return; // n'enleve pas game->paused tout de suite
 		}
 		if(game->delay_start != 0) {
-			game->delay_start = 0; // force the countdown to stop if it was active
+			game->delay_start = 0; // force l'arret du compte a rebours s'il etait actif
 			msgbox("Net_client::pause: stop countdown...\n");
-			return; // and stay on pause
+			return; // et reste sur pause
 		}
 		message(-1, "Game unpaused", true, true);
-		if(p2 && p2->from) {
-			Packet_serverlog log("unpause");
-			log.add(Packet_serverlog::Var("id", p2->from->id()));
-			if(game->net_server)
-				game->net_server->record_packet(&log);
-		}
+		if(p2 && p2->from)
+			log_step("unpause\t%u", p2->from->id());
 	} else {
 		Packet_pause *p=(Packet_pause *) p2;
 		const char *pn;
@@ -158,12 +150,8 @@ void Net_client::pause(Packet *p2) {
 		}
 		sprintf(st, ST_PAUSEDBYBOB, pn);
 		message(-1, st);
-		if(p2 && p2->from) {
-			Packet_serverlog log("pause");
-			log.add(Packet_serverlog::Var("id", p2->from->id()));
-			if(game->net_server)
-				game->net_server->record_packet(&log);
-		}
+		if(p2 && p2->from)
+			log_step("pause\t%u", p2->from->id());
 	}
 	game->paused=!game->paused;
 	msgbox("Net_client::pause done\n");
@@ -352,24 +340,24 @@ void Net_server::playerwantjoin(Packet *p2) {
 	playeraccepted.accepted = game->server_accept_player;
 	playeraccepted.pos=0;
 	if(game->terminated)
-		playeraccepted.accepted = 3; // the game is finished, do not accept players
+		playeraccepted.accepted = 3; // la partie est terminee: accepte aucun joueur
 	if(playeraccepted.accepted == 0) {
 		for(int i=0; i<MAXPLAYERS; i++) {
 			Canvas *c = game->net_list.get(i);
 			if(c) {
-				if(!strcmp(c->name, p->name) && !memcmp(c->player_hash, p->player_hash, sizeof(c->player_hash))) { // if already someone with this name
-					if(c->idle == 3) { // if player is 'gone'
+				if(!strcmp(c->name, p->name) && !memcmp(c->player_hash, p->player_hash, sizeof(c->player_hash))) { // si deja qqun avec ce nom la
+					if(c->idle == 3) { // si joueur 'gone'
 						if(c->color != p->team) {
-							// if joins with a different team, drop him and accept the new one
+							// si join avec une team differente, drop-le et accepte le nouveau
 							Packet_dropplayer p3;
 							p3.player = i;
 							p3.reason = DROP_AUTO;
 							net->dispatch(&p3, P_DROPPLAYER, game->loopback_connection);
 							record_packet(&p3);
-							game->net_list.drop_player(&p3, true); // immediately drop the player
+							game->net_list.drop_player(&p3, true); // drop immediatement le joueur
 						} else { // si meme team, conserve les stats
-							playeraccepted.accepted = 4; // already someone, we're going to replace this guy!
-							playeraccepted.pos = i; // indicate the number of the player to replace
+							playeraccepted.accepted = 4; // deja qqun: on va le remplacer ce mec!
+							playeraccepted.pos = i; // indique le numero du joueur a remplacer
 							playeraccepted.answer(p);
 
 							Packet_rejoin p_rejoin;
@@ -381,20 +369,16 @@ void Net_server::playerwantjoin(Packet *p2) {
 							p_rejoin.handicap = p->handicap;
 							net->dispatch(&p_rejoin, P_REJOIN);
 							record_packet(&p_rejoin);
-							c->remote_adr = p->from; // the server re-adjuste the remote_adr of the canvas
+							c->remote_adr = p->from; // le serveur re-ajuste la remote_adr du canvas
 							Dword id=0;
 							if(p->from!=game->loopback_connection)
 								id=p->from->id();
-							Packet_serverlog log("player_rejoin");
-							log.add(Packet_serverlog::Var("id", c->id()));
-							log.add(Packet_serverlog::Var("connection_id", id));
-							log.add(Packet_serverlog::Var("handicap", log_handicap(p->handicap)));
-							record_packet(&log);
+							log_step("player_rejoin\t%u\t%u\t%s", c->id(), id, log_handicap(p->handicap));
 							game->net_list.update_team_names();
 							return;
 						}
 					} else {
-						playeraccepted.accepted = 2; // already someone, refuse the player
+						playeraccepted.accepted = 2; // deja qqun: refuse le joueur
 					}
 					break;
 				}
@@ -403,25 +387,11 @@ void Net_server::playerwantjoin(Packet *p2) {
 		if(playeraccepted.accepted == 0) {
 			if(game->net_list.size() == MAXPLAYERS)
 				playeraccepted.accepted = 5; // game is full, can't join
-			if(game->server_max_players && game->net_list.size() >= game->server_max_players)
-				playeraccepted.accepted = 5; // game is full, can't join
-			if(game->server_max_teams && game->net_list.count_teams() >= game->server_max_teams) {
-                               unsigned i;
-				for(i=0; i<MAXPLAYERS; ++i) {
-					Canvas* c=game->net_list.get(i);
-					if(c && c->color==p->team)
-						break;
-				}
-				if(i==MAXPLAYERS) {
-					// if not joining an already existing team, we can't accept the new player
-					playeraccepted.accepted = 5; // game is full, can't join
-				}
-			}
 		}
 	}
 
 	if(playeraccepted.accepted == 0) { // si on accepte le joueur
-		Packet_player player;  // dispatches P_PLAYER to everyone (except the asking host!)
+		Packet_player player;  // dispatch P_PLAYER a tous (sauf le cok demandant!!).
 		strcpy(player.name, p->name);
 		player.player = p->player;
 		player.team = p->team;
@@ -442,14 +412,7 @@ void Net_server::playerwantjoin(Packet *p2) {
 		Dword id=0;
 		if(p->from && p->from!=game->loopback_connection)
 			id=p->from->id();
-		Packet_serverlog log("player_join");
-		log.add(Packet_serverlog::Var("id", canvas->id()));
-		log.add(Packet_serverlog::Var("connection_id", id));
-		log.add(Packet_serverlog::Var("team", log_team(p->team)));
-		log.add(Packet_serverlog::Var("handicap", log_handicap(p->handicap)));
-		log.add(Packet_serverlog::Var("name", canvas->name));
-		log.add(Packet_serverlog::Var("team_name", canvas->team_name));
-		record_packet(&log);
+		log_step("player_join\t%u\t%u\t%s\t%s\t%s\t%s", canvas->id(), id, log_team(p->team), log_handicap(p->handicap), canvas->name, canvas->team_name);
 	}
 	playeraccepted.answer(p);
 	game->net_list.update_team_names();
@@ -495,39 +458,21 @@ void Net_server::wantjoin(Packet *p2) {
 void Net_server::clientpause(Packet *p2) {
 	Packet_pause p;
 	msgbox("Net_server::clientpause from %x\n", p2->from);
-	if(!game) {
-		// unlikely but what the hell...
-		return;
-	}
 	if(game->delay_start && game->delay_start!=500) {
 		//Don't ever interrupt countdown
 		return;
 	}
-
 	bool allowed=false;
-	// check all the starting conditions
-	if(game->delay_start==500 && allow_start)
-		allowed=true;
-	// make sure there's enough players
-	if(game->server_min_players && game->server_min_players > game->net_list.size(false))
-		allowed=false;
-	// make sure there's enough teams
-	if(game->server_min_teams && game->server_min_teams > game->net_list.count_teams(false))
-		allowed=false;
-
-	// commandline options or trusted connections are always allowed to start/pause
 	if(!p2->from || p2->from->trusted)
 		allowed=true;
-
-	// if game is already started, all of the above doesn't apply anyway
+	if(game->delay_start==500 && allow_start)
+		allowed=true;
 	if(game->delay_start==0 && allow_pause)
 		allowed=true;
-
 	if(!allowed)
 		return;
-
 	if(game->paused) {
-		p.player = -1;
+		p.player=-1;
 		net->dispatch(&p, P_PAUSE);
 		record_packet(&p);
 	}
@@ -540,7 +485,7 @@ void Net_server::clientpause(Packet *p2) {
 			}
 		}
 		if(i==MAXPLAYERS)
-			i = -1;
+			i=-1;
 		p.player=(signed char) i;
 		net->dispatch(&p, P_PAUSE);
 		record_packet(&p);
@@ -592,12 +537,8 @@ void Net_server::clientchat(Packet *p2) {
 	else {
 		net->dispatch(p, P_CHAT);
 		record_packet(p);
-		if(p && p->from) {
-			Packet_serverlog log("chat");
-			log.add(Packet_serverlog::Var("id", p->from!=game->loopback_connection? p->from->id():0));
-			log.add(Packet_serverlog::Var("text", p->text));
-			record_packet(&log);
-		}
+		if(p && p->from)
+			log_step("chat\t%u\t%s", p->from!=game->loopback_connection? p->from->id():0, p->text);
 	}
 }
 
@@ -615,7 +556,7 @@ Net_pendingjoin::~Net_pendingjoin() {
 
 void Net_pendingjoin::load_packet_gameserver(Packet_gameserver* resp) {
 	resp->version = game->net_version();
-	resp->accepted = 1; // 'accepted' is useless since Quadra_param->accept_connection()
+	resp->accepted = 1; // 'accepted' est inutile depuis Quadra_param->accept_connection()
 	resp->game_seed = game->seed;
 	resp->paused = game->paused;
 	strcpy(resp->name, game->name);
@@ -632,10 +573,10 @@ void Net_pendingjoin::load_packet_gameserver(Packet_gameserver* resp) {
 	resp->delay_start = game->delay_start;
 	resp->game_end = game->game_end;
 	resp->game_end_value = game->game_end_value;
-	if(game->game_end == 2) { // if game_end == time in minutes
+	if(game->game_end == 2) { // si game_end == temps en minute
 		Dword timer = game->net_list.gettimer();
 		if(timer < (Dword)resp->game_end_value)
-			resp->game_end_value -= timer; // computes and gives the remaining time only
+			resp->game_end_value -= timer; // calcul et donne le temps restant seulement!
 		else
 			resp->game_end_value=0;
 	}
@@ -679,7 +620,7 @@ void Net_pendingjoin::step() {
 	for(i=0; i<MAXPLAYERS; i++) {
  		Canvas *c = game->net_list.get(i);
 		if(c && (!c->idle || c->dying)) {
-			// if a canvas isn't 'idle' (process_key), abandon
+			// si un canvas est pas 'idle' (process_key), abandon
 			msgbox("   Canvas %x is not idle now!\n", c);
 			return;
 		}
@@ -692,12 +633,8 @@ void Net_pendingjoin::step() {
 	pac->from->joined=true;
 	char addr[64];
 	Net::stringaddress(addr, pac->from->address(), pac->from->getdestport());
-
-	Packet_serverlog log("connection_joined");
-	log.add(Packet_serverlog::Var("id", pac->from->id()));
-	if(game->net_server)
-		game->net_server->record_packet(&log);
-
+	if(pac && pac->from)
+		log_step("connection_joined\t%u\t%s", pac->from->id(), pac->registered? "true":"false");
 	for(i=0; i<MAXPLAYERS; i++) {
 		Canvas *c = game->net_list.get(i);
 		if(c) {

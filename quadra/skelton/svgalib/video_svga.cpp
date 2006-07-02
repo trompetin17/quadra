@@ -18,19 +18,21 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef UGS_LINUX_SVGA
+#if 1
+#define Palette gl_palette
+#include <vga.h>
+#include <vgagl.h>
+#undef Palette
+#else
+#include "svgalib.h"
+#endif
 
-#include "wraplib.h"
 #include "video_svga.h"
 #include "utils.h"
 #include "error.h"
 #include "input.h"
 #include "main.h"
 #include "cursor.h"
-
-RCSID("$Id$")
-
-static Svgalib* lib;
 
 Svgalib_Video_bitmap* Svgalib_Video_bitmap::New(const int px, const int py,
 						const int w, const int h,
@@ -72,7 +74,7 @@ void Svgalib_Video_bitmap::rect(const int x, const int y,
   if(clip(x, y, w, h))
     return;
   
-  lib->gl_fillbox(clip_x1+pos_x, clip_y1+pos_y+((Svgalib_Video*)video)->displayoffset,
+  gl_fillbox(clip_x1+pos_x, clip_y1+pos_y+((Svgalib_Video*)video)->displayoffset,
 	     clip_w, clip_y2-clip_y1+1, color);
 }
 
@@ -92,12 +94,12 @@ void Svgalib_Video_bitmap::get_bitmap(const Bitmap* bit, const int x, const int 
 
   if(clip_x1==x && clip_y1==y &&
      clip_w == bit->width && clip_y2 == y+bit->height-1) {
-    lib->gl_getbox(clip_x1+pos_x, clip_y1+pos_y+((Svgalib_Video*)video)->displayoffset, clip_w,
+    gl_getbox(clip_x1+pos_x, clip_y1+pos_y+((Svgalib_Video*)video)->displayoffset, clip_w,
 		  clip_y2-clip_y1+1, (*bit)[0]);
   } else {
     int i;
     for(i=clip_y1; i<=clip_y2; i++)
-      lib->gl_getbox(clip_x1+pos_x, i+((Svgalib_Video*)video)->displayoffset+pos_y, clip_w, 1,
+      gl_getbox(clip_x1+pos_x, i+((Svgalib_Video*)video)->displayoffset+pos_y, clip_w, 1,
 		    (*bit)[i-y]+clip_x1-x);
   }
 }
@@ -106,7 +108,7 @@ void Svgalib_Video_bitmap::put_pel(const int x, const int y, const Byte c) const
   if(clip(x, y, 1, 1))
     return;
 
-  lib->gl_setpixel(clip_x1+pos_x, clip_y1+pos_y+((Svgalib_Video*)video)->displayoffset, c);
+  gl_setpixel(clip_x1+pos_x, clip_y1+pos_y+((Svgalib_Video*)video)->displayoffset, c);
 }
 
 void Svgalib_Video_bitmap::hline(const int y, const int x,
@@ -114,7 +116,7 @@ void Svgalib_Video_bitmap::hline(const int y, const int x,
   if(clip(x, y, w, 1))
     return;
 
-  lib->gl_hline(clip_x1+pos_x, clip_y1+pos_y+((Svgalib_Video*)video)->displayoffset,
+  gl_hline(clip_x1+pos_x, clip_y1+pos_y+((Svgalib_Video*)video)->displayoffset,
 	   clip_x2+pos_x, c);
 }
 
@@ -123,7 +125,7 @@ void Svgalib_Video_bitmap::vline(const int x, const int y, const int h,
   if(clip(x, y, 1, h))
     return;
 
-  lib->gl_line(clip_x1+pos_x, clip_y1+pos_y+((Svgalib_Video*)video)->displayoffset,
+  gl_line(clip_x1+pos_x, clip_y1+pos_y+((Svgalib_Video*)video)->displayoffset,
 	  clip_x1+pos_x, clip_y2+pos_y+((Svgalib_Video*)video)->displayoffset, c);
 }
 
@@ -132,7 +134,7 @@ const int x2, const int y2, const Byte c) const
 {
 	if(clip(x1, y1, x2, y2))
 	return;
-  lib->gl_line(clip_x1, clip_y1+((Svgalib_Video*)video)->displayoffset, clip_x2, clip_y2+((Svgalib_Video*)video)->displayoffset, c);
+  gl_line(clip_x1, clip_y1+((Svgalib_Video*)video)->displayoffset, clip_x2, clip_y2+((Svgalib_Video*)video)->displayoffset, c);
 }
 
 void Svgalib_Video_bitmap::put_bitmap(const Bitmap& d, const int dx,
@@ -141,7 +143,7 @@ void Svgalib_Video_bitmap::put_bitmap(const Bitmap& d, const int dx,
     return;
   
   if(d.width == d.realwidth) {
-    lib->gl_putboxpart(clip_x1+pos_x,
+    gl_putboxpart(clip_x1+pos_x,
 		  clip_y1+pos_y+((Svgalib_Video*)video)->displayoffset,
 		  clip_w,
 		  clip_y2-clip_y1+1,
@@ -152,7 +154,7 @@ void Svgalib_Video_bitmap::put_bitmap(const Bitmap& d, const int dx,
   } else {
     int y;
     for(y=clip_y1; y<=clip_y2; y++)
-      lib->gl_putbox(clip_x1+pos_x,
+      gl_putbox(clip_x1+pos_x,
 		y+((Svgalib_Video*)video)->displayoffset+pos_y,
 		clip_w,
 		1,
@@ -174,12 +176,12 @@ void Svgalib_Video_bitmap::put_sprite(const Sprite& d, const int dx,
 
   if(clip_x1==dx2 && clip_y1==dy2 &&
      clip_w == d.width && clip_y2 == dy2+d.height-1) {
-    lib->gl_putboxmask(clip_x1+pos_x, clip_y1+phys_y, clip_w,
+    gl_putboxmask(clip_x1+pos_x, clip_y1+phys_y, clip_w,
 		  clip_y2-clip_y1+1, d[0]);
   } else {
     int y;
     for(y=clip_y1; y<=clip_y2; y++)
-      lib->gl_putboxmask(clip_x1+pos_x, y+phys_y, clip_w, 1,
+      gl_putboxmask(clip_x1+pos_x, y+phys_y, clip_w, 1,
 		    d[y-dy2]+clip_x1-dx2);
   }
 }
@@ -190,12 +192,8 @@ void Svgalib_Video_bitmap::setmem() {
 Svgalib_Video* Svgalib_Video::New(int w, int h, int b, const char *wname) {
   if(getenv("DISPLAY"))
     return NULL;
-
-  lib = getSvgalib();
-  if(!lib)
-    return NULL;
-
-  return new Svgalib_Video(w, h, b, wname);
+  else
+    return new Svgalib_Video(w, h, b, wname);
 }
 
 Svgalib_Video::Svgalib_Video(int w, int h, int b, const char *wname) {
@@ -207,15 +205,15 @@ Svgalib_Video::Svgalib_Video(int w, int h, int b, const char *wname) {
   newpal = true;
   need_paint = 2;
 
-  lib->vga_setmousesupport(1);
+  vga_setmousesupport(1);
 
-  if(lib->vga_init() != 0)
+  if(vga_init() != 0)
     (void)new Error("Fatal: error initializing SVGALib!\n");
   
-  if(lib->vga_setmode(10 /* G640x480x256 */) != 0)
+  if(vga_setmode(10 /* G640x480x256 */) != 0)
     (void)new Error("Fatal: could not set 640x480x256 SVGA mode. Check SVGALib configuration\n");
   
-  lib->gl_setcontextvga(10 /* G640x480x256 */);
+  gl_setcontextvga(10 /* G640x480x256 */);
 
   vb = Video_bitmap::New(0, 0, w, h);
   
@@ -226,7 +224,7 @@ Svgalib_Video::~Svgalib_Video() {
   if(vb)
     delete vb;
 
-  lib->vga_setmode(0 /* TEXT */);
+  vga_setmode(0 /* TEXT */);
 }
 
 void Svgalib_Video::lock() {
@@ -237,10 +235,10 @@ void Svgalib_Video::unlock() {
 }
 
 void Svgalib_Video::flip() {
-  lib->gl_setdisplaystart(0, displayoffset);
+  gl_setdisplaystart(0, displayoffset);
   displayoffset = (vb->height) - displayoffset;
 
-  lib->vga_waitretrace();
+  vga_waitretrace();
 
   if(newpal) {
     pal.set();
@@ -264,7 +262,7 @@ void Svgalib_Video::dosetpal(PALETTEENTRY pal[256], int size) {
     newpal.color[i].green = pal[i].peGreen >> 2;
     newpal.color[i].blue = pal[i].peBlue >> 2;
   }
-  lib->gl_setpalettecolors(0, size, &newpal);
+  gl_setpalettecolors(0, size, &newpal);
 }
 
 void Svgalib_Video::start_frame() {
@@ -286,9 +284,9 @@ void Svgalib_Video::end_frame() {
 void Svgalib_Video::restore() {
   newpal = true;
   need_paint = 2;
-  /* FIXME: shouldn't be necessary, probably related to the
-     problems with signals in Input_Svgalib. */
-  lib->vga_setmode(10 /* G640x480x256 */);
+  /* FIXME: ne devrait pas être nécessaire, probablement lié au
+     trouble de signals dans Input_Svgalib. */
+  vga_setmode(10 /* G640x480x256 */);
 }
 
 void Svgalib_Video::clean_up() {
@@ -296,6 +294,3 @@ void Svgalib_Video::clean_up() {
 
 void Svgalib_Video::snap_shot(int x, int y, int w, int h) {
 }
-
-#endif /* UGS_LINUX_SVGA */
-

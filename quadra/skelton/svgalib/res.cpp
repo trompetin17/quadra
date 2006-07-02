@@ -21,8 +21,6 @@
 #include <sys/stat.h>
 #include "res.h"
 
-RCSID("$Id$")
-
 Res_mem::Res_mem() {
 	pos = 0;
 	_buf = NULL;
@@ -64,7 +62,7 @@ Res_dos::~Res_dos() {
 	if(handle != -1)
 		close(handle);
 	if(_buf)
-		delete[] static_cast<Byte*>(_buf);
+		delete _buf;
 }
 
 void Res_dos::position(Dword po) {

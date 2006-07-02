@@ -21,9 +21,6 @@
 #include "zlib.h"
 #undef FAR
 #include "res_compress.h"
-#include "byteorder.h"
-
-RCSID("$Id$")
 
 Res_compress::Res_compress(const char *fil, Res_mode pmode, bool res_doze) {
 	mode = pmode;
@@ -44,7 +41,7 @@ Res_compress::Res_compress(const char *fil, Res_mode pmode, bool res_doze) {
 Res_compress::~Res_compress() {
 	if(mode == RES_WRITE || mode == RES_CREATE) {
 		if(res)
-			write_compress();
+			write_compress(NULL);
 	}
 	if(res)
 		delete res;
@@ -54,8 +51,8 @@ Res_compress::~Res_compress() {
 
 void Res_compress::read_uncompress() {
 	exist = false;
-	Byte *temp = (Byte *) res->buf(); // reads the entire file in '_buf'
-	ressize = INTELDWORD(*(Dword *) temp);
+	Byte *temp = (Byte *) res->buf(); // lit le fichier en entier dans '_buf'
+	ressize = *(Dword *) temp;
 	Byte *source = temp + 4;
 	int src_size = res->size() - 4;
 	skelton_msgbox("Res_compress::Res_compress: Reading compressed file original size = %i, compressed = %i\n", ressize, src_size);
@@ -105,16 +102,16 @@ Dword Res_compress::size() {
 	return ressize;
 }
 
-void Res_compress::write_compress() {
+Byte *Res_compress::write_compress(Dword *size) {
 	if(!res)
 		(void)new Error("Trying to write_compress a second time!");
 	if(!res_dos)
 		(void)new Error("Trying to write_compress a Res_doze!");
 	if(!_buf)
-		return;
+		return NULL;
 	unsigned long dest_len = write_pos + 65540;
 	Byte *temp = (Byte *) malloc(dest_len);
-	*((Dword *)temp)=INTELDWORD(write_pos);
+	*((Dword *)temp)=write_pos;
 	int error = compress(temp+4, &dest_len, _buf, write_pos);
 	if(error != Z_OK) {
 		(void) new Error("Unable to compress file, error #%i", error);
@@ -124,5 +121,12 @@ void Res_compress::write_compress() {
 	delete res_dos;
 	res_dos=NULL;
 	res=NULL;
-	free(temp);
+	if(size) {
+		*size=dest_len+4;
+	}
+	else {
+		free(temp);
+		temp=NULL;
+	}
+	return temp;
 }

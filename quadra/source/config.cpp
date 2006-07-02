@@ -18,6 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#ifdef UGS_LINUX
+#define stricmp strcasecmp
+#endif
 #include <string.h>
 #include <stdio.h>
 #include "input.h"
@@ -26,19 +29,14 @@
 #include "crypt.h"
 #include "video.h"
 #include "config.h"
-#include "version.h"
-#include "unicode.h"
-
-RCSID("$Id$")
 
 const int Config::game_version = 19;
-int Config::net_version = 24;
+int Config::net_version = 23;
 
-const int Config::major = VERSION_MAJOR;
-const int Config::minor = VERSION_MINOR;
-const int Config::patchlevel = VERSION_PATCHLEVEL;
-
-/* FIXME: we should remove all occurence of Config::xtreme */
+const int Config::major = 1;
+const int Config::minor = 1;
+const int Config::patchlevel = 5;
+bool Config::registered = false;
 bool Config::xtreme = false;
 char Config::user_name[64] = {""};
 
@@ -57,7 +55,7 @@ void Config::default_config() {
 	memset(&info2, 0, sizeof(info2));
 	info.language = 0;
 	info.setup_player = 0;
-	info.cdmusic = 0; // 0=no music  1=auto-change  2=loop all
+	info.cdmusic = 1; // 0=no music  1=auto-change  2=loop all
 	info.multi_level = 1;
 	info.unlock_theme = 0;
 	info.port_number = 3456;
@@ -71,6 +69,7 @@ void Config::default_config() {
 	info.game_type = info.level_up = info.level_start = info.combo_min = info.game_end = 0;
 	info.game_public = 1;
 	info.game_end_value = 1;
+	strcpy(info.game_server_address, "");
 
 	for(int i=0; i<3; i++) {
 		sprintf(st,"#%i", i+1);
@@ -94,7 +93,7 @@ void Config::default_config() {
 
 void Config::read() {
 	if(!fname[0])
-		snprintf(fname, sizeof(fname) - 1, "%s/%s", quadradir, "quadra.cfg");
+		sprintf(fname, "%s/%s", quadradir, "quadra.cfg");
 
 	int i;
 
@@ -150,7 +149,7 @@ void Config::read() {
 		if(player2[i].v_repeat<0 || player2[i].v_repeat>3) {
 			player2[i].v_repeat=2;
 		}
-		player[i].repeat = -1;
+		player[i].repeat=-1;
 		if(player2[i].continuous<0 || player2[i].continuous>1)
 			player2[i].continuous=1;
 		if(player2[i].handicap<0 || player2[i].handicap>4)
@@ -162,7 +161,10 @@ void Config::read() {
 	for(i=0; i<10; i++) {
 		info.book[i][255] = 0;
 	}
-	info2.proxy_address[127] = 0;
+}
+
+void Config::check_register() {
+  registered = true;
 }
 
 void fix_str(char *st, Dword len) {
@@ -180,7 +182,7 @@ void fix_str(char *st, Dword len) {
 void Config::write() {
 	int i;
 	if(!fname[0])
-		snprintf(fname, sizeof(fname) - 1, "%s/%s", quadradir, "quadra.cfg");
+		sprintf(fname, "%s/%s", quadradir, "quadra.cfg");
 
 	if(!video_is_dumb) {
 		Res_dos res(fname, RES_CREATE);
@@ -200,35 +202,9 @@ void Config::write() {
 			}
 			res.write(player, sizeof(player));
 			res.write(player2, sizeof(player2));
-			fix_str(info2.proxy_address, 128);
 			res.write(&info2, sizeof(info2));
 		}
 	}
-}
-
-void Config::get_player_hash(Byte* buf, unsigned qplayer) {
-	if(player2[qplayer].ngPasswd[0]) {
-		Unicode uni_p(player[qplayer].name);
-		uni_p.cat(player2[qplayer].ngPasswd);
-		Crypt name_crypt;
-		name_crypt.step(uni_p, uni_p.size());
-		name_crypt.finalize(false);
-		memcpy(buf, name_crypt.get_digest(), 16);
-	}
-	else
-		memset(buf, 0, 16);
-}
-
-void Config::get_team_hash(Byte* buf, unsigned qplayer) {
-	if(player2[qplayer].ngTeam[0] && player2[qplayer].ngTeamPasswd[0]) {
-		Unicode uni_t(player2[qplayer].ngTeam);
-		uni_t.cat(player2[qplayer].ngTeamPasswd);
-		Crypt team_crypt;
-		team_crypt.step(uni_t, uni_t.size());
-		memcpy(buf, team_crypt.get_digest(), 16);
-	}
-	else
-		memset(buf, 0, 16);
 }
 
 Config config;

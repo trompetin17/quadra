@@ -24,8 +24,6 @@
 #include "res.h"
 #include "raw.h"
 
-RCSID("$Id$")
-
 char Raw::Head::signature[]={0x6d, 0x68, 0x77, 0x61, 0x6e, 0x68};
 
 #define swap(A) ((Word) (((((Word)A)>>8)   )| ((((Word)A)  )<<8)))
@@ -89,9 +87,9 @@ Raw::Raw(int w, int h2, int ps) {
 
 Raw::~Raw() {
 	if(pic_)
-		delete[] pic_;
+		delete pic_;
 	if(pal_)
-		delete[] pal_;
+		delete pal_;
 }
 
 void Raw::write(Res_dos& res) {

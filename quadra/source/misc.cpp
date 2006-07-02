@@ -25,8 +25,6 @@
 #include "global.h"
 #include "misc.h"
 
-RCSID("$Id$")
-
 Wait_time::Wait_time(int del, bool force) {
 	force_wait = force;
 	delay = del;
@@ -62,7 +60,7 @@ void Fade_to::step() {
 		ret();
 		return;
 	}
-	time_control = TIME_FREEZE; // always fade the sync with the display
+	time_control = TIME_FREEZE; // fade toujours sync avec le display
 	if(fad->step())
 		ret();
 	fad->set();

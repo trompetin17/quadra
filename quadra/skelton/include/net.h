@@ -41,8 +41,6 @@
 #define SOCKET_ERROR -1
 #endif
 
-const unsigned NETBUF_SIZE = 4096;
-
 #include "array.h"
 #include "types.h"
 #include "packet.h"
@@ -88,8 +86,6 @@ public:
 	virtual Dword magic()=0;
 	virtual char *get_motd() {
 		return "Hello!";
-	}
-	virtual ~Net_param() {
 	}
 };
 
@@ -173,7 +169,7 @@ private:
 	int tcpsock;
 	Dword from;
 	sockaddr_in tcpsin;
-	Byte tcpbuf[NETBUF_SIZE+2];
+	Byte tcpbuf[1024];
 	Dword tcpbufsize;
 	Dword tcppacsize;
 	char desthost[256];
@@ -199,9 +195,6 @@ public:
 	virtual Dword getdestaddr() const {
 		return destaddr;
 	}
-	virtual const char* getdesthost() const {
-		return desthost;
-	}
 	virtual int getdestport() const {
 		return destport;
 	}
@@ -221,17 +214,14 @@ public:
 	Dword name_resolve;
 	int port_resolve;
 	char host_name[1024];
-	//All the IP addresses of this machine
 	Array<Dword> host_adr;
-	//Those IP addresses that look like public internet addresses
-	Array<Dword> host_adr_pub;
 
 	Net_param *net_param;
 
 	Net(Net_param *np);
 	virtual ~Net();
 
-	//Client+Server
+	//Client+Serveur
 	Net_connection *server_addr();
 	void step(bool loop_only=false);
 	void addwatch(Word id, Net_callable *nc);
@@ -301,11 +291,11 @@ private:
 	void verify_connections();
 	void verify_server_connection();
 
-	/* true if error (message in last_error) */
+	/* true si erreur (message dans last_error) */
 	bool checkerror(int quel);
-	/* verifies if extended error in WSALasterror or errno */
+	/* verifie si erreur etendu dans WSALasterror ou errno */
 	bool getlasterror(int quel);
-	/* quits with an error message */
+	/* quit avec message d'erreur */
 	void callwsa(int quel);
 
 	#ifdef UGS_DIRECTX

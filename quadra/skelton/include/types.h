@@ -32,22 +32,8 @@
 #define NULL 0
 #endif
 
-#if defined(lint)
-#define RCSID(x) /* empty */
-#else
-static const char *rcsid(const char *);
-#define RCSID(x) static const char *rcsid(const char *s) { return rcsid(x); }
-#endif
-
 typedef unsigned int Dword;
 typedef unsigned short Word;
 typedef unsigned char Byte;
-
-#ifdef UGS_DIRECTX
-#define snprintf _snprintf
-#define vsnprintf _vsnprintf
-#define strcasecmp stricmp
-typedef int addr_size_t;
-#endif /* UGS_DIRECTX */
 
 #endif

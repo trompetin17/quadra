@@ -22,9 +22,6 @@
 #include <string.h>
 #include "error.h"
 #include "command.h"
-#include "types.h"
-
-RCSID("$Id$")
 
 Command::Command() {
 	st[0] = 0;
@@ -53,13 +50,13 @@ bool Command::token(const char *s) {
 	while(token != NULL) {
 		tok[0] = '-';
 		strcpy(&tok[1], token);
-		strcat(tok, " "); // force a space at the end of the token
+		strcat(tok, " "); // force un espace a la fin du token
 
 		char *temp;
 		temp = strstr(st, tok);
 		if(temp) {
 			skelton_msgbox("Command::token: Found token [%s]\n",tok);
-			last_param = strchr(temp, ' '); // look for the next space following this token
+			last_param = strchr(temp, ' '); // cherche l'espace suivant ce token
 			if(last_param)
 				last_param++;
 			return true;
@@ -90,7 +87,7 @@ char *Command::get_param() {
 	if(strlen(param))
 		return param;
 	else
-		return NULL; // if no parameter
+		return NULL; // si pas de param
 }
 
 Command command;

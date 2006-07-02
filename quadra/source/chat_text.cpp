@@ -27,8 +27,6 @@
 #include "nglog.h"
 #include "chat_text.h"
 
-RCSID("$Id$")
-
 Chat_text *chat_text=NULL;
 int Chat_text::quel_player=0;
 
@@ -43,7 +41,7 @@ void Chat_text::add_text(int team, const char *text, bool sound) {
 	char tmp[256];
 	strncpy(tmp, text, 256);
 	tmp[255]=0;
-	int color_cut = -1;
+	int color_cut=-1;
 	if(team&16 && team>0) {
 		team-=16;
 		char *col=strchr(tmp, ':');
@@ -56,9 +54,9 @@ void Chat_text::add_text(int team, const char *text, bool sound) {
 		scroll_up();
 		list[CHAT_NBLINE-1].team = team;
 		if(color_cut!=-1)
-			team = -1;
+			team=-1;
 		list[CHAT_NBLINE-1].color_cut = color_cut;
-		color_cut = -1;
+		color_cut=-1;
 		last_s = -1;
 		for(i=0; (unsigned int)i < strlen(tm); i++) {
 			wid = font->width(tm, i+1);

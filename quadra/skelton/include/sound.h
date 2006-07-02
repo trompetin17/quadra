@@ -92,7 +92,6 @@ public:
 	Sample(Res& re, int nb);
 	virtual ~Sample();
 	void stop();
-	int refcount;
 };
 
 #ifdef UGS_LINUX
@@ -119,11 +118,11 @@ class Sfx {
 	Playing_sfx* playing;
 #endif
 public:
-	Sfx(Sample *sam, Dword dwPlayFlags=0, int vo = -1, int pa = -1, int f = -1, int pos = -1);
+	Sfx(Sample *sam, Dword dwPlayFlags=0, int vo=-1, int pa=-1, int f=-1, int pos=-1);
 	void stop();
-	void pan(int pa);  //-4000=left 0=center 4000=right
-	void freq(int pa); //200=low  60000=very high
-	void volume(int pa);  //0=full .. -4000=nil
+	void pan(int pa);  //-4000=gauche 0=centre 4000=droite
+	void freq(int pa); //200=bas  60000=tres haute
+	void volume(int pa);  //0=full .. -4000=absent
 	void position(int pa);
 #ifdef UGS_LINUX
 	virtual ~Sfx();

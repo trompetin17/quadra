@@ -22,8 +22,6 @@
 #include "main.h"
 #include "input_dumb.h"
 
-RCSID("$Id$")
-
 Input_Dumb::Input_Dumb() {
 	mouse.dx = mouse.dy = mouse.dz = 0;
 	mouse.quel = -1;
@@ -42,7 +40,7 @@ Input_Dumb::~Input_Dumb() {
 }
 
 void Input_Dumb::clear_key() {
-	process_key(); // empties the key queue
+	process_key(); // vide la queue de touche 
 	shift_key = 0;
 	quel_key = -1;
 	key_pending = 0;

@@ -41,11 +41,4 @@ public:
   virtual Find_file_entry get_next_entry() = 0;
 };
 
-static const char *basename(const char* f) {
-	const char* p=(const char*)(f+strlen(f));
-	while(*p != '/' && *p != '\\' && p>=f)
-		p--;
-	return p+1;
-}
-
 #endif

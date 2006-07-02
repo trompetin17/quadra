@@ -24,8 +24,6 @@
 #include "error.h"
 #include "spawn.h"
 
-RCSID("$Id$")
-
 class ProcessWin32: public Process {
 	PROCESS_INFORMATION pi;
 	unsigned long exit_code;

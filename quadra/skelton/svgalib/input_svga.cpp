@@ -18,6 +18,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#if 1
+#define Palette gl_palette
+#include <vgamouse.h>
+#include <vgakeyboard.h>
+#include <vga.h>
+#undef Palette
+#else
+#include "svgalib.h"
+#endif
+#include "video.h"
+#include "input_svga.h"
+
 const char *keynames[256] = {
   "", "Escape", "1", "2", "3", "4", "5", "6",
   "7", "8", "9", "0", "-", "=", "Backspace", "Tab",
@@ -54,22 +66,8 @@ const char *keynames[256] = {
   "", "", "", "", "", "", "", ""
 };
 
-#ifdef UGS_LINUX_SVGA
-
-#include "types.h"
-
-RCSID("$Id$")
-
-#include "wraplib.h"
-#include "video.h"
-#include "input_svga.h"
-
-static Svgalib* lib;
-
 Input_Svgalib::Input_Svgalib() {
   struct sigaction newsignals;
-
-  lib = getSvgalib();
 
   tty_fd = 0;
 
@@ -94,7 +92,7 @@ Input_Svgalib::Input_Svgalib() {
 
 Input_Svgalib::~Input_Svgalib() {
   sigaction(SIGUSR2, &oldsignals, NULL);
-  lib->mouse_close();
+  mouse_close();
   deraw();
 
   tcsetattr(0, TCSANOW, &termattr);
@@ -107,7 +105,7 @@ void Input_Svgalib::clear_key() {
   for(int i=0; i<256; i++)
     keys[i] = 0;
   if(israw)
-    lib->keyboard_clearstate();
+    keyboard_clearstate();
 }
 
 void Input_Svgalib::check() {
@@ -124,16 +122,16 @@ void Input_Svgalib::check() {
 
 void Input_Svgalib::deraw() {
   if(israw) {
-    lib->keyboard_close();
+    keyboard_close();
     israw=false;
   }
 }
 
 void Input_Svgalib::reraw() {
   if(!israw) {
-    lib->keyboard_init();
-    lib->keyboard_seteventhandler(Input_Svgalib::keyboard_handler);
-    lib->keyboard_translatekeys(8 /* DONT_CATCH_CTRLC */);
+    keyboard_init();
+    keyboard_seteventhandler(Input_Svgalib::keyboard_handler);
+    keyboard_translatekeys(8 /* DONT_CATCH_CTRLC */);
     israw=true;
   }
 }
@@ -142,10 +140,10 @@ void Input_Svgalib::process_key() {
   int thekey;
 
   if(israw)
-    lib->keyboard_update();
+    keyboard_update();
   else {
     fflush(stdin);
-    thekey = lib->vga_getkey();
+    thekey = vga_getkey();
     if(thekey) {
       switch (thekey) {
       case 27:
@@ -168,12 +166,12 @@ void Input_Svgalib::process_key() {
 
 void Input_Svgalib::process_mouse() {
   mouse.dx = mouse.dy = mouse.dz = 0;
-  lib->mouse_update();
+  mouse_update();
 }
 
 void Input_Svgalib::restore_mouse() {
   mouse_reinit = false;
-  lib->mouse_seteventhandler((void*) Input_Svgalib::mouse_handler);
+  mouse_seteventhandler((void*) Input_Svgalib::mouse_handler);
   mouse.quel = -1;
   for(int i=0; i<4; i++)
     mouse.button[i] = RELEASED;
@@ -241,11 +239,7 @@ void Input_Svgalib::keyboard_handler(int scancode, int press) {
 }
 
 void Input_Svgalib::signal_handler(int signal) {
-  /* tells that the mouse should be re-initialized at the next
-     refresh */
+  /* indique que la souris devra etre re-initer au prochain refresh */
   ((Input_Svgalib*)input)->mouse_reinit = true;
 	((Input_Svgalib*)input)->oldsignals.sa_handler(signal);
 }
-
-#endif /* UGS_LINUX_SVGA */
-

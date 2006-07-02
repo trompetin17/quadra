@@ -26,8 +26,7 @@
 
 #include "video_dumb.h"
 #include "video_dx.h"
-
-RCSID("$Id$")
+#include "video_dx16.h"
 
 Video* video = NULL;
 static bool video_8bit = true;
@@ -55,7 +54,11 @@ Video_bitmap* Video_bitmap::New(const int px, const int py,
 Video* Video::New(int w, int h, int b, const char *wname, bool dumb) {
 	if(dumb)
 		return Video_Dumb::New(w, h, b, wname);
-
-	video_8bit = true;
-	return new DirectX_Video(w, h, b, wname);
+	if(b == 8) {
+		video_8bit = true;
+		return new DirectX_Video(w, h, b, wname);
+	}	else {
+		video_8bit = false;
+		return new Video16(w, h, b, wname);
+	}
 }

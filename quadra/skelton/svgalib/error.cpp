@@ -24,13 +24,11 @@
 #include "error.h"
 #include "video.h"
 
-RCSID("$Id$")
-
-#ifndef NDEBUG
+#ifdef _DEBUG
 	int copper=0;
 #endif
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 	bool _debug = true;
 #else
 	bool _debug = false;
@@ -42,7 +40,7 @@ Error::Error(const char* m, ...) {
 	char st[1024];
 	va_list marker;
 	va_start(marker, m);
-	vsnprintf(st, sizeof(st) - 1, m, marker);
+	vsprintf(st, m, marker);
 	va_end(marker);
 	fprintf(stderr, "Error: %s\n", st);
 	exit(1);
@@ -53,9 +51,9 @@ void msgbox(const char* m, ...) {
 		char st[1024];
 		va_list marker;
 		va_start(marker, m);
-		vsnprintf(st, sizeof(st) - 1, m, marker);
+		vsprintf(st, m, marker);
 		va_end(marker);
-		fprintf(stderr, "%s", st);
+		fprintf(stderr, st);
 	}
 }
 
@@ -64,9 +62,9 @@ void skelton_msgbox(const char* m, ...) {
 		char st[1024];
 		va_list marker;
 		va_start(marker, m);
-		vsnprintf(st, sizeof(st) - 1, m, marker);
+		vsprintf(st, m, marker);
 		va_end(marker);
-		fprintf(stderr, "%s", st);
+		fprintf(stderr, st);
 	}
 }
 
@@ -75,9 +73,9 @@ void lock_msgbox(const char* m, ...) {
 		char st[1024];
 		va_list marker;
 		va_start(marker, m);
-		vsnprintf(st, sizeof(st) - 1, m, marker);
+		vsprintf(st, m, marker);
 		va_end(marker);
-		fprintf(stderr, "%s", st);
+		fprintf(stderr, st);
 	}
 }
 

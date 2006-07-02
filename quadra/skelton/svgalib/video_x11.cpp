@@ -18,8 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef UGS_LINUX_X11
-
 #include <signal.h>
 #include <unistd.h>
 #include <sys/shm.h>
@@ -29,8 +27,8 @@
 #include <X11/xpm.h>
 #undef Font
 #include "debug.h"
+#ifdef _DEBUG
 #include "command.h"
-#ifndef NDEBUG
 #ifdef FPSMETER
 #include "overmind.h"
 #endif
@@ -39,8 +37,6 @@
 #include "bitmap.h"
 #include "sprite.h"
 #include "video_x11.h"
-
-RCSID("$Id$")
 
 /*
  * Gack! This is HORRIBLE!
@@ -200,7 +196,7 @@ Video* Video_X11::New(int w, int h, int b, const char *wname) {
     return NULL;
   }
 
-#ifndef NDEBUG
+#ifdef _DEBUG
   if(command.token("sync")) {
     skelton_msgbox("X11: synchronous communication with X server enabled.\n");
     XSynchronize(display, true);
@@ -269,19 +265,12 @@ Video_X11::Video_X11(int w, int h, int b,
   vfb(NULL),
   min_x2(w), max_x2(0), min_y2(h), max_y2(0),
   window(0),
-  fullscreen_window(0),
-  modecount(0),
-  modes(0),
-  fullscreen_mode(0),
-  allow_fullscreen(false),
-  fullscreen(false),
-  restore_fullscreen(false),
   visual(NULL),
   delete_win(0),
   depth(d),
   do_shm(false) {
-  /* NOTE: we assume that "b" is always 8, even is we try to be
-     wise-asses in some places (like "bit = b"). */
+  /* NOTE: ont assume que "b" est toujours 8, même si ont essaye de
+     faire le smart à des places (comme "bit = b"). */
 
   XSetWindowAttributes attribs;
   XGCValues gcvalues;
@@ -290,9 +279,8 @@ Video_X11::Video_X11(int w, int h, int b,
   XSizeHints sizehints;
   Pixmap ico_pixmap;
   Pixmap ico_mask;
+  char *argv[1];
   int tmp_y;
-  int vm_event_base;
-  int vm_error_base;
 
   setuid(getuid());  
   setgid(getgid());
@@ -333,65 +321,18 @@ Video_X11::Video_X11(int w, int h, int b,
   attribs.colormap = DefaultColormap(display, DefaultScreen(display));
 
   window = XCreateWindow(display,
-                         DefaultRootWindow(display),
-                         0, 0, /* X, Y relative to parent window */
-                         w, h, /* width, height */
-                         0, /* border width */
-                         depth, /* color depth */
-                         InputOutput,
-                         visual,
-                         CWEventMask|CWBorderPixel|CWColormap,
-                         &attribs);
+			 DefaultRootWindow(display),
+			 0, 0, /* X, Y relative to parent window */
+			 w, h, /* width, height */
+			 0, /* border width */
+			 depth, /* color depth */
+			 InputOutput,
+			 visual,
+			 CWEventMask | CWBorderPixel | CWColormap,
+			 &attribs);
 
   if(!window)
     (void)new Error("XCreateWindow failed");
-
-  attribs.override_redirect = True;
-
-  allow_fullscreen = XF86VidModeQueryExtension(display, &vm_event_base, &vm_error_base);
-
-
-  if(allow_fullscreen) {
-    allow_fullscreen = XF86VidModeGetAllModeLines(display,
-                                                  DefaultScreen(display),
-                                                  &modecount,
-                                                  &modes);
-  }
-
-  skelton_msgbox("\n");
-  if(allow_fullscreen) {
-    int i;
-
-    for(i = 0; i < modecount; ++i) {
-      skelton_msgbox("X11: mode %ix%i\n",
-                     modes[i]->hdisplay,
-                     modes[i]->vdisplay);
-      if(modes[i]->hdisplay == w && modes[i]->vdisplay == h) {
-        fullscreen_mode = modes[i];
-        break;
-      }
-    }
-
-    allow_fullscreen = fullscreen_mode;
-  }
-
-  if(allow_fullscreen) {
-    fullscreen_window  = XCreateWindow(display,
-                                       DefaultRootWindow(display),
-                                       0, 0, /* X, Y relative to parent window */
-                                       w, h, /* width, height */
-                                       0, /* border width */
-                                       depth, /* color depth */
-                                       InputOutput,
-                                       visual,
-                                       CWEventMask|CWBorderPixel|CWColormap|CWOverrideRedirect,
-                                       &attribs);
-
-    if(!fullscreen_window)
-      (void)new Error("XCreateWindow failed");
-
-    skelton_msgbox("X11: fullscreen mode available\n");
-  }
 
   classhint = XAllocClassHint();
   classhint->res_name = "LudusSkelton";
@@ -399,19 +340,8 @@ Video_X11::Video_X11(int w, int h, int b,
   XSetClassHint(display, window, classhint);
   XFree(classhint);
 
-  char** argv = static_cast<char**>(alloca(sizeof(char*) * (ux_argc + 1)));
-  char str[PATH_MAX];
-  for(int i = 0; i < ux_argc; i++) {
-    argv[i] = ux_argv[i];
-  }
-  argv[ux_argc] = 0;
-  if(argv[0][0] != '/' && strchr(argv[0], '/')) {
-    char pwd[PATH_MAX];
-    getcwd(pwd, sizeof(pwd));
-    snprintf(str, sizeof(str), "%s/%s", pwd, ux_argv[0]);
-    argv[0] = str;
-  }
-  XSetCommand(display, window, argv, ux_argc);
+  argv[0] = "/usr/games/quadra";
+  XSetCommand(display, window, argv, 1);
 
   XpmCreatePixmapFromData(display,
 			  DefaultRootWindow(display),
@@ -453,6 +383,17 @@ Video_X11::Video_X11(int w, int h, int b,
   if(!gc)
     (void)new Error("XCreateGC failed");
 
+  XMapRaised(display, window);
+
+  while(1) {
+    XEvent event;
+
+    XNextEvent(display, &event);
+
+    if((event.type == Expose) && (event.xexpose.count == 0))
+      break;
+  }
+
   do {
     if(!XShmQueryExtension(display))
       break;
@@ -487,8 +428,8 @@ Video_X11::Video_X11(int w, int h, int b,
 
     shmctl(shminfo.shmid, IPC_RMID, 0);
 
-    /* voodoo warning: XShmAttach dies an horrible death if the X
-       server is not local. Let's be nifty. */
+    /* voodoo warning: XShmAttach foire horriblement si le serveur X
+       n'est pas local. Soyons futés. */
     XSync(display, False);
     xerror = false;
     if(xoldhandler != xhandler)
@@ -535,17 +476,9 @@ Video_X11::Video_X11(int w, int h, int b,
 
   if(!vb)
     (void)new Error("Couldn't create a video bitmap.");
-
-  XMapRaised(display, window);
-
-  if(allow_fullscreen && !command.token("nofullscreen"))
-    toggle_fullscreen();
 }
 
 Video_X11::~Video_X11() {
-  if(fullscreen)
-    toggle_fullscreen();
-
   if(vb)
     delete vb;
 
@@ -563,14 +496,6 @@ Video_X11::~Video_X11() {
     XUnmapWindow(display, window);
     XDestroyWindow(display, window);
   }
-
-  if(fullscreen_window) {
-    XUnmapWindow(display, fullscreen_window);
-    XDestroyWindow(display, fullscreen_window);
-  }
-
-  if(modes)
-    XFree(modes);
 
   XCloseDisplay(display);
 }
@@ -643,38 +568,34 @@ void Video_X11::start_frame() {
 }
 
 void Video_X11::flip() {
-  Window current_window = fullscreen ? fullscreen_window : window;
-
-  /* I'm not sure how useful this is, the XSync or XFlush probably
-     already block on reading or writing, giving the same effect? */
-  usleep(0);
+  sleep(0);
 
   if(max_x2 > min_x2) {
-    /* in case that the last frame is not finished */
+    /* des fois que la frame précédente soit pas finie */
     XSync(display, False);
 
     if(do_shm)
       XShmPutImage(display,
-                   current_window,
-                   gc,
-                   image,
-                   min_x2, min_y2, /* src x, y */
-                   min_x2, min_y2, /* dest x, y */
-                   max_x2-min_x2+1, max_y2-min_y2+1,
-                   false);
+		   window,
+		   gc,
+		   image,
+		   min_x2, min_y2, /* src x, y */
+		   min_x2, min_y2, /* dest x, y */
+		   max_x2-min_x2, max_y2-min_y2,
+		   false);
     else
       XPutImage(display,
-                current_window,
-                gc,
-                image,
-                min_x2, min_y2, /* src x, y */
-                min_x2, min_y2, /* dest x, y */
-                max_x2-min_x2+1, max_y2-min_y2+1);
-
-    /* so that everything goes through */
+		window,
+		gc,
+		image,
+		min_x2, min_y2, /* src x, y */
+		min_x2, min_y2, /* dest x, y */
+		max_x2-min_x2, max_y2-min_y2);
+  
+    /* pour que tout passe */
     XFlush(display);
 
-    /* reset the dirty rect */
+    /* reset le dirty rect */
     min_x2 = vb->width;
     min_y2 = vb->height;
     max_x2 = 0;
@@ -719,60 +640,3 @@ void Video_X11::clean_up() {
 void Video_X11::snap_shot(int x, int y, int w, int h) {
   skelton_msgbox("Unimplemented: Video_X11::snap_shot\n");
 }
-
-void Video_X11::focus_in(Window w) {
-  if(w == window)
-    skelton_msgbox("X11: FocusIn (main window)\n");
-  else
-    skelton_msgbox("X11: FocusIn\n");
-
-  if(w == window && restore_fullscreen) {
-    toggle_fullscreen();
-  }
-}
-
-void Video_X11::focus_out(Window w) {
-  if(w == window)
-    skelton_msgbox("X11: FocusOut (main window)\n");
-  else
-    skelton_msgbox("X11: FocusOut\n");
-
-  if(w == window && fullscreen) {
-    toggle_fullscreen();
-    restore_fullscreen = true;
-  }
-}
-
-void Video_X11::toggle_fullscreen() {
-  skelton_msgbox("X11: toggle_fullscreen\n");
-
-  if(!allow_fullscreen) {
-    skelton_msgbox("X11: fullscreen not allowed\n");
-    return;
-  }
-
-  if(fullscreen) {
-    XF86VidModeSwitchToMode(display, DefaultScreen(display), modes[0]);
-    XUngrabPointer(display, CurrentTime);
-    XUnmapWindow(display, fullscreen_window);
-  } else {
-    XMapRaised(display, fullscreen_window);
-    XGrabPointer(display,
-                 fullscreen_window, /* grab_window */
-                 True, /* owner_events */
-                 0, /* event_mask */
-                 GrabModeAsync, /* pointer_mode */
-                 GrabModeAsync, /* keyboard_mode */
-                 fullscreen_window, /* confine_to */
-                 None, /* cursor */
-                 CurrentTime); /* time */
-    XF86VidModeSwitchToMode(display, DefaultScreen(display), fullscreen_mode);
-    XF86VidModeSetViewPort(display, DefaultScreen(display), 0, 0);
-  }
-
-  dirty(0, 0, width-1, height-1);
-  fullscreen = !fullscreen;
-}
-
-#endif /* UGS_LINUX_X11 */
-

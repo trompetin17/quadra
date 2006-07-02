@@ -18,12 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef UGS_LINUX_X11
-
 #include "video.h"
 #include "cursor_x11.h"
-
-RCSID("$Id$")
 
 Cursor_X11::Cursor_X11() {
   visible = true;
@@ -57,6 +53,3 @@ void Cursor_X11::put_back() {
 
 void Cursor_X11::draw() const {
 }
-
-#endif /* UGS_LINUX_X11 */
-

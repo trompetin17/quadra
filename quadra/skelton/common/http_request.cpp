@@ -23,8 +23,6 @@
 #include "net.h"
 #include "http_request.h"
 
-RCSID("$Id$")
-
 char Http_request::base64table[] = {
   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
   'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
@@ -70,7 +68,7 @@ void Http_request::base64encode(const Byte *in, Textbuf& out, Dword size) {
 		switch(size%3) {
 			case 1:
 				*end--='=';
-				// no break, it's normal!
+				//pas de break, c'est normal!
 			case 2:
 				*end--='=';
 		}
@@ -109,42 +107,30 @@ void Http_request::url_encode(const char *src, Textbuf& dest) {
 		tmp[0] = *src++;
 		tmp[1] = 0;
 		if(tmp[0] < 48 || tmp[0] > 122 || (tmp[0] >= 58 && tmp[0] <= 64))
-			sprintf(tmp, "%c%02X", '%', (Byte)tmp[0]); // converted to '%FF' url
+			sprintf(tmp, "%c%02X", '%', (Byte)tmp[0]); // convertit en '%FF' url
 		dest.append("%s", tmp);
 	}
 }
 
-Http_request::Http_request(const char *aHost, int port, const Byte *request, int size) {
+Http_request::Http_request(const char *host, int port, const Byte *request, int size) {
 	if(request) {
 		this->request=request;
 		this->size=size? size:strlen((const char *)request);
 	}
-	if(aHost) {
-		host = strdup(aHost);
-	} else {
-		host = NULL;
-	}
-	nc=net->start_other(aHost, port); // nc could be NULL in case of error!
+	nc=net->start_other(host, port); // nc peut etre NULL en cas d'erreur!
 	sent=false;
 }
 
-Http_request::Http_request(const char* aHost, Dword hostaddr, int port, const Byte *request, int size) {
+Http_request::Http_request(Dword hostaddr, int port, const Byte *request, int size) {
 	if(request) {
 		this->request=request;
 		this->size=size? size:strlen((const char *)request);
 	}
-	if(aHost) {
-		host = strdup(aHost);
-	} else {
-		host = NULL;
-	}
-	nc=net->start_other(hostaddr, port); // nc could be NULL in case of error!
+	nc=net->start_other(hostaddr, port); // nc peut etre NULL en cas d'erreur!
 	sent=false;
 }
 
 Http_request::~Http_request() {
-	if(host)
-		free(host);
 	if(nc)
 		delete nc;
 }
@@ -165,7 +151,7 @@ Dword Http_request::getsize() const {
 	return buf.size()? buf.size()-1:0; //Don't count nul byte added in 'done'
 }
 
-bool Http_request::isconnected() const { // indicate if the connection has been established
+bool Http_request::isconnected() const { // indique si la connexion a ete etablie
 	if(nc && nc->state() == Net_connection::connected)
 		return true;
 	return false;
