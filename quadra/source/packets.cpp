@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include "net_buf.h"
@@ -26,15 +12,13 @@
 #include "canvas.h"
 #include "packets.h"
 
-RCSID("$Id$")
-
 void Packet_wantjoin::write(Net_buf *p) {
 	Packet_ping::write(p);
 	p->write_byte(1);
 	p->write_byte(net_version);
 	p->write_byte(language);
 	p->write_byte(os);
-	p->write_bool(true);
+	p->write_bool(registered);
 }
 
 bool Packet_wantjoin::read(Net_buf *p) {
@@ -45,7 +29,7 @@ bool Packet_wantjoin::read(Net_buf *p) {
 	net_version=p->read_byte();
 	language=p->read_byte();
 	os=p->read_byte();
-	p->read_bool();
+	registered=p->read_bool();
 	return true;
 }
 
@@ -121,7 +105,7 @@ void Packet_gameinfo::write(Net_buf *p) {
 bool Packet_gameinfo::read(Net_buf *p) {
 	if(!Packet_udp::read(p))
 		return false;
-	if(!p->read_string(name, sizeof(name)))
+	if(!p->read_string(name, 32))
 		return false;
 	version = p->read_byte();
 	port = p->read_dword();
@@ -134,7 +118,7 @@ bool Packet_gameinfo::read(Net_buf *p) {
 		Byte t=p->read_byte();
 		if(t>=MAXTEAMS)
 			return false;
-		if(!p->read_string(tmp, sizeof(tmp)))
+		if(!p->read_string(tmp, 40))
 			return false;
 		add_player(0, t, tmp, -1, 0);
 	}
@@ -224,14 +208,13 @@ void Packet_gameserver::write(Net_buf *p) {
 	for(i=0; i<players.size(); i++) {
 		p->write_dword(players[i]->player_id);
 	}
-	p->write_bool(boring_rules);
 }
 
 bool Packet_gameserver::read(Net_buf *p) {
 	if(!Packet_ping::read(p))
 		return false;
 	version = p->read_byte();
-	if(!p->read_string(name, sizeof(name)))
+	if(!p->read_string(name, 32))
 		return false;
 	accepted=p->read_bool();
 	game_seed=p->read_dword();
@@ -257,7 +240,7 @@ bool Packet_gameserver::read(Net_buf *p) {
 		Byte t=p->read_byte();
 		if(t>=MAXTEAMS)
 			return false;
-		if(!p->read_string(tmp, sizeof(tmp)))
+		if(!p->read_string(tmp, 40))
 			return false;
 		add_player(quel, t, tmp, 0, 0);
 	}
@@ -296,7 +279,6 @@ bool Packet_gameserver::read(Net_buf *p) {
 	for(i=0; i<num_player; i++) {
 		players[i]->player_id=p->read_dword();
 	}
-	boring_rules=p->read_bool();
 	return true;
 }
 
@@ -314,7 +296,7 @@ bool Packet_chat::read(Net_buf *p) {
 	team = p->read_byte();
 	if(team>=MAXTEAMS || team<-1)
 		return false;
-	if(!p->read_string(text, sizeof(text)))
+	if(!p->read_string(text, 256))
 		return false;
 	to_team = p->read_byte();
 	if(to_team>=MAXTEAMS || to_team<-1)
@@ -335,7 +317,7 @@ bool Packet_playerwantjoin::read(Net_buf *p) {
 	team = p->read_byte();
 	if(team>=MAXTEAMS)
 		return false;
-	if(!p->read_string(name, sizeof(name)))
+	if(!p->read_string(name, 40))
 		return false;
 	player = p->read_byte();
 	if(player>2)
@@ -352,10 +334,10 @@ bool Packet_playerwantjoin::read(Net_buf *p) {
 	handicap = p->read_dword();
 	if(handicap<0 || handicap>4)
 		return false;
-	p->read_mem(player_hash, sizeof(player_hash));
-	if(!p->read_string(team_name, sizeof(team_name)))
+	p->read_mem(player_hash, 16);
+	if(!p->read_string(team_name, 40))
 		return false;
-	p->read_mem(team_hash, sizeof(team_hash));
+	p->read_mem(team_hash, 16);
 	h_repeat = p->read_dword();
 	if(h_repeat<0 || h_repeat>3)
 		return false;
@@ -371,15 +353,15 @@ void Packet_playerwantjoin::write(Net_buf *p) {
 	p->write_string(name);
 	p->write_byte(player);
 	if(game->net_version()>=23)
-		p->write_dword(static_cast<Dword>(-1));
+		p->write_dword(-1);
 	else
 		p->write_dword(h_repeat);
 	p->write_dword(smooth);
 	p->write_dword(shadow);
 	p->write_dword(handicap);
-	p->write_mem(player_hash, sizeof(player_hash));
+	p->write_mem(player_hash, 16);
 	p->write_string(team_name);
-	p->write_mem(team_hash, sizeof(team_hash));
+	p->write_mem(team_hash, 16);
 	p->write_dword(h_repeat);
 	p->write_dword(v_repeat);
 }
@@ -390,7 +372,7 @@ bool Packet_player::read(Net_buf *p) {
 	team = p->read_byte();
 	if(team>=MAXTEAMS)
 		return false;
-	if(!p->read_string(name, sizeof(name)))
+	if(!p->read_string(name, 40))
 		return false;
 	player = p->read_byte();
 	if(player>2)
@@ -432,7 +414,7 @@ void Packet_player::write(Net_buf *p) {
 	p->write_string(name);
 	p->write_byte(player);
 	if(game->net_version()>=23)
-		p->write_dword(static_cast<Dword>(-1));
+		p->write_dword(-1);
 	else
 		p->write_dword(h_repeat);
 	p->write_dword(smooth);
@@ -487,9 +469,9 @@ bool Packet_stat::read(Net_buf *p) {
 	num_stat=p->read_byte();
 	for(int i=0; i<num_stat; i++) {
 		Byte st=p->read_byte();
-		int val=p->read_dword();
 		if(st>=CS::LAST)
 			continue; //Ignore stats we don't know about
+		int val=p->read_dword();
 		add_stat(st, val);
 	}
 	return true;
@@ -519,9 +501,9 @@ bool Packet_gamestat::read(Net_buf *p) {
 	num_stat=p->read_byte();
 	for(int i=0; i<num_stat; i++) {
 		Byte st=p->read_byte();
-		int val=p->read_dword();
 		if(st>=GS::LAST)
 			continue; //Ignore stats we don't know about
+		int val=p->read_dword();
 		add_stat(st, val);
 	}
 	return true;
@@ -829,7 +811,7 @@ bool Packet_rejoin::read(Net_buf *p) {
 void Packet_rejoin::write(Net_buf *p) {
 	Packet_playerbase::write(p);
 	if(game->net_version()>=23)
-		p->write_dword(static_cast<Dword>(-1));
+		p->write_dword(-1);
 	else
 		p->write_dword(h_repeat);
 	p->write_dword(smooth);
@@ -922,87 +904,7 @@ bool Packet_servernameteam::read(Net_buf *p) {
 	team=p->read_byte();
 	if(team>=MAXTEAMS)
 		return false;
-	if(!p->read_string(name, sizeof(name)))
+	if(!p->read_string(name, 40))
 		return false;
 	return true;
-}
-
-Packet_serverlog::Var::Var() {
-	name[0]=0;
-	value[0]=0;
-}
-
-Packet_serverlog::Var::Var(const char* n, const char* val) {
-	strncpy(name, n, sizeof(name));
-	name[sizeof(name)-1]=0;
-	strncpy(value, val, sizeof(value));
-	value[sizeof(value)-1]=0;
-}
-
-Packet_serverlog::Var::Var(const char* n, unsigned i) {
-	strncpy(name, n, sizeof(name));
-	name[sizeof(name)-1]=0;
-	sprintf(value, "%u", i);
-}
-
-Packet_serverlog::Var::Var(const char* n, int i) {
-	strncpy(name, n, sizeof(name));
-	name[sizeof(name)-1]=0;
-	sprintf(value, "%i", i);
-}
-
-Packet_serverlog::Var::Var(const char* n, float f) {
-	strncpy(name, n, sizeof(name));
-	name[sizeof(name)-1]=0;
-	sprintf(value, "%f", f);
-}
-
-Packet_serverlog::Packet_serverlog(const char* type) {
-	packet_id = P_SERVERLOG;
-	strncpy(event_type, type, sizeof(event_type));
-	event_type[sizeof(event_type)-1]=0;
-}
-
-bool Packet_serverlog::Var::read(Net_buf* p) {
-	if(!p->read_string(name, sizeof(name)))
-		return false;
-	if(!p->read_string(value, sizeof(value)))
-		return false;
-	return true;
-}
-
-void Packet_serverlog::Var::write(Net_buf* p) {
-	p->write_string(name);
-	p->write_string(value);
-}
-
-void Packet_serverlog::write(Net_buf* p) {
-	Packet_tcp::write(p);
-	p->write_string(event_type);
-	p->write_dword(vars.size());
-	for(unsigned i=0; i<vars.size(); i++)
-		vars[i].write(p);
-}
-
-bool Packet_serverlog::read(Net_buf* p) {
-	if(!Packet_tcp::read(p))
-		return false;
-	if(!p->read_string(event_type, sizeof(event_type)))
-		return false;
-	vars.clear();
-	unsigned size = p->read_dword();
-	if(size > 100)
-		return false;
-	for(unsigned i=0; i<size; i++) {
-		Var v;
-		if(!v.read(p))
-			return false;
-		vars.add(v);
-	}
-	return true;
-}
-
-void Packet_serverlog::add(const Var& var)
-{
-	vars.add(var);
 }

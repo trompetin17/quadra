@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #define WIN32_LEAN_AND_MEAN
@@ -31,14 +17,11 @@
 #include "palette.h"
 #include "sprite.h"
 #include "video_dx.h"
-#include "raw.h"
-
-RCSID("$Id$")
 
 extern LRESULT CALLBACK windowproc(HWND hwnd, UINT msg,
 				   WPARAM wparam, LPARAM lparam);
 
-/* internal singleton */
+/* singleton interne */
 DirectX_Video *directx_video = NULL;
 
 DirectX_Video::DirectX_Video(int w, int h, int b, const char *wname) {
@@ -120,7 +103,7 @@ DirectX_Video::~DirectX_Video() {
 		lpdd->Release();
 		lpdd=NULL;
 	}
-	SetWindowPos(hwnd, HWND_BOTTOM, 0, 0, 64, 48, SWP_HIDEWINDOW);
+	ShowWindow(hwnd, SW_HIDE);
 	DestroyWindow(hwnd);
 	UnregisterClass("SkeltonClass", hinst);
 	ShowCursor(TRUE);
@@ -211,7 +194,7 @@ void DirectX_Video::flip() {
 
 	calldx(lpddsprimary->Flip(lpddsback, DDFLIP_WAIT));
 	if(newpal) {
-		// new method for palette:
+		// Nouvelle methode pour palette:
 		int boo;
 		lpdd->GetVerticalBlankStatus(&boo);
 		if(!boo)
@@ -276,9 +259,6 @@ void DirectX_Video::snap_shot(int x, int y, int w, int h) {
 	unlock();
 
 	skelton_msgbox("ok\n");
-}
-
-void DirectX_Video::toggle_fullscreen() {
 }
 
 void DirectX_Video::start_frame() {
@@ -350,8 +330,8 @@ void DirectX_Video_bitmap::rect(const int x,const int y,const int w,const int h,
 	RECT rect;
 	rect.top = clip_y1+pos_y;
 	rect.left = clip_x1+pos_x;
-	rect.right = clip_x2+pos_x+1;  // damn, this sucks
-	rect.bottom = clip_y2+pos_y+1; // the last pixel is "excluded", shit
+	rect.right = clip_x2+pos_x+1;  // maudit que c'est poche
+	rect.bottom = clip_y2+pos_y+1; // le dernier pixel est 'exclu' bordel
 	DDBLTFX ddbltfx;
 	ddbltfx.dwSize = sizeof(ddbltfx);
 	ddbltfx.dwFillColor = color;
@@ -392,9 +372,44 @@ void DirectX_Video_bitmap::line(const int x1, const int y1, const int x2, const 
 }
 
 void DirectX_Video_bitmap::put_bitmap(const Bitmap& d, const int dx, const int dy) const {
-	d.draw(*currentpage, dx, dy);
+#if 0
+  if(d.directx) {
+    if(clip(dx, dy, d))
+      return;
+    
+    RECT rect;
+    rect.top = clip_y1-dy;
+    rect.left = clip_x1-dx;
+    rect.right = clip_x2-dx+1;  // maudit que c'est poche
+    rect.bottom = clip_y2-dy+1; // le dernier pixel est 'exclu' bordel
+    directx_video->lpddsback->BltFast(clip_x1+pos_x, clip_y1+pos_y, d.directx_surface,&rect, DDBLTFAST_NOCOLORKEY | DDBLTFAST_WAIT);
+  } else {
+#endif
+    d.draw(*currentpage, dx, dy);
+#if 0
+  }
+#endif
 }
 
 void DirectX_Video_bitmap::put_sprite(const Sprite& d, const int dx, const int dy) const {
-	d.draw(*currentpage, dx, dy);
+#if 0
+  if(d.directx) {
+    int tx = dx-d.hot_x;
+    int ty = dy-d.hot_y;
+    if(clip(tx, ty, d))
+      return;
+    
+    RECT rect;
+    rect.top = clip_y1-ty;
+    rect.left = clip_x1-tx;
+    rect.right = clip_x2-tx+1;  // maudit que c'est poche
+    rect.bottom = clip_y2-ty+1; // le dernier pixel est 'exclu' bordel
+    
+    directx_video->lpddsback->BltFast(clip_x1+pos_x, clip_y1+pos_y, d.directx_surface,&rect, DDBLTFAST_SRCCOLORKEY | DDBLTFAST_WAIT);
+  } else {
+#endif
+    d.draw(*currentpage, dx, dy);
+#if 0
+  }
+#endif
 }

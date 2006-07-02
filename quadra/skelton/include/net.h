@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #ifndef _HEADER_NET
@@ -40,8 +26,6 @@
 #include <netinet/in.h>
 #define SOCKET_ERROR -1
 #endif
-
-const unsigned NETBUF_SIZE = 4096;
 
 #include "array.h"
 #include "types.h"
@@ -88,8 +72,6 @@ public:
 	virtual Dword magic()=0;
 	virtual char *get_motd() {
 		return "Hello!";
-	}
-	virtual ~Net_param() {
 	}
 };
 
@@ -173,7 +155,7 @@ private:
 	int tcpsock;
 	Dword from;
 	sockaddr_in tcpsin;
-	Byte tcpbuf[NETBUF_SIZE+2];
+	Byte tcpbuf[1024];
 	Dword tcpbufsize;
 	Dword tcppacsize;
 	char desthost[256];
@@ -199,9 +181,6 @@ public:
 	virtual Dword getdestaddr() const {
 		return destaddr;
 	}
-	virtual const char* getdesthost() const {
-		return desthost;
-	}
 	virtual int getdestport() const {
 		return destport;
 	}
@@ -221,17 +200,14 @@ public:
 	Dword name_resolve;
 	int port_resolve;
 	char host_name[1024];
-	//All the IP addresses of this machine
 	Array<Dword> host_adr;
-	//Those IP addresses that look like public internet addresses
-	Array<Dword> host_adr_pub;
 
 	Net_param *net_param;
 
 	Net(Net_param *np);
 	virtual ~Net();
 
-	//Client+Server
+	//Client+Serveur
 	Net_connection *server_addr();
 	void step(bool loop_only=false);
 	void addwatch(Word id, Net_callable *nc);
@@ -301,11 +277,11 @@ private:
 	void verify_connections();
 	void verify_server_connection();
 
-	/* true if error (message in last_error) */
+	/* true si erreur (message dans last_error) */
 	bool checkerror(int quel);
-	/* verifies if extended error in WSALasterror or errno */
+	/* verifie si erreur etendu dans WSALasterror ou errno */
 	bool getlasterror(int quel);
-	/* quits with an error message */
+	/* quit avec message d'erreur */
 	void callwsa(int quel);
 
 	#ifdef UGS_DIRECTX

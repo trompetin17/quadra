@@ -31,32 +31,32 @@ En fait, vous avez joué pendant %i heures et %i minutes!
 En fait, vous avez joué pendant %i minutes %i secondes.
 Vous avez seulement passé %i secondes à l'essayer.
 Est-ce que c'était intéressant? Ou même fabuleux?
-
-
-
-
-
-
-
-
-
+Si oui, alors pourquoi ne pas y investir quelques sous!
+Vous pourrez procéder à l'enregistrement via notre site Web à l'adresse:
+http://www.ludusdesign.com
+Ou si vous préférez, envoyez-nous 10$ par la poste à l'adresse:
+207, l'Heureux
+McMasterville (QC) Canada
+J3G 5G2
+Et alors, vous deviendrez heureux pour le reste de votre vie.
+(ça désactivera aussi le message au début du jeu...)
 N'oubliez pas de copier ce jeu à tout le monde!
 
 Nous avons également une version %s compatible avec la vôtre!
 Alors tenez-vous à l'affût des jeux de Ludus Design, et rappelez-vous:
 On fait des jeux hots, pour vous!
-Merci d'avoir téléchargé Quadra!
+Merci d'avoir enregistré Quadra!
+Vous nous encouragez ainsi à continuer d'améliorer et
+à développer d'autres projets dans l'avenir!
+L'enregistrement est au nom de:
 
 
 
 
 
-
-
-
-
-
-
+Si vous avez des problèmes d'utilisation ou des questions, écrivez-nous
+à cette adresse:
+support@ludusdesign.com
 
 
 L'équipe de Quadra:
@@ -64,13 +64,13 @@ Rémi Veilleux: Programmation, design, graphisme
 Stéphane Lajoie: Programmation
 Pierre Phaneuf: Conversion Linux
 Notre site Web:
-http://quadra.sourceforge.net/
+http://www.ludusdesign.com/index_fr.html
 Ceci est une version démo gratuite et distribuable.
 Cliquez sur 'Retour ·0' pour revenir au menu principal
 Quadra(mc)  Ludus Design
 Utilise le "Universal Game Skelton(mc)"
 VERSION NON ENREGISTRÉE. S.V.P. enregistrez si vous aimez ce jeu!
-Version gratuite: distribuée sous les termes de la GNU LGPL
+VERSION ENREGISTRÉE. Merci!
 Version numéro: %i
 Avertissement: Impossible d'initialiser la carte de son
 Fichier de configuration inexistant. Il sera créé.
@@ -379,7 +379,7 @@ Veuillez essayer un autre serveur, ou changer votre numéro de port.
 Le serveur Quadra utilise une version antérieure (%i) à la vôtre.
 Ce serveur devra être mis à jour à votre version %i.
 Le serveur Quadra utilise une version plus récente (%i) que la vôtre.
-Veuillez consulter notre site web pour les mises à jour 'quadra.sourceforge.net'.
+Veuillez consulter notre site web pour les mises à jour 'www.ludusdesign.com'.
 Carnet d'adresses
 Connecter
 Recherche de %s...
@@ -434,7 +434,7 @@ Adresse du serveur de partie publique:
 Options avancées:
 Adresse de serveur de partie invalide.
 Veuillez retourner au menu "Option" et vérifiez.
-Adresse par défaut: http://quadra.sourceforge.net/cgi-bin/qserv.pl
+Adresse par défaut: http://ludusdesign.com/cgibin/qserv.pl
 Quadra version %i.%i.%i
 NON ENREGISTRÉ
 Aucun serveur de partie Quadra à cette adresse.
@@ -566,8 +566,8 @@ Vous recevez la
        patate chaude!
 Vous vous débarrassez
     de la patate chaude!
-
-
+ngStats log:
+ngWorldStats log:
 gdesc_fr.txt
 Aveugle
 En attente pour la
@@ -576,8 +576,8 @@ Appuyez sur une
  touche pour repartir.
 %s gagne la manche!
 Personne ne
-·2 Impossible de tracer
-·2 Trace de la partie
+·2 Impossible de tracer sous le nom '%s'
+·2 Trace de la partie dans '%s'
 Points par min.
 Blocks par min.
 Tourne double...
@@ -591,4 +591,3 @@ Combo moy.
 Rang
 Vitesse
 Combos
-Serveur proxy HTTP:

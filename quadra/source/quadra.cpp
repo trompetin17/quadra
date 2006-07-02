@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- *
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- *
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 
@@ -23,19 +9,14 @@
 #include <pwd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#endif
-#ifdef UGS_DIRECTX
-#include <shlobj.h>
-#include <shlwapi.h>
+#define stricmp strcasecmp
 #endif
 #include <stdlib.h>
-#include <exception>
 #include "packet.h"
 #include "types.h"
 #include "net.h"
 #include "video.h"
 #include "cursor.h"
-#include "image_png.h"
 #include "palette.h"
 #include "input.h"
 #include "sound.h"
@@ -68,10 +49,7 @@
 #include "unicode.h"
 #include "nglog.h"
 #include "clock.h"
-#include "net_server.h"
 #include "quadra.h"
-
-RCSID("$Id$")
 
 Sprite *cur;
 
@@ -302,7 +280,7 @@ Player_flash_lines::Player_flash_lines(Canvas *c): Player_base(c) {
 	anim = 0;
 	canvas->color_flash = 255;
 	if(canvas->inter) {
-		int vo = -300 - ugs_random.rnd(255);
+		int vo=-300-ugs_random.rnd(255);
 		if(!canvas->islocal())
 			vo -= 1000;
 		play_sound(sons.flash, vo, -1, 11000+ugs_random.rnd(127) - (canvas->complexity<<8));
@@ -438,7 +416,7 @@ Player_text_scroll::Player_text_scroll(Canvas *c, const char *texte, int xoffset
 }
 
 Player_text_scroll::~Player_text_scroll() {
-	if(game) // if ALT-F4: game is destroyed before this module... grr...
+	if(game) // si ALT-F4: game est detruit avant ce module... grrr
 		game->net_list.remove_watch(this);
 }
 
@@ -582,7 +560,7 @@ void Player_change_level::init() {
 	if(time_control == TIME_FAST)
 		nframe = 3;
 	call(new Fade_to(*canvas->pal, noir, nframe));
-	call(new Wait_time(14)); // so that the 'level up' doesn't jerk
+	call(new Wait_time(14)); // juste pour eviter de voir le 'level up' boker
 	ret();
 }
 
@@ -626,7 +604,7 @@ void Player_check_line::step() {
 		check_clean();
 		call(new Player_flash_lines(canvas));
 	} else {
-		if(canvas->idle < 2) { // if alive
+		if(canvas->idle < 2) { // si vivant
 			//Copy hole positions into moved array so that give_line
 			//  and Net_list::send can use them
 			int i, j;
@@ -634,7 +612,7 @@ void Player_check_line::step() {
 				for(i=0; i<18; i++)
 					canvas->moved[j][i]=hole_pos[j][i];
 			canvas->give_line();
-		} else { // if dead, useless
+		} else { // si mort, donne rien.
 			canvas->depth = 0;
 			canvas->complexity=0;
 			canvas->send_for_clean=0;
@@ -739,7 +717,7 @@ void Player_base::move_down() {
 	if(!canvas->collide(canvas->bloc->bx, t, canvas->bloc->rot)) {
 		canvas->bloc->y += canvas->down_speed;
 		canvas->bloc->by = calc_by(canvas->bloc->y);
-	} else { // is used to "settle" the block so that it drops
+	} else { // sert a 'accoter' le bloc pour qu'il se depose
 		canvas->bloc->y = ((canvas->bloc->by-12)*18<<4)-1;
 	}
 	canvas->set_bit(1);
@@ -806,7 +784,7 @@ void Player_process_key::keyboard_control() {
 				if(canvas->bloc->bx<5)
 					inc=1;
 				else
-					inc = -1;
+					inc=-1;
 				if(!canvas->collide(canvas->bloc->bx+inc, canvas->bloc->by, canvas->bloc->rot)) {
 					canvas->bloc->bx+=inc;
 					if(rotate_left()) {
@@ -829,7 +807,7 @@ void Player_process_key::keyboard_control() {
 				if(canvas->bloc->bx<5)
 					inc=1;
 				else
-					inc = -1;
+					inc=-1;
 				if(!canvas->collide(canvas->bloc->bx+inc, canvas->bloc->by, canvas->bloc->rot)) {
 					canvas->bloc->bx+=inc;
 					if(rotate_right()) {
@@ -845,14 +823,14 @@ void Player_process_key::keyboard_control() {
 	}
 	if(canvas->check_key(5) & RELEASED) {
 		if(rotate_right(true))
-			block_rotated++;
+			block_rotated+=2;
 		else {
 			if(canvas->collide_side_only) {
 				int inc;
 				if(canvas->bloc->bx<5)
 					inc=1;
 				else
-					inc = -1;
+					inc=-1;
 				if(!canvas->collide(canvas->bloc->bx+inc, canvas->bloc->by, canvas->bloc->rot)) {
 					canvas->bloc->bx+=inc;
 					if(rotate_right(true)) {
@@ -870,7 +848,7 @@ void Player_process_key::keyboard_control() {
 		move_down();
 		canvas->unrelease_key(3);
 	}
-	if(canvas->check_key(6) & PRESSED) {
+	if(canvas->check_key(6) & RELEASED) {
 		drop_down();
 		canvas->clear_key(6);
 	}
@@ -889,7 +867,7 @@ void Player_process_key::keyboard_control() {
 	if(bouge_left && !bouge_right && !auto_bouge) {
 		if(hold_left < 2) {
 			if(hold_left == 0)
-				hold_left = canvas->h_repeat_delay+10;	// initial repeating delay
+				hold_left = canvas->h_repeat_delay+10;	// delai de repetition initiale
 			else
 				hold_left = canvas->h_repeat_delay;
 			if(!move_left())
@@ -944,22 +922,22 @@ void Player_process_key::step() {
 	if(playback)
 		playback_control();
 	else {
-		if(canvas->inter) // if the canvas is hidden, don't listen to keys
+		if(canvas->inter) // si canvas invisible, ecoute pas les touches!
 			keyboard_control();
 	}
 
 	canvas->write_byte();
 
-	t = ((canvas->bloc->bx-4)<<4)*18; // compute the position where the block should be
-	int nx = canvas->bloc->x; // new position 'x' to obtain
+	t = ((canvas->bloc->bx-4)<<4)*18; // calcul la position ou le bloc devrait etre
+	int nx = canvas->bloc->x; // nouvelle position 'x' a obtenir
 	if(nx < t) {
 		nx += canvas->side_speed;
-		if(nx > t) // if past the position
+		if(nx > t) // si depasse la position
 			nx = t;
 	}
 	if(nx > t) {
 		nx -= canvas->side_speed;
-		if(nx < t) // if past the position
+		if(nx < t) // si depasse la position
 			nx = t;
 	}
 	t = calc_by(canvas->bloc->y-(17<<4)-15);
@@ -1148,12 +1126,7 @@ Player_dead::Player_dead(Canvas *c, bool tg): Player_base(c), then_gone(tg) {
 		death_type="suicide";
 		canvas->stats[CS::SUICIDES].add(1);
 	}
-	Packet_serverlog log("player_dead");
-	log.add(Packet_serverlog::Var("id", canvas->id()));
-	log.add(Packet_serverlog::Var("fragger_id", fragger? fragger->id():0));
-	log.add(Packet_serverlog::Var("type", death_type));
-	if(game && game->net_server)
-		game->net_server->record_packet(&log);
+	log_step("player_dead\t%u\t%u\t%s", canvas->id(), fragger? fragger->id():0, death_type);
 	i = 11;
 	j = 4;
 	Player_dead::c = 0;
@@ -1264,10 +1237,7 @@ void Player_dead_wait::step() {
 		net->sendtcp(&p);
 		canvas->restart();
 		ret();
-		Packet_serverlog log("player_respawn");
-		log.add(Packet_serverlog::Var("id", canvas->id()));
-		if(game && game->net_server)
-			game->net_server->record_packet(&log);
+		log_step("player_respawn\t%u", canvas->id());
 	}
 	else {
 		if(canvas->bonus && !canvas->bon[0].blind_time && add_bonus)
@@ -1313,10 +1283,7 @@ Player_first_frag::Player_first_frag(Canvas *c): Player_base(c) {
 	canvas->delete_bloc();
 	canvas->set_next();
 	canvas->stats[CS::ROUND_WINS].add(1);
-	Packet_serverlog log("player_survived");
-	log.add(Packet_serverlog::Var("id", canvas->id()));
-	if(game && game->net_server)
-		game->net_server->record_packet(&log);
+	log_step("player_survived\t%u", canvas->id());
 }
 
 void Player_first_frag::step() {
@@ -1372,10 +1339,7 @@ Player_gone::Player_gone(Canvas *c, bool chat_msg): Player_base(c) {
 		sprintf(st, ST_BOBHASGONE, canvas->name);
 		message(-1, st);
 	}
-	Packet_serverlog log("player_gone");
-	log.add(Packet_serverlog::Var("id", canvas->id()));
-	if(game && game->net_server)
-		game->net_server->record_packet(&log);
+	log_step("player_gone\t%u", canvas->id());
 }
 
 void Player_gone::step() {
@@ -1588,16 +1552,7 @@ Player_stamp::Player_stamp(Canvas *c, Packet_stampblock *p): Player_base(c) {
 	canvas->stats[CS::SCORE].add(p->score);
 	if(game->net_version()>=23)
 		canvas->stats[CS::PLAYING_TIME].add(p->time_held);
-
-	Packet_serverlog log("player_stampblock");
-	log.add(Packet_serverlog::Var("id", canvas->id()));
-	log.add(Packet_serverlog::Var("block", canvas->bloc->quel));
-	log.add(Packet_serverlog::Var("times_rotated", p->block_rotated));
-	log.add(Packet_serverlog::Var("time_held", p->time_held));
-	log.add(Packet_serverlog::Var("points", p->score));
-	if(game && game->net_server)
-		game->net_server->record_packet(&log);
-
+	log_step("player_stampblock\t%u\t%i\t%i\t%i\t%i", canvas->id(), canvas->bloc->quel, p->block_rotated, p->time_held, p->score);
 	canvas->watch_date = p->date;
 	stamp_bloc();
 	if(canvas->bonus && !canvas->bon[0].blind_time)
@@ -1608,29 +1563,11 @@ Player_stamp::Player_stamp(Canvas *c, Packet_stampblock *p): Player_base(c) {
 	for(i=0; i<MAXPLAYERS; i++) {
 		if(canvas->attacks[i] > 0) {
 			canvas->attacks[i]--;
-			if(canvas->attacks[i] == 0 && canvas->last_attacker == i) // si c'etait lui le last_attacker,
+			if(canvas->attacks[i] == 0 && canvas->last_attacker == i) // si c'etait lui le last_attacker, 
 				if(!game->survivor)
 					canvas->last_attacker = 255; // on l'oublie.
 		}
-
-		// new handicap code for net_version >= 24
-		Canvas* other_canvas = game->net_list.get(i);
-		if(other_canvas) {
-			int diff=0;
-			if(canvas->handicap>other_canvas->handicap)
-				diff=canvas->handicap-other_canvas->handicap;
-			if(canvas->handicaps[i] < diff*Canvas::stamp_per_handicap)
-				canvas->handicaps[i]++;
-		}
 	}
-
-	// adjust handicap_crowd considering crowdedness of the game (i.e. number of players alive)
-	int max_handicap_crowd = max(0, int(game->net_list.count_alive())-4);
-	max_handicap_crowd *= Canvas::stamp_per_handicap;
-	if(canvas->handicap_crowd < max_handicap_crowd)
-		++canvas->handicap_crowd;
-	else
-		canvas->handicap_crowd = max_handicap_crowd;
 }
 
 void Player_stamp::init() {
@@ -1667,17 +1604,8 @@ void Player_stamp::stamp_bloc() {
 			}
 		}
 	canvas->last_x += canvas->bloc->bx;
-	int startline=0;
-	for(j = 0; j < 32; ++j)
-		for(i = 4; i < 14; ++i)
-			if(canvas->occupied[j][i]) {
-				startline = j;
-				// break out of both loops
-				j=32;
-				break;
-			}
 	canvas->snapshot[0]=0;
-	for(j = startline; j < 32; j++)
+	for(j = 12; j < 32; j++)
 		for(i = 4; i < 14; i++) {
 			if(canvas->occupied[j][i]) {
 				char bl[3];
@@ -1704,7 +1632,7 @@ void Player_stamp::stamp_bloc() {
 			break;
 	}
 	if(canvas->inter) {
-		int vo = -200 - ugs_random.rnd(255);
+		int vo=-200-ugs_random.rnd(255);
 		if(!canvas->islocal())
 			vo -= 1000;
 		play_sound(dep, vo, i, 10500+ugs_random.rnd(1023));
@@ -1737,10 +1665,7 @@ void Player_wait_respawn::step() {
 		canvas->restart();
 		ret();
 		game->removepacket();
-		Packet_serverlog log("player_respawn");
-		log.add(Packet_serverlog::Var("id", canvas->id()));
-		if(game && game->net_server)
-			game->net_server->record_packet(&log);
+		log_step("player_respawn\t%u", canvas->id());
 	} else {
 		if(canvas->bonus && !canvas->bon[0].blind_time && add_bonus)
 			call(new Player_add_bonus(canvas));
@@ -1822,15 +1747,6 @@ void Player_init::net_call(Packet *p2) {
 
 void init_directory() {
 	strcpy(quadradir, exe_directory);
-#ifdef UGS_DIRECTX
-	if(SHGetFolderPath(0, CSIDL_APPDATA|CSIDL_FLAG_CREATE, 0, SHGFP_TYPE_CURRENT, quadradir) < 0) {
-		msgbox("SHGetFolderPath failed, using exe_directory");
-	}
-	else {
-		PathAppend(quadradir, "Quadra");
-		CreateDirectory(quadradir, 0);
-	}
-#endif
 #ifdef UGS_LINUX
 	struct passwd *pw = NULL;
 
@@ -1854,9 +1770,9 @@ void init_stuff(bool need_sound=true, bool need_video=true) {
 
 	fonts.init();
 	if(!video->xwindow) {
-		Res_doze res("cursor.png");
-		Png png(res);
-		Bitmap bitmap(png);
+		Res_doze res("CURSOR.RAW");
+		Raw raw(res);
+		Bitmap bitmap(raw);
 		cur = new Sprite(bitmap, 0, 0);
 	}
 	else
@@ -1944,46 +1860,12 @@ void init_stuff(bool need_sound=true, bool need_video=true) {
 		Res_doze res("zingle.wav");
 		sons.potato_rid = new Sample(res, 2);
 	}
-	{ //-roncli 4/29/01 Load countdown samples
-		Res_doze res("t1min.wav");
-		sons.minute = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t30sec.wav");
-		sons.thirty = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t20sec.wav");
-		sons.twenty = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t10sec.wav");
-		sons.ten = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t5sec.wav");
-		sons.five = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t4sec.wav");
-		sons.four = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t3sec.wav");
-		sons.three = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t2sec.wav");
-		sons.two = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t1sec.wav");
-		sons.one = new Sample(res, 2);
-	}
 	cursor = Cursor::New(cur);
 	cursor->set_speed(config.info.mouse_speed);
 	for(i=0; i<8; i++)
 		fteam[i] = new Font(*fonts.normal);
+
+	config.check_register();
 }
 
 void deinit_stuff() {
@@ -1992,45 +1874,100 @@ void deinit_stuff() {
 			delete fteam[i];
 			fteam[i] = NULL;
 		}
-
-	delete sons.click; sons.click = NULL;
-	delete sons.point; sons.point = NULL;
-	delete sons.fadeout; sons.fadeout = NULL;
-	delete sons.fadein; sons.fadein = NULL;
-	delete sons.drip; sons.drip = NULL;
-	delete sons.glass; sons.glass = NULL;
-	delete sons.depose; sons.depose = NULL;
-	delete sons.depose2; sons.depose2 = NULL;
-	delete sons.depose3; sons.depose3 = NULL;
-	delete sons.depose4; sons.depose4 = NULL;
-	delete sons.flash; sons.flash = NULL;
-	delete sons.enter; sons.enter = NULL;
-	delete sons.levelup; sons.levelup = NULL;
-	delete sons.bonus1; sons.bonus1 = NULL;
-	delete sons.start; sons.start = NULL;
-	delete sons.pause; sons.pause = NULL;
-	delete sons.msg; sons.msg = NULL;
-	delete sons.potato_get; sons.potato_get = NULL;
-	delete sons.potato_rid; sons.potato_rid = NULL;
-	delete sons.minute; sons.minute = NULL;
-	delete sons.thirty; sons.thirty = NULL;
-	delete sons.twenty; sons.twenty = NULL;
-	delete sons.ten; sons.ten = NULL;
-	delete sons.five; sons.five = NULL;
-	delete sons.four; sons.four = NULL;
-	delete sons.three; sons.three = NULL;
-	delete sons.two; sons.two = NULL;
-	delete sons.one; sons.one = NULL;
-
-	delete net_starter; net_starter=NULL;
-	delete chat_text; chat_text=NULL;
-
+	if(sons.click) {
+		delete sons.click;
+		sons.click = NULL;
+	}
+	if(sons.point) {
+		delete sons.point;
+		sons.point = NULL;
+	}
+	if(sons.fadeout) {
+		delete sons.fadeout;
+		sons.fadeout = NULL;
+	}
+	if(sons.fadein) {
+		delete sons.fadein;
+		sons.fadein = NULL;
+	}
+	if(sons.drip) {
+		delete sons.drip;
+		sons.drip = NULL;
+	}
+	if(sons.glass) {
+		delete sons.glass;
+		sons.glass = NULL;
+	}
+	if(sons.depose) {
+		delete sons.depose;
+		sons.depose = NULL;
+	}
+	if(sons.depose2) {
+		delete sons.depose2;
+		sons.depose2 = NULL;
+	}
+	if(sons.depose3) {
+		delete sons.depose3;
+		sons.depose3 = NULL;
+	}
+	if(sons.depose4) {
+		delete sons.depose4;
+		sons.depose4 = NULL;
+	}
+	if(sons.flash) {
+		delete sons.flash;
+		sons.flash = NULL;
+	}
+	if(sons.enter) {
+		delete sons.enter;
+		sons.enter = NULL;
+	}
+	if(sons.levelup) {
+		delete sons.levelup;
+		sons.levelup = NULL;
+	}
+	if(sons.bonus1) {
+		delete sons.bonus1;
+		sons.bonus1 = NULL;
+	}
+	if(sons.start) {
+		delete sons.start;
+		sons.start = NULL;
+	}
+	if(sons.pause) {
+		delete sons.pause;
+		sons.pause = NULL;
+	}
+	if(sons.msg) {
+		delete sons.msg;
+		sons.msg = NULL;
+	}
+	if(sons.potato_get) {
+		delete sons.potato_get;
+		sons.potato_get = NULL;
+	}
+	if(sons.potato_rid) {
+		delete sons.potato_rid;
+		sons.potato_rid = NULL;
+	}
+	if(net_starter) {
+		delete net_starter;
+		net_starter=NULL;
+	}
+	if(chat_text) {
+		delete chat_text;
+		chat_text=NULL;
+	}
 	config.write();
 	Highscores::free();
-
-	delete cursor; cursor = NULL;
-	delete cur; cur = NULL;
-
+	if(cursor) {
+		delete cursor;
+		cursor = NULL;
+	}
+	if(cur) {
+		delete cur;
+		cur=NULL;
+	}
 	fonts.deinit();
 }
 
@@ -2124,7 +2061,7 @@ void read_script(const char *fn, bool second=false) {
 }
 
 #ifdef UGS_DIRECTX
-#ifndef NDEBUG
+#ifdef _DEBUG
 #include <crtdbg.h>
 #endif
 #endif
@@ -2137,7 +2074,7 @@ void start_game() {
 		msgbox("Debug mode enabled\n");
 	}
 #ifdef UGS_DIRECTX
-#ifndef NDEBUG
+#ifdef _DEBUG
 	_CrtSetReportMode(_CRT_WARN, _CRTDBG_MODE_DEBUG);
 	_CrtSetReportMode(_CRT_ERROR, _CRTDBG_MODE_DEBUG);
 	_CrtSetReportMode(_CRT_ASSERT, _CRTDBG_MODE_DEBUG);
@@ -2153,8 +2090,6 @@ void start_game() {
 	bool demo_play = false;
 	bool demo_verif = false;
 	char buf[512];
-  /* FIXME: rather than using 1024 MAXPATHLEN should be used.  To do
-     so requires all other filename lengths be MAXPATHLEN as well. */
 	char fn[1024];
 
 	init_directory();
@@ -2163,33 +2098,18 @@ void start_game() {
 #ifdef UGS_LINUX
 	dir = getenv("QUADRADIR");
 	if(!dir)
-		dir = DATAGAMESDIR;
-#endif
-#ifdef UGS_DIRECTX
-	dir = exe_directory;
+		dir="/usr/lib/games";
 #endif
 	resmanager=new Resmanager();
-	snprintf(fn, sizeof(fn) - 1, "%s/quadra.res", dir);
+	sprintf(fn, "%s/quadra.res", dir);
 	resmanager->loadresfile(fn);
-	snprintf(fn, sizeof(fn) - 1, "%s/quadra%i%i%i.res", dir, Config::major, Config::minor, Config::patchlevel);
+	sprintf(fn, "%s/quadra%i%i%i.res", dir, Config::major, Config::minor, Config::patchlevel);
 	resmanager->loadresfile(fn);
-	if(command.token("patch") || command.token("theme")) {
-		char *temp=command_get_param("patch <filename>");
-		if(temp[0] != '/' && temp[0] != '\\')
-			snprintf(fn, sizeof(fn) - 1, "%s/%s", dir, temp);
-		else
-			snprintf(fn, sizeof(fn) - 1, "%s", temp);
-		resmanager->loadresfile(fn);
-	}
-	msgbox("Reading config: ");
 	config.read();
-	msgbox("Ok\n");
 	//Read script and add to command line options if applicable
 	if(command.token("exec")) {
 		char *temp=command_get_param("exec <filename>");
-		msgbox("Reading script %s: ", temp);
 		read_script(temp);
-		msgbox("Ok\n");
 	}
 	bool dedicated=command.token("dedicated");
 	if(command.token("english") || dedicated)
@@ -2207,9 +2127,7 @@ void start_game() {
 	}
 	for(i=0; i<MAXTEAMS; i++)
 		set_team_name(i, NULL);
-	msgbox("Reading stringtable: ");
 	stringtable=new Stringtable(language);
-	msgbox("Ok\n");
 
 	if(command.token("h help ?")) {
 		display_command_line_help();
@@ -2218,14 +2136,14 @@ void start_game() {
 	}
 	if(_debug && command.token("verify")) {
 		char *temp = command_get_param("verify <filename>");
-		strncpy(buf, temp, sizeof(buf) - 1);
+		strcpy(buf, temp);
 		demo_play = true;
 		demo_verif = true;
 		no_sound = true;
 	}
 	if(command.token("play")) {
 		char *temp = command_get_param("play <filename>");
-		strncpy(buf, temp, sizeof(buf) - 1);
+		strcpy(buf, temp);
 		demo_play = true;
 		demo_verif = false;
 	}
@@ -2238,15 +2156,16 @@ void start_game() {
 	if(command.token("nosound")) {
 		no_sound=true;
 	}
-	msgbox("Calling init_stuff: ");
 	init_stuff(!no_sound, !no_video); //No sound when checking demos
-	msgbox("Ok\n");
 	Dword last=0;
 	Dword acc=0;
 	Executor *menu = new Executor();
 	//Add Menu_intro so we get back there after -connect, -server or -play
 	//  unless -thenquit option si specified
 	if(!command.token("thenquit"))
+		if(Config::xtreme)
+			menu->add(new Menu_guy());
+		else
 			menu->add(new Menu_intro());
 
 	if(!demo_play) {
@@ -2302,8 +2221,6 @@ void start_game() {
 				char *temp=command_get_param("attack2clean <type> [strength]");
 				p.potato_clean_attack=read_attack_param(temp);
 			}
-			if(command.token("boringrules"))
-				p.boring_rules = true;
 			if(command.token("nolevelup"))
 				p.level_up = false;
 			if(command.token("levelup"))
@@ -2315,7 +2232,7 @@ void start_game() {
 			}
 			if(command.token("name")) {
 				char *temp = command_get_param("name <game name>");
-				strncpy(buf, temp, sizeof(buf) - 1);
+				strcpy(buf, temp);
 				p.name=buf;
 			}
 			if(command.token("nohandicap"))
@@ -2351,34 +2268,24 @@ void start_game() {
 			if(command.token("admin")) {
 				char *temp = command_get_param("admin <password>");
 				char line[1024];
-				snprintf(line, sizeof(line) - 1, "/setpasswd %s", temp);
+				sprintf(line, "/setpasswd %s", temp);
 				game->net_list.got_admin_line(line, NULL);
 			}
 			if(command.token("record")) {
 				char *temp = command_get_param("record <filename>", Clock::absolute_time());
 				game->prepare_recording(temp);
-				game->prepare_logging();
+			}
+			if(command.token("slog")) {
+				char *temp = command_get_param("slog <filename>", Clock::absolute_time());
+				game->prepare_logging(temp);
 			}
 		}
 		else {
-			if(command.token("connectfile")) {
-				char *temp = command_get_param("connectfile <filename>");
-				char st[1024];
-				Res_dos file(temp);
-				if(file.exist) {
-					snprintf(st, sizeof(st), "-connect %*.*s", file.size(), file.size(), (char *)file.buf());
-					st[sizeof(st) - 1] = 0;
-					command.add(st);
-				}
-				else
-					msgbox("Can't find connectfile %s, ignoring.\n", temp);
-
-			}
 			if(command.token("connect")) {
 				if(!net->active)
 					(void) new Error("Network failed to initialize or not present\nCan't connect.\n");
 				char *temp = command_get_param("connect <TCP/IP address>");
-				strncpy(buf, temp, sizeof(buf) - 1);
+				strcpy(buf, temp);
 				menu->add(new Menu_startconnect(buf, false));
 				if(config.warning)
 					menu->add(new Menu_setup());
@@ -2419,7 +2326,7 @@ void start_game() {
 				try {
 					overmind.step();
 				}
-				catch(std::exception *e) {
+				catch(exception *e) {
 					msgbox("Exception caught from overmind.step(): %s\n", e->what());
 				}
 				#ifdef PAINTDETECTOR2000
@@ -2438,7 +2345,7 @@ void start_game() {
 			try {
 				ecran->draw_zone();
 			}
-			catch(std::exception *e) {
+			catch(exception *e) {
 				msgbox("Exception caught from ecran->draw_zone(): %s\n", e->what());
 			}
 
@@ -2461,7 +2368,7 @@ void start_game() {
 		}
 		end_frame();
 
-#ifndef NDEBUG
+#ifdef _DEBUG
 		if(input->keys[KEY_F8] & PRESSED) // F8 = buckage
 			for(int j=0; j<8000000; j++)
 				;

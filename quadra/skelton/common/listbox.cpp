@@ -1,31 +1,18 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include <stdio.h>
 #include <string.h>
+#ifdef UGS_LINUX
+#define stricmp strcasecmp
+#endif
 
 #include "input.h"
 #include "cursor.h"
 #include "listbox.h"
-
-RCSID("$Id$")
 
 Zone_listbox::Zone_listbox(Inter* in, Bitmap *fond, Font *f, int *pval, int px, int py, int pw, int ph):
 	Zone_watch_int(in, pval, px, py, pw, ph) {
@@ -114,7 +101,7 @@ void Zone_listbox::end_sort() {
 int Zone_listbox::compare_sort(const void *arg1, const void *arg2) {
 	char *s1 = (*(Listable **) arg1)->list_name;
 	char *s2 = (*(Listable **) arg2)->list_name;
-  return strcasecmp(s1, s2);
+  return stricmp(s1, s2);
 }
 
 
@@ -314,7 +301,7 @@ void Zone_listtext::clicked(int quel) {
 	parent->unselect();
 	if(this->quel < parent->elements.size()) {
 		parent->select(this->quel + parent->first_item);
-		//inter->clicked = parent; // eww!
+		//inter->clicked = parent; // yark!
 		parent->clicked(quel);
 	}
 }
@@ -338,8 +325,8 @@ void Zone_listtext::dirt() {
 void Zone_listtext::entered() {
 	Zone_text::entered();
 	if(parent->val && kb_focusable) {
-        /* kb_focusable also indicates that this zone_listtext
-           currently contains something */
+	// kb_focusable indique en meme temps que cette zone_listtext contient
+	// actuellement quelque chose
 		high=true;
 		dirt();
 	}
@@ -348,8 +335,8 @@ void Zone_listtext::entered() {
 void Zone_listtext::leaved() {
 	Zone_text::leaved();
 	if(parent->val && kb_focusable) {
-        /* kb_focusable also indicates that this zone_listtext
-           currently contains something */
+	// kb_focusable indique en meme temps que cette zone_listtext contient
+	// actuellement quelque chose
 		high=false;
 		dirt();
 	}

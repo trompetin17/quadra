@@ -1,33 +1,16 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #ifndef _HEADER_VIDEO_X11
 #define _HEADER_VIDEO_X11
 
-#ifdef UGS_LINUX_X11
-
 #define Font XFont
 #define Cursor XCursor
 #include <X11/Xlib.h>
 #include <X11/extensions/XShm.h>
-#include <X11/extensions/xf86vmode.h>
 #undef Font
 #undef Cursor
 
@@ -74,13 +57,6 @@ public:
   short min_x[480], max_x[480];
   int min_x2, max_x2, min_y2, max_y2;
   Window window;
-  Window fullscreen_window;
-  int modecount;
-  XF86VidModeModeInfo** modes;
-  XF86VidModeModeInfo* fullscreen_mode;
-  bool allow_fullscreen;
-  bool fullscreen;
-  bool restore_fullscreen;
   GC gc;
   Visual *visual;
   Atom delete_win;
@@ -101,9 +77,6 @@ public:
   virtual void restore();
   virtual void clean_up();
   virtual void snap_shot(int x, int y, int w, int h);
-  void focus_in(Window w);
-  void focus_out(Window w);
-  virtual void toggle_fullscreen();
 };
 
 class Video_X11_8: public Video_X11 {
@@ -139,7 +112,4 @@ public:
   virtual void dosetpal(PALETTEENTRY pal[256], int size);
 };
 
-#endif /* UGS_LINUX_X11 */
-
 #endif /* _HEADER_VIDEO_X11 */
-

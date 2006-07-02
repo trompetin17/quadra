@@ -1,6 +1,7 @@
 
 Quadra version @VERSION@
-http://quadra.sourceforge.net/
+Ludus Design
+http://ludusdesign.com/
 
 Description
 -----------
@@ -19,6 +20,9 @@ Features include:
  - Chat window
  - CD-based music
  - And much more!
+
+It is based on the shareware model. You can freely download and copy
+the game. After a 30 day period, you must register or stop using it.
 
 Installation
 ------------
@@ -54,4 +58,3 @@ like error messages, computer model, video and sound card models and
 operating system version.
 
 Have fun playing Quadra!
-

@@ -1,25 +1,12 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include "inter.h"
 #include "bitmap.h"
+#include "pcx.h"
 #include "dict.h"
 #include "clock.h"
 #include "res_compress.h"
@@ -29,13 +16,10 @@
 #include "zone.h"
 #include "global.h"
 #include "quadra.h"
-#include "image_png.h"
 #include "recording.h"
 #include "game.h"
 #include "multi_player.h"
 #include "menu_demo_central.h"
-
-RCSID("$Id$")
 
 class Zone_change_dir: public Zone_text_input {
 	Menu_demo_central *menu_demo_central;
@@ -72,8 +56,8 @@ Menu_demo_central::Player_infos::Player_infos(int pplayer) {
 
 Menu_demo_central::Menu_demo_central() {
 	{
-		Res_doze res("multi.png");
-		Png img(res);
+		Res_doze res("Multi.raw");
+		Raw img(res);
 		bit = new Bitmap(img);
 		pal.load(img);
 	}
@@ -153,7 +137,7 @@ void Menu_demo_central::refresh_detail() {
 
 void Menu_demo_central::drive_playback(const char *n) {
 	char temp[1024];
-	snprintf(temp, sizeof(temp) - 1, "%s/%s", find_directory, n);
+	sprintf(temp, "%s/%s", find_directory, n);
 	Res_compress *res = new Res_compress(temp, RES_TRY);
 	if(res->exist) {
 		play = new Playback(res);
@@ -339,7 +323,7 @@ void Menu_demo_central::step() {
 		Listitem *e = (Listitem *) z_list->get_selected();
 		if(e && e->isfolder) {
 			if(!strcmp(e->list_name, "..")) {
-				// treat the .. differently
+				// traite le .. differemment
 				char *t = strrchr(find_directory, '/');
 				if(t)
 					*t = 0;
@@ -365,7 +349,7 @@ void Menu_demo_central::step() {
 				call(new Fade_in(pal));
 				call(new Call_setfont(pal, new Demo_multi_player(play)));
 				call(new Fade_out(pal));
-				// the 'delete play' is done by ~Demo_multi_player
+				// le 'delete play' est fait par ~Demo_multi_player
 				play = NULL;
 			}
 		}
@@ -374,7 +358,7 @@ void Menu_demo_central::step() {
 		Listitem *e = (Listitem *) z_list->get_selected();
 		if(e && !e->isfolder) {
 			char temp[1024];
-			snprintf(temp, sizeof(temp) - 1, "%s/%s", find_directory, e->list_name);
+			sprintf(temp, "%s/%s", find_directory, e->list_name);
 			remove(temp);
 			z_list->remove_item(e);
 		}
@@ -409,7 +393,7 @@ void Menu_demo_central::reload() {
 	}
 	z_dir->set_val(find_directory);
 	char temp_search[1024];
-	snprintf(temp_search, sizeof(temp_search) - 1, "%s/*", find_directory);
+	sprintf(temp_search, "%s/*", find_directory);
 
 	msgbox("Menu_demo_central::find_all: Finding directories in [%s]...\n", temp_search);
 	{
@@ -418,7 +402,7 @@ void Menu_demo_central::reload() {
 		while(!find_file->eof()) {
 			Find_file_entry ff = find_file->get_next_entry();
 			if(ff.is_folder) {
-				if(ff.name[0] == '.' && ff.name[1] == 0) // ignore the "." directory
+				if(ff.name[0] == '.' && ff.name[1] == 0) // ignore le repertoire "."
 					continue;
 				Listitem *e = new Listitem(ff.name, fteam[1]);
 				e->isfolder = true;
@@ -429,9 +413,9 @@ void Menu_demo_central::reload() {
 		delete find_file;
 	}
 
-	snprintf(temp_search, sizeof(temp_search) - 1, "%s/*.rec", find_directory);
+	sprintf(temp_search, "%s/*.rec", find_directory);
 
-	msgbox("Menu_demo_central::find_all: Finding files in [%s]...\n", find_directory);
+	msgbox("Menu_demo_central::find_all: Finding files in [%s]...\n", temp_search);
 	{
 		Find_file *find_file = Find_file::New(temp_search);
 		z_list->init_sort();
@@ -445,22 +429,7 @@ void Menu_demo_central::reload() {
 				z_list->add_sort(e);
 			}
 		}
-		delete find_file;
-
-		snprintf(temp_search, sizeof(temp_search) - 1, "%s/*.qrec", find_directory);
-		find_file = Find_file::New(temp_search);
-		while(!find_file->eof()) {
-			Find_file_entry ff = find_file->get_next_entry();
-			if(!ff.is_folder) {
-				Listitem *e = new Listitem(ff.name, fteam[5]);
-				e->file_size = ff.size;
-				strcpy(e->file_date, ff.date);
-				e->isfolder = false;
-				z_list->add_sort(e);
-			}
-		}
-		delete find_file;
-
 		z_list->end_sort();
+		delete find_file;
 	}
 }

@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #ifndef HEADER_INTER
@@ -81,7 +67,7 @@ public:
 	void flush();
 	virtual ~Inter();
 	void process();
-	void select_zone(Zone *z, int quel); // selects a zone (gives focus and/or click)
+	void select_zone(Zone *z, int quel); // selectionne une zone (donne focus et/ou click)
 	bool is_kb_visible() const {
 		return kb_visible;
 	}
@@ -128,7 +114,7 @@ public:
 class Zone_sprite: public Zone {
 	Sprite *sp;
 public:
-	Zone_sprite(Inter *in, const char *nam, int px = -1, int py = -1);
+	Zone_sprite(Inter *in, const char *nam, int px=-1, int py=-1);
 	virtual ~Zone_sprite();
 	virtual void draw();
 };
@@ -288,7 +274,7 @@ protected:
 	void set_mouse_curpos();
 	bool cut_selection();
 public:
-	Zone_text_input(Inter* in, const Palette& pal, char* s, int mlen, int px, int py, int pw, int mwidth = -1);
+	Zone_text_input(Inter* in, const Palette& pal, char* s, int mlen, int px, int py, int pw, int mwidth=-1);
 	virtual ~Zone_text_input();
 	virtual void clicked(int quel);
 	virtual void lost_focus(int cancel);

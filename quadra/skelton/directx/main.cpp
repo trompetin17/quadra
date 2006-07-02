@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #define WIN32_LEAN_AND_MEAN
@@ -33,8 +19,6 @@
 #include "overmind.h"
 #include "command.h"
 #include "main.h"
-
-RCSID("$Id$")
 
 bool alt_tab=false;
 Time_mode time_control=TIME_NORMAL;
@@ -79,22 +63,22 @@ void end_frame() {
 char exe_directory[_MAX_DRIVE+_MAX_DIR+1];
 
 void set_path() {
-	char tmp[_MAX_PATH];
-	if(!GetModuleFileName(NULL, tmp, sizeof(tmp))) {
-		skelton_msgbox("Error getting module filename, using current directory as exe_directory\n");
-		strcpy(exe_directory, ".");
-		return;
-	}
-	char* p = strrchr(tmp, '\\');
-	if(!p)
-		p = strrchr(tmp, '/');
-	if(!p) {
-		skelton_msgbox("Strange module filename, using current directory as exe_directory\n");
-		strcpy(exe_directory, ".");
-		return;
-	}
-	*p = 0;
-	strcpy(exe_directory, tmp);
+	char drive_buf[_MAX_DRIVE];
+  char dir_buf[_MAX_DIR];
+	//+3 in case they "forgot" to count the stupid double quotes
+	char temp_path[_MAX_PATH+3];
+	strcpy(temp_path, GetCommandLine()+1);
+	char *find_fin = strchr(temp_path, '"');
+	if(find_fin)
+		*find_fin = 0;
+	_splitpath(temp_path, drive_buf, dir_buf, NULL, NULL);
+	exe_directory[0] = 0;
+	strcat(exe_directory, drive_buf);
+	strcat(exe_directory, dir_buf);
+	//Remove useless ending \ or /
+	char *c=&exe_directory[strlen(exe_directory)-1];
+	if(*c=='\\' || *c=='/')
+		*c=0;
 }
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
@@ -172,7 +156,7 @@ COPPER(30,0,0);
 			if(!wparam && !alt_tab) {
 				alt_tab = true;
 				if(input)
-					input->clear_key(); // to avoid getting a stuck key
+					input->clear_key(); // pour eviter qu'une touche reste coller
 				ShowCursor(TRUE);
 			}
 			break;
@@ -193,7 +177,7 @@ COPPER(30,0,0);
 			return 0;
 		case WM_KEYDOWN:
 			if(input) {
-				if(wparam == 19) // 'pause' key
+				if(wparam == 19) // touche 'pause'
 					input->pause = true;
 				if(wparam >= 16 && wparam <= 46)
 					((Input_DX *) input)->add_key_buf((char) wparam, true);

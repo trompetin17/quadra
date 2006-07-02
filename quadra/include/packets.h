@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #ifndef _HEADER_PACKETS
@@ -77,8 +63,7 @@ enum Packet_type {
 	P_REMOVEBONUS,
 	P_CLIENTREMOVEBONUS,
 	P_SERVERNAMETEAM,
-	P_GAMESTAT,
-	P_SERVERLOG
+	P_GAMESTAT
 };
 
 class Packet_findgame: public Packet_udp {
@@ -93,6 +78,7 @@ public:
 	Byte net_version;
 	Byte language;
 	Byte os;
+	bool registered;
 	Packet_wantjoin() {
 		packet_id = P_WANTJOIN;
 		net_version=Config::net_version;
@@ -106,6 +92,7 @@ public:
 			#error "What platform???"
 		#endif
 		;
+		registered=Config::registered;
 	}
 	virtual void write(Net_buf *p);
 	virtual bool read(Net_buf *p);
@@ -174,7 +161,6 @@ public:
 	Byte potato_team;
 	bool single;
 	bool terminated;
-	bool boring_rules;
 	Packet_gameserver() {
 		packet_id = P_GAMESERVER;
 		name[0] = 0;
@@ -426,12 +412,12 @@ public:
 	int seed;
 	Byte bloc, next, next2, next3, bonus, idle, state;
   struct {
-    Byte x;   // "hole" position
+    Byte x;   //position du 'trou'
     Byte color;
 		Byte blind_time;
 		Word hole_pos; //Hole positions
 		bool final;
-  } bon[20];  // waiting annoyance lines
+  } bon[20];  //les lignes chiantes en attente
 	Byte can[32][10];
 	bool occ[32][10];
 	Byte blinded[32][10];
@@ -652,40 +638,6 @@ public:
 	}
 	virtual bool read(Net_buf *p);
 	virtual void write(Net_buf *p);
-};
-
-class Packet_serverlog: public Packet_tcp {
-public:
-	class Var {
-	public:
-		Var();
-		Var(const char* n, const char* val);
-		Var(const char* n, unsigned i);
-		Var(const char* n, int i);
-		Var(const char* n, float f);
-
-		bool read(Net_buf* p);
-		void write(Net_buf* p);
-
-		const char* getValue() const { return value; }
-
-	private:
-		char name[128];
-		char value[1024];
-	};
-
-	Packet_serverlog(const char* type="unknown");
-	virtual bool read(Net_buf* p);
-	virtual void write(Net_buf* p);
-
-	const char* getType() const { return event_type; }
-	void add(const Var& var);
-	unsigned size() const { return vars.size(); }
-	const Var& getVar(unsigned i) const { return vars[i]; }
-
-private:
-	char event_type[64];
-	Array<Var> vars;
 };
 
 #endif

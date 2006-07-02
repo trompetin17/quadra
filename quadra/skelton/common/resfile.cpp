@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include <stdio.h>
@@ -23,9 +9,8 @@
 #include "error.h"
 #include "res.h"
 #include "resfile.h"
-#include "byteorder.h"
 
-RCSID("$Id$")
+#define stricmp strcasecmp
 
 Resdata::Resdata(char *resname, int ressize, Byte *resdata, Resdata *list) {
 	name = resname;
@@ -35,8 +20,8 @@ Resdata::Resdata(char *resname, int ressize, Byte *resdata, Resdata *list) {
 }
 
 Resdata::~Resdata() {
-	delete[] name;
-	delete[] data;
+	delete name;
+	delete data;
 	if(next)
 		delete next;
 }
@@ -50,10 +35,10 @@ Resfile::Resfile(const char *fname, bool ro) {
 		res = new Res_dos(fname, RES_CREATE);
 
 	if(res->exist) {
-		skelton_msgbox("Resfile %s is fine\n", fname);
-		thaw();
+	  skelton_msgbox("Resfile %s is fine\n", fname);
+	  thaw();
 	} else
-		skelton_msgbox("Resfile %s does not exist\n", fname);
+	  skelton_msgbox("Resfile %s does not exist\n", fname);
 }
 
 Resfile::~Resfile() {
@@ -79,13 +64,11 @@ void Resfile::thaw() {
 
 	do {
 		res->read(&resnamelen, sizeof(resnamelen));
-		resnamelen = INTELDWORD(resnamelen);
 		if(resnamelen == 0)
 			break;
 		resname = new char[resnamelen];
 		res->read(resname, resnamelen);
 		res->read(&ressize, sizeof(ressize));
-		ressize = INTELDWORD(ressize);
 		resdata = new Byte[ressize];
 		res->read(resdata, ressize);
 
@@ -107,7 +90,7 @@ int Resfile::get(const char *resname, Byte **resdata) {
 	ptr = list;
 
 	while(ptr != NULL) {
-		if(strcasecmp(ptr->name, resname) == 0)
+		if(stricmp(ptr->name, resname) == 0)
 			break;
 		ptr = ptr->next;
 	}
@@ -128,7 +111,7 @@ void Resfile::remove(const char* resname) {
 	ptr = list;
 
 	while(ptr != NULL) {
-		if(strcasecmp(ptr->name, resname) == 0)
+		if(stricmp(ptr->name, resname) == 0)
 			break;
 		prev = ptr;
 		ptr = ptr->next;
@@ -142,6 +125,6 @@ void Resfile::remove(const char* resname) {
 		ptr->next = NULL;
 		delete ptr;
 	}
-	// Can somebody tell me why Resfile::list isn't an Array<Resdata>?
-	// We all know linked lists suck, don't we? Whatever...
+	//Can somebody tell me why Resfile::list isn't an Array<Resdata>?
+	//  We all know linked lists suck, don't we? Whatever...
 }

@@ -1,8 +1,6 @@
 # Makefile pour Quadra
 # $Id$
 
-# FIXME: this file is obsolete
-
 ifndef MAKEFILE_INCLUDED
 
 .PHONY: dist
@@ -19,30 +17,29 @@ VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)
 QUADRADIR:=quadra-$(VERSION)
 QUADRAPKG:=$(QUADRADIR).tar.gz
 
-PACKAGE_DEPS:=source/quadra source/quadra.res packages/install.sh NEWS LICENSE packages/README packages/quadra.spec images/quadra.xpm
+PACKAGE_DEPS:=source/quadra source/quadra.res packages/install.sh history.txt license.txt packages/README packages/quadra.spec images/quadra.xpm
 
 TARGETS+=
-CLEANS+=packages/README packages/install.sh packages/quadra.spec $(QUADRADIR) $(QUADRAPKG)
+CLEANS+=packages/README packages/quadra.spec $(QUADRADIR) $(QUADRAPKG)
 
 dist:
 	@$(MAKE) $(QUADRAPKG) RELEASE=yes
 
-$(QUADRAPKG): $(QUADRADIR) $(PACKAGES_DEPS)
+$(QUADRAPKG): $(QUADRADIR) $(QUADRADIR)/* $(PACKAGES_DEPS)
 	tar cf - $< | gzip -9 > $@
 
 $(QUADRADIR): $(PACKAGE_DEPS)
 	rm -rf $@
 	mkdir $@
 	cp $^ $@
+	mv $@/history.txt $@/ChangeLog
+	mv $@/license.txt $@/LICENSE
 	chmod 755 $@/install.sh
 
 packages/README: packages/readme.txt
 	sed $^ -e 's/@VERSION@/$(VERSION)/g' > $@
 
 packages/quadra.spec: packages/quadra.spec.in
-	sed $^ -e 's/@VERSION@/$(VERSION)/g' > $@
-
-packages/install.sh: packages/install.sh.in
 	sed $^ -e 's/@VERSION@/$(VERSION)/g' > $@
 
 endif

@@ -1,34 +1,16 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include <stdio.h>
 #include "res.h"
 #include "resfile.h"
-#include "byteorder.h"
-
-RCSID("$Id$")
 
 void Resfile::freeze() {
 	int resnamelen;
 	Resdata *ptr;
-        Dword d;
 
 	res->write(&signature, sizeof(signature));
 
@@ -36,11 +18,9 @@ void Resfile::freeze() {
 
   while(ptr != NULL) {
 		resnamelen = strlen(ptr->name)+1;
-                d = INTELDWORD(resnamelen);
-		res->write(&d, sizeof(d));
+		res->write(&resnamelen, sizeof(resnamelen));
 		res->write(ptr->name, resnamelen);
-                d = INTELDWORD(ptr->size);
-		res->write(&d, sizeof(d));
+		res->write(&ptr->size, sizeof(ptr->size));
 		res->write(ptr->data, ptr->size);
     ptr = ptr->next;
   }

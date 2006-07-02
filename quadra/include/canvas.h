@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #ifndef _HEADER_CANVAS
@@ -63,16 +49,16 @@ public:
 	bool should_remove_bonus; //Remove bonus when we have the chance
 
 	Dword gone_time;
-  /* possible values of canvas->idle:
-    0: busy, canvas not available (being recursed)
-    1: idle, doing nothing (moving a block)
-    2: dead, waiting
-    3: gone, the player has left the game
+  /* valeur possible de canvas->idle:
+    0: busy, canvas non disponible (en recursion)
+    1: idle, fait rien (en mouvement de bloc)
+    2: mort, en attente
+    3: gone, le joueur a quitté le jeu
   */
 	int idle;
 	State state;
-	bool dying; // Set to true while in Player_dead or Player_firstfrag
-	bool wait_download; // Set when waiting for a P_DOWNLOAD (clients only)
+	bool dying; //Set to true while in Player_dead or Player_firstfrag
+	bool wait_download; //Set when waiting for a P_DOWNLOAD (clients only)
 	bool trying_to_drop;
 	Word watch_date;
 	bool small_watch;
@@ -92,14 +78,14 @@ public:
 	//unit block moved in last Player_check_link anim
 	bool moved[36][18];
   struct {
-    Byte x;   // position of the "hole"
+    Byte x;   //position du 'trou'
     Byte color;
 		Byte blind_time;
 		Word hole_pos; //Hole positions
 		bool final;
-  } bon[20];  // the waiting annoying lines
-	Byte last_x;  // position of the last dropped block (for line sending)
-	char snapshot[32*10*2+1]; // 32 lines * 10 columns * 2 chars per block + 1 string terminator
+  } bon[20];  //les lignes chiantes en attente
+	Byte last_x;  // position du dernier bloc depose (pour envoie des lignes)
+	char snapshot[401];
 	Word best_move; //MSB: depth, LSB: complexity
 	Word best_clean; //same here
 	Word best_recurse; //MSB: complexity, LSB: depth
@@ -109,21 +95,17 @@ public:
 	char msg1[64], msg2[64];
 	Dword frame_start;
 	Byte attacks[MAXPLAYERS], last_attacker;
-	// stuff for latest new handicap code (version 24)
-	enum { stamp_per_handicap = 3 };
-	Byte handicaps[MAXPLAYERS]; // stamp counter vis-a-vis other players
-	Byte handicap_crowd; // similar counter but for the crowdedness factor
 	Inter *inter;
 	Overmind *over;
 	Executor *myself;
 	int handicap;
-	int level, speed, player; // player: LOCAL player number (0 to 2)
-	int num_player; // num_player: net_list player number (0 to MAXPLAYERS)
+	int level, speed, player; // player: numero de joueur LOCAL (0 a 2)
+	int num_player; // num_player: numero de joueur dans net_list (0 a MAXPLAYERS)
 	int h_repeat, h_repeat_delay;
 	int v_repeat, v_repeat_delay;
 	int continuous;
 	int level_up;
-	int side_speed, down_speed, depth, complexity, bonus;
+	int side_speed, down_speed, depth, complexity, lines, bonus;
 	bool send_for_clean;
 	int x,y;
 	char name[40];
@@ -176,7 +158,7 @@ public:
 	void setscreen() {
 		screen->setmem();
 	}
-	// multiplayer recording stuff
+	//Stuff de recording multi-player
 	Packet_clientmoves *moves;
 	void start_moves();
 	void send_p_moves();

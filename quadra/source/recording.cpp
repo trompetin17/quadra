@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include <string.h>
@@ -31,20 +17,21 @@
 #include "clock.h"
 #include "chat_text.h"
 #include "recording.h"
-#include "byteorder.h"
-
-RCSID("$Id$")
 
 Recording *recording = NULL;
 Playback *playback = NULL;
 
 Recording::Recording() {
 	res=NULL;
+	all_output=NULL;
+	all_output_size=0;
 }
 
 Recording::~Recording() {
 	if(res)
 		delete res;
+	if(all_output)
+		free(all_output);
 }
 
 bool Recording::create(const char *n) {
@@ -53,11 +40,9 @@ bool Recording::create(const char *n) {
 }
 
 void Recording::write_hunk(Byte h) {
-	int i;
 	if(!res)
 		return;
-	i = INTELDWORD(h);
-	res->write(&i, sizeof(h));
+	res->write(&h, sizeof(h));
 }
 
 void Recording::start_for_multi(Packet* p) {
@@ -73,13 +58,11 @@ void Recording::write_packet(Packet* p) {
 	if(!res)
 		return;
 	write_hunk(11);
-	Dword d = INTELDWORD(frame);
-	res->write(&d, sizeof(d));
+	res->write(&frame, sizeof(frame));
 	Net_buf n;
 	p->write(&n);
 	Word size=n.len();
-	Word w = INTELWORD(size);
-	res->write(&w, sizeof(w));
+	res->write(&size, sizeof(size));
 	res->write(n.buf, size);
 }
 
@@ -92,15 +75,12 @@ void Recording::end_single(Canvas* c) {
 	memset(playername, 0, sizeof(playername));
 	strcpy(playername, c->name);
 	score=c->stats[CS::SCORE].get_value();
-	lines=c->stats[CS::LINESCUR].get_value();
+	lines=c->lines;
 	level=c->level;
 	res->write(playername, sizeof(playername));
-	Dword d = INTELDWORD(score);
-	res->write(&d, sizeof(d));
-	d = INTELDWORD(lines);
-	res->write(&d, sizeof(d));
-	d = INTELDWORD(level);
-	res->write(&d, sizeof(d));
+	res->write(&score, sizeof(score));
+	res->write(&lines, sizeof(lines));
+	res->write(&level, sizeof(level));
 }
 
 void Recording::end_multi() {
@@ -109,7 +89,7 @@ void Recording::end_multi() {
 	if(game->single)
 		end_single(game->net_list.get(0));
 	write_summary();
-	res->write_compress();
+	all_output=res->write_compress(&all_output_size);
 	delete res;
 	res=NULL;
 }
@@ -125,8 +105,7 @@ void Recording::write_summary() {
 
 	Dword size=buf.len();
 	write_hunk(13);
-	Dword d = INTELDWORD(size);
-	res->write(&d, sizeof(d));
+	res->write(&size, sizeof(size));
 	res->write(buf.get(), size);
 }
 
@@ -191,7 +170,7 @@ bool Playback::check_scores(Canvas* c) {
 		return false;
 	if(c->stats[CS::SCORE].get_value() != score)
 		return false;
-	if(c->stats[CS::LINESCUR].get_value() != lines)
+	if(c->lines != lines)
 		return false;
 	if(c->level != level)
 		return false;
@@ -248,10 +227,8 @@ void Playback::read_all() {
 
 void Playback::read_seed() {
 	res->read(&seed, sizeof(seed));
-	seed = INTELDWORD(seed);
 	for(int i=0; i<3; i++) {
 		res->read(&player[i].repeat, sizeof(player[0].repeat));
-		player[i].repeat = INTELDWORD(player[i].repeat);
 	}
 }
 
@@ -274,11 +251,8 @@ void Playback::read_info() {
 	res->read(&player[0].name, sizeof(player[0].name));
 	player[0].name[sizeof(player[0].name)-1]=0;
 	res->read(&score, sizeof(score));
-	score = INTELDWORD(score);
 	res->read(&lines, sizeof(lines));
-	lines = INTELDWORD(lines);
 	res->read(&level, sizeof(level));
-	level = INTELDWORD(level);
 }
 
 void Playback::read_packet() {
@@ -286,9 +260,7 @@ void Playback::read_packet() {
 	Word size=0;
 	Net_buf n;
 	res->read(&frame, sizeof(frame));
-	frame = INTELDWORD(frame);
 	res->read(&size, sizeof(size));
-	size = INTELWORD(size);
 	if(size>sizeof(n.buf))
 		return;
 	res->read(n.buf, size);
@@ -302,7 +274,7 @@ void Playback::read_packet() {
 	}*/
 	if(p->packet_id==P_GAMESERVER) {
 		Packet_gameserver *p2=(Packet_gameserver *) p;
-		if(p2->version<20 || p2->version>Config::net_version) {
+		if(p2->version<20 || p2->version>23) {
 			msgbox("  Demo game version is %i. Current version is %i. Invalid demo file\n", p2->version, Config::net_version);
 			res=NULL;
 			valid=false;
@@ -327,7 +299,6 @@ void Playback::read_packet() {
 void Playback::read_summary() {
 	Dword size;
 	res->read(&size, sizeof(size));
-	size = INTELDWORD(size);
 	Buf buf(size+1);
 	res->read(buf.get(), size);
 	buf[size]=0;

@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #ifndef HEADER_LISTBOX
@@ -82,10 +68,10 @@ class Zone_listbox: public Zone_watch_int {
 	Zone_listup *zup;
 	Zone_listdown *zdown;
 	Font *font2;
-	Array<Listable *> elements; // list of the list_box elements
-	int first_item; // first displayed item in list_box
-	Array<Zone_listtext *> list; // list of the displayed zone_text
-	Array<Listable *> sort_list; // temporary list of elements to sort
+	Array<Listable *> elements; // liste des elements de la list_box
+	int first_item; // premier item afficher dans la list_box
+	Array<Zone_listtext *> list; // liste des zone_text affichées
+	Array<Listable *> sort_list; // liste temporaire d'element a sorter
 	static int compare_sort(const void *arg1, const void *arg2);
 	Video_bitmap *screen;
 	bool selectable;
@@ -111,7 +97,7 @@ public:
 	void empty();
 	void select(int q);
 	int search(Listable *source);
-	bool in_listbox(const Zone *z); // asks if 'z' is an element of the listbox
+	bool in_listbox(const Zone *z); // demande si 'z' est un element de la listbox
 	void init_sort();
 	void add_sort(Listable *l);
 	void end_sort();

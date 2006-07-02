@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #ifndef _HEADER_CONFIG
@@ -29,11 +15,10 @@ public:
 	const static int game_version;
 	static int net_version;
 	const static int major, minor, patchlevel;
+	static bool registered;
 	static bool xtreme;
 	static char user_name[];
 	int warning;
-	//WARNING: Everything in the following structs is pretty much set in stone. A full
-	//         understanding of config.cpp is needed to change anything.
 	struct {
 		int language;
 		int setup_player, cdmusic;
@@ -64,7 +49,8 @@ public:
 		int whole_bunch_of_stuff[11];
 	} player2[3];
 	struct {
-		char proxy_address[128];
+		int some_stuff[16];
+		char yet_more_stuff[64];
 	} info2;
 	char fname[1024];
 	Config();
@@ -72,11 +58,7 @@ public:
 	void default_config();
 	void read();
 	void write();
-
-	//Get the hash value for a player
-	void get_player_hash(Byte* buf, unsigned qplayer);
-	//Get the hash value for a player's team
-	void get_team_hash(Byte* buf, unsigned qplayer);
+	void check_register();
 };
 
 extern Config config;

@@ -1,28 +1,12 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include "input.h"
 #include "video.h"
 #include "cursor_self.h"
-
-RCSID("$Id$")
 
 Cursor_Self::Cursor_Self(Sprite* s) {
   change_cursor(s);
@@ -36,7 +20,7 @@ Cursor_Self::Cursor_Self(Sprite* s) {
   set_speed(64);
   restore_back(true);
   mouse_rate=0;
-  smooth_mode=true; // enable the smoothing by default
+  smooth_mode=true; // enable le smooth par defaut
   visible = true;
 }
 
@@ -73,10 +57,10 @@ void Cursor_Self::set_speed(const Byte s) {
 }
 
 void Cursor_Self::move() {
-  int nx, ny; // new pos x,y
+  int nx, ny; // nouvelle pos x,y
   pool_x += input->mouse.dx * speed;
   pool_y += input->mouse.dy * speed;
-  int temp_x, temp_y; // ajusted value of pool_x and pool_y
+  int temp_x, temp_y; // valeur ajuste de pool_x et pool_y
   temp_x = (pool_x) >> 6;
   temp_y = (pool_y) >> 6;
   pool_x -= (temp_x << 6);
@@ -91,21 +75,21 @@ void Cursor_Self::move() {
     ny = ly2;
   if(ny < ly1)
     ny = ly1;
-  if(smooth_mode) { // smooth mode: movements interpolation (for 35 updates/second serial mouses)
+  if(smooth_mode) { // mode smooth: interpolation des mouvements (pour serial mouse a 35 update/seconde)
     if(sx != nx || sy != ny) {
       x = (sx+nx) >> 1;
       sx = nx;
       y = (sy+ny) >> 1;
       sy = ny;
       mouse_rate++;
-      if(mouse_rate > 45) // if the mouse is updated at more than 40 fps
-	smooth_mode = false; // deactivate smoothing
+      if(mouse_rate > 45) // si la souris s'update plus que 40 frame/seconde,
+	smooth_mode = false; // desactive le smoothing
     } else {
       x = nx;
       y = ny;
       mouse_rate=0;
     }
-  } else { // normal mode: for fast bus mouses
+  } else { // mode normal: pour bus mouse rapide
     x = sx = nx;
     y = sy = ny;
   }

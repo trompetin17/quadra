@@ -1,27 +1,13 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include <stdio.h>
 #include "input.h"
-#include "image_png.h"
 #include "sprite.h"
+#include "pcx.h"
 #include "zone.h"
 #include "config.h"
 #include "quadra.h"
@@ -44,8 +30,6 @@
 #include "clock.h"
 #include "multi_player.h"
 
-RCSID("$Id$")
-
 Multi_player::Multi_player(int *got_high) {
 	stop=false; //set to true to quit game
 	got_highscore = got_high;
@@ -53,8 +37,8 @@ Multi_player::Multi_player(int *got_high) {
 	menu_stat = NULL;
 	int i;
 	{
-		Res_doze res("fond0.png");
-		Png img(res);
+		Res_doze res("Fond0.pcx");
+		Pcx img(res);
 		bit = new Bitmap(img);
 	}
 	pal.set_size(256);
@@ -92,7 +76,7 @@ Multi_player::Multi_player(int *got_high) {
 					break;
 				case 2: pane[i] = new Pane_comboinfo(*pane_info[i]); break;
 			}
-		} else { // else multi_player mode
+		} else { // sinon mode multi_player
 			pane[i] = new Pane_option(*pane_info[i]);
 		}
 		pane_exec[i]->add(pane[i]);
@@ -117,17 +101,17 @@ void Multi_player::step() {
 	if(wait_timer==500) {
 		int col;
 		Byte side;
-		for(col = -1; col<9; col++) {
+		for(col=-1; col<9; col++) {
 			for(side=0; side<16; side++) {
 				char st[32];
 				Bitmap the_bit(18, 18, 18);
 				if(col!=-1) {
 					raw_draw_bloc(video->vb, 0, 0, side, color[col]);
 					video->vb->get_bitmap(&the_bit, 0, 0, 18, 18);
-					sprintf(st, "%c%c.png", '0'+col, 'a'+side);
+					sprintf(st, "%c%c.raw", '0'+col, 'a'+side);
 				}
 				else
-					strcpy(st, "e0.png");
+					strcpy(st, "e0.raw");
 				Raw raw(18, 18, col!=-1? 8:2);
 				Res_dos res(st, RES_CREATE);
 				if(!res.exist) {
@@ -206,7 +190,7 @@ void Multi_player::step() {
 	}
 
 	if(_debug) {
-		int snap_can = -1;
+		int snap_can=-1;
 		if(input->keys[KEY_F2] & PRESSED) {
 			input->keys[KEY_F2] = 0;
 			snap_can = 0;
@@ -232,7 +216,8 @@ Multi_player::~Multi_player() {
 	if(zone_pause)
 		delete zone_pause;
 	for(i=0; i<3; i++) {
-		pane[i] = NULL; // very important, becase the delete pane_exec[i] destroy Panes that access pane[]
+		pane[i] = NULL; // Tres important car les delete pane_exec[i] detruisent des Pane
+		                //  qui accedent a pane[]
 		overmind.stop(pane_exec[i]);
 		delete pane_exec[i];
 		delete pane_info[i];
@@ -242,7 +227,7 @@ Multi_player::~Multi_player() {
 	delete bit;
 	delete courrier;
 	if(!game->single && !playback)
-		config.write(); // save the config only in multi-player AND not in a demo
+		config.write(); // save la config seulement en multi-player ET pas dans une demo
 }
 
 void Multi_player::check_pause() {
@@ -257,9 +242,9 @@ void Multi_player::check_pause() {
 	if(game->paused != pause) {
 		pause = game->paused;
 		if(pause) {
-			if(game->delay_start == 0) // prevents the sound at the start
+			if(game->delay_start == 0) // empeche de faire le son au debut
 				Sfx stmp(sons.pause, 0, -300, 0, 11025);
-			zone_pause = new Zone_sprite(inter, "gamepaus.png");
+			zone_pause = new Zone_sprite(inter, "GAMEPAUS.RAW");
 		} else {
 			if(zone_pause)
 				delete zone_pause;
@@ -277,7 +262,7 @@ void Multi_player::check_pause() {
 				if(zone_pause)
 					delete zone_pause;
 				video->need_paint = 2;
-				sprintf(st, "game_%i.png", chiffre+1);
+				sprintf(st, "GAME_%i.RAW", chiffre+1);
 				zone_pause = new Zone_sprite(inter, st);
 				last_countdown = chiffre;
 				Sfx stmp(sons.pause, 0, -300, 0, 20025);
@@ -314,7 +299,7 @@ void Demo_multi_player::init_playback() {
 			game->seed = playback->seed;
 	}
 	if(game)
-		game->frame_start = overmind.framecount; // re-adjust the frame_start before starting the playback
+		game->frame_start = overmind.framecount; // re-ajuste le frame_start avant de commencer le playback
 }
 
 Demo_multi_player::~Demo_multi_player() {
@@ -368,9 +353,9 @@ void Single_player_iterate::init() {
 		game->loopback_connection->joined=true;
 		game->loopback_connection->trusted=true;
 		char fn[1024];
-		snprintf(fn, sizeof(fn) - 1, "%s/last.qrec", quadradir);
+		sprintf(fn, "%s/last.rec", quadradir);
 		game->prepare_recording(fn);
-		game->prepare_logging();
+		game->prepare_logging(Clock::absolute_time());
 	}
 	call(new Multi_player(&hscore));
 }

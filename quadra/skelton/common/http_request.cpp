@@ -1,29 +1,13 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include <stdio.h>
 #include "error.h"
 #include "net.h"
 #include "http_request.h"
-
-RCSID("$Id$")
 
 char Http_request::base64table[] = {
   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -70,7 +54,7 @@ void Http_request::base64encode(const Byte *in, Textbuf& out, Dword size) {
 		switch(size%3) {
 			case 1:
 				*end--='=';
-				// no break, it's normal!
+				//pas de break, c'est normal!
 			case 2:
 				*end--='=';
 		}
@@ -109,42 +93,30 @@ void Http_request::url_encode(const char *src, Textbuf& dest) {
 		tmp[0] = *src++;
 		tmp[1] = 0;
 		if(tmp[0] < 48 || tmp[0] > 122 || (tmp[0] >= 58 && tmp[0] <= 64))
-			sprintf(tmp, "%c%02X", '%', (Byte)tmp[0]); // converted to '%FF' url
+			sprintf(tmp, "%c%02X", '%', (Byte)tmp[0]); // convertit en '%FF' url
 		dest.append("%s", tmp);
 	}
 }
 
-Http_request::Http_request(const char *aHost, int port, const Byte *request, int size) {
+Http_request::Http_request(const char *host, int port, const Byte *request, int size) {
 	if(request) {
 		this->request=request;
 		this->size=size? size:strlen((const char *)request);
 	}
-	if(aHost) {
-		host = strdup(aHost);
-	} else {
-		host = NULL;
-	}
-	nc=net->start_other(aHost, port); // nc could be NULL in case of error!
+	nc=net->start_other(host, port); // nc peut etre NULL en cas d'erreur!
 	sent=false;
 }
 
-Http_request::Http_request(const char* aHost, Dword hostaddr, int port, const Byte *request, int size) {
+Http_request::Http_request(Dword hostaddr, int port, const Byte *request, int size) {
 	if(request) {
 		this->request=request;
 		this->size=size? size:strlen((const char *)request);
 	}
-	if(aHost) {
-		host = strdup(aHost);
-	} else {
-		host = NULL;
-	}
-	nc=net->start_other(hostaddr, port); // nc could be NULL in case of error!
+	nc=net->start_other(hostaddr, port); // nc peut etre NULL en cas d'erreur!
 	sent=false;
 }
 
 Http_request::~Http_request() {
-	if(host)
-		free(host);
 	if(nc)
 		delete nc;
 }
@@ -165,7 +137,7 @@ Dword Http_request::getsize() const {
 	return buf.size()? buf.size()-1:0; //Don't count nul byte added in 'done'
 }
 
-bool Http_request::isconnected() const { // indicate if the connection has been established
+bool Http_request::isconnected() const { // indique si la connexion a ete etablie
 	if(nc && nc->state() == Net_connection::connected)
 		return true;
 	return false;

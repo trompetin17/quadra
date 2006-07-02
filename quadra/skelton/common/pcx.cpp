@@ -1,27 +1,10 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include "pcx.h"
-#include "byteorder.h"
-
-RCSID("$Id$")
 
 Pcx::Pcx(Res& res) {
 	Error *error;
@@ -42,7 +25,7 @@ Pcx::Pcx(Res& res) {
 	Byte c, num;
 	Byte* out = pic_;
 	int x,i;
-	if(width_ == h.byteperline) { // unpack faster if it is the right width
+	if(width_ == h.byteperline) { // depack plus rapidement si bonne largeur
 		for(i=0; i < height_; i++) {
 			x = 0;
 			while(x < width_) {
@@ -59,7 +42,7 @@ Pcx::Pcx(Res& res) {
 				}
 			}
 		}
-	} else { // damn shitty PCX with bad bytes at the end of the lines!
+	} else { // maudit PCX de merde avec des mauvais bytes au bout des lignes!!
 		for(i=0; i < height_; i++) {
 			x = 0;
 			while(x < h.byteperline) {

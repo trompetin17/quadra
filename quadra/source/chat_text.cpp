@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include <string.h>
@@ -26,8 +12,6 @@
 #include "game.h"
 #include "nglog.h"
 #include "chat_text.h"
-
-RCSID("$Id$")
 
 Chat_text *chat_text=NULL;
 int Chat_text::quel_player=0;
@@ -43,7 +27,7 @@ void Chat_text::add_text(int team, const char *text, bool sound) {
 	char tmp[256];
 	strncpy(tmp, text, 256);
 	tmp[255]=0;
-	int color_cut = -1;
+	int color_cut=-1;
 	if(team&16 && team>0) {
 		team-=16;
 		char *col=strchr(tmp, ':');
@@ -56,9 +40,9 @@ void Chat_text::add_text(int team, const char *text, bool sound) {
 		scroll_up();
 		list[CHAT_NBLINE-1].team = team;
 		if(color_cut!=-1)
-			team = -1;
+			team=-1;
 		list[CHAT_NBLINE-1].color_cut = color_cut;
-		color_cut = -1;
+		color_cut=-1;
 		last_s = -1;
 		for(i=0; (unsigned int)i < strlen(tm); i++) {
 			wid = font->width(tm, i+1);

@@ -1,24 +1,9 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
-#include <stdarg.h>
 #include "error.h"
 #include "packets.h"
 #include "config.h"
@@ -30,8 +15,6 @@
 #include "texte.h"
 #include "video.h"
 #include "nglog.h"
-
-RCSID("$Id$")
 
 Net_starter::Net_module::Net_module() {
 	last_video_frame=video->framecount;
@@ -96,7 +79,6 @@ char *packet_name[] = {
 	"P_CLIENTREMOVEBONUS",
 	"P_SERVERNAMETEAM",
 	"P_GAMESTAT",
-	"P_SERVERLOG",
 };
 
 int Quadra_param::tcpport() {
@@ -202,7 +184,6 @@ Packet *Quadra_param::alloc_packet(Word pt) {
 		case P_CLIENTREMOVEBONUS: return new Packet_clientremovebonus();
 		case P_SERVERNAMETEAM: return new Packet_servernameteam();
 		case P_GAMESTAT: return new Packet_gamestat();
-		case P_SERVERLOG: return new Packet_serverlog();
 		default: return NULL;
 	}
 }
@@ -247,11 +228,7 @@ void Quadra_param::client_connect(Net_connection *adr) {
 		return;
 	char st[64], st1[256];
 	Net::stringaddress(st, adr->address(), adr->getdestport());
-	Packet_serverlog log("connect");
-	log.add(Packet_serverlog::Var("id", adr->id()));
-	log.add(Packet_serverlog::Var("address", st));
-	if(game && game->net_server)
-		game->net_server->record_packet(&log);
+	log_step("connect\t%u\t%s", adr->id(), st);
 	sprintf(st1, ST_CONNECTFROMBOB, st);
 	message(-1, st1, true, false, true);
 }
@@ -264,12 +241,7 @@ void Quadra_param::client_deconnect(Net_connection *adr) {
 		game->net_list.client_deconnect(adr);
 	char st[64], st1[256];
 	Net::stringaddress(st, adr->address(), adr->getdestport());
-
-	Packet_serverlog log("disconnect");
-	log.add(Packet_serverlog::Var("id", adr->id()));
-	if(game && game->net_server)
-		game->net_server->record_packet(&log);
-
+	log_step("disconnect\t%u", adr->id());
 	sprintf(st1, ST_DISCONNECTFROMBOB, st);
 	message(-1, st1, true, false, true);
 	if(!game)
@@ -277,9 +249,11 @@ void Quadra_param::client_deconnect(Net_connection *adr) {
 	for(int j=0; j<MAXPLAYERS; j++) {
 		Canvas *c = game->net_list.get(j);
 		if(c && c->remote_adr == adr) {
-			c->remote_adr = NULL; // this net_connection is now destroyed
+			c->remote_adr = NULL; // cette net_connection est desormais detruite.
 			if(c->idle != 3) { 
-				/* sends an automatic 'P_GONE' for every active players of the client that has been disconnected.  */
+				/* envoie un 'P_GONE' automatique pour tout les joueurs actifs du client qui a ete
+					 deconnecte.
+				*/
 				if(c->idle != 2 && !c->dying) {
 					Packet_dead d;
 					d.player = j;
@@ -313,12 +287,12 @@ void send_msg(Net_connection *nc, char *msg, ...) {
 	char st[4096];
 	va_list marker;
 	va_start(marker, msg);
-	vsnprintf(st, sizeof(st) - 1, msg, marker);
+	vsprintf(st, msg, marker);
 	va_end(marker);
 	if(nc->packet_based) {
 		Packet_chat p;
-		p.team = -1;
-		p.to_team = -1;
+		p.team=-1;
+		p.to_team=-1;
 		strncpy(p.text, st, 255);
 		p.text[255]=0;
 		if(game && game->loopback_connection==nc)

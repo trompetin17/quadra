@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #ifndef _HEADER_NET_LIST
@@ -99,9 +85,7 @@ public:
 	bool accept_connection(Net_connection *nc);
 	void client_deconnect(Net_connection *nc);
 	Byte syncpoint;
-	unsigned count_teams(bool include_gone=true) const;
-	unsigned count_alive() const;
-	unsigned size(bool include_gone=true) const;
+	int size();
 	int add_player(Canvas *c);
 	void set_player(Canvas *c, int pos, bool msg);
 	//Should be called on server only: initiate drop player procedure

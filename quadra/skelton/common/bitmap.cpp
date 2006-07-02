@@ -1,36 +1,27 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include <string.h>
 #include "types.h"
+#include "raw.h"
+#include "pcx.h"
 #include "video.h"
 #include "res.h"
-#include "image_png.h"
 #include "bitmap.h"
 
-RCSID("$Id$")
-
-Bitmap* Bitmap::loadPng(const char* n) {
+Bitmap* Bitmap::loadPcx(const char* n) {
 	Res_doze res(n);
-	Png png(res);
-	return new Bitmap(png);
+	Pcx pcx(res);
+	return new Bitmap(pcx);
+}
+
+Bitmap* Bitmap::loadRaw(const char* n) {
+	Res_doze res(n);
+	Raw raw(res);
+	return new Bitmap(raw);
 }
 
 Bitmap::Bitmap(int w, int h, int rw):
@@ -82,6 +73,53 @@ Bitmap::Bitmap(const Image& raw, bool dx):
 	initlines();
 	setmem((void*)new Byte[size]);
 	reload(raw);
+	if(dx)
+		create_directx_surface();
+}
+
+void Bitmap::create_directx_surface() {
+/*#ifdef UGS_DIRECTX
+	directx = true;
+	DDSURFACEDESC	ddsd;
+
+	ZeroMemory(&ddsd, sizeof(ddsd));
+	ddsd.dwSize = sizeof(ddsd);
+	ddsd.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
+	ddsd.ddsCaps.dwCaps = DDSCAPS_VIDEOMEMORY | DDSCAPS_OFFSCREENPLAIN;
+	ddsd.dwWidth = width;
+	ddsd.dwHeight = height;
+
+	if(video->lpdd->CreateSurface(&ddsd, &directx_surface, NULL) != DD_OK) {
+		ZeroMemory(&ddsd, sizeof(ddsd));
+		ddsd.dwSize = sizeof(ddsd);
+		ddsd.dwFlags = DDSD_CAPS | DDSD_HEIGHT | DDSD_WIDTH;
+		ddsd.dwWidth = width;
+		ddsd.dwHeight = height;
+		ddsd.ddsCaps.dwCaps = DDSCAPS_OFFSCREENPLAIN | DDSCAPS_SYSTEMMEMORY;
+		calldx(video->lpdd->CreateSurface(&ddsd, &directx_surface, NULL));
+	}
+
+	DDCOLORKEY color;
+	color.dwColorSpaceLowValue  = 0;
+	color.dwColorSpaceHighValue = 0;
+	calldx(directx_surface->SetColorKey(DDCKEY_SRCBLT, &color));
+
+	video->add_surface(directx_surface, this);
+	copy_surface();
+#endif*/
+}
+
+void Bitmap::copy_surface() {
+/*#ifdef UGS_DIRECTX
+	DDSURFACEDESC lock;
+	lock.dwSize=sizeof(lock);
+	lock.dwFlags=DDSD_ALL;
+	calldx(directx_surface->Lock(NULL, &lock, DDLOCK_WAIT|DDLOCK_SURFACEMEMORYPTR, NULL));
+	int pitch = lock.lPitch;
+	for(int i=0; i<height; i++)
+		memcpy((Byte *) lock.lpSurface + i*pitch, lines[i], realwidth);
+	calldx(directx_surface->Unlock(NULL));
+#endif*/
 }
 
 void Bitmap::reload(const Image& raw) {
@@ -94,6 +132,10 @@ void Bitmap::initlines() {
 }
 
 Bitmap::~Bitmap() {
+/*#ifdef UGS_DIRECTX
+	if(directx)
+		video->remove_surface(directx_surface, this);
+#endif*/
 	delete[] zlines;
 	delete[] lines;
 	if(fmem)

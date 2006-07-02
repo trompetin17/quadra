@@ -1,24 +1,8 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
-
-#ifdef UGS_LINUX_X11
 
 #include <signal.h>
 #define Font XFont
@@ -32,8 +16,6 @@
 #include "sprite.h"
 #include "video_x11.h"
 
-RCSID("$Id$")
-
 Video_X11_16::Video_X11_16(int w, int h, int b,
 			   const char *wname,
 			   Display* dpy,
@@ -44,8 +26,6 @@ Video_X11_16::Video_X11_16(int w, int h, int b,
 
   if(!vfb)
     (void)new Error("Could not allocate virtual frame buffer.");
-
-  memset(vfb, 0, w*h);
 }
 
 Video_X11_16::~Video_X11_16() {
@@ -63,14 +43,14 @@ void Video_X11_16::flip() {
   }
 
   if(max_x > min_x) {
-    /* conversino of the 8 bpp buffer to a 16 bpp buffer. */
+    // Conversion du buffer 8 bpp vers un buffer 16 bpp.
     buf = (unsigned short*) image->data;
     for(y = 0; y < 480; y++)
       for(x = min_x[y]; x <= max_x[y]; x++) {
         buf[(y * width) + x] = colors[vfb[(y * width) + x]];
       }
     
-    /* reset the dirty rect */
+    /* reset le dirty rect */
     for(y = 0; y < 480; y++) {
       min_x[y] = vb->width;
       max_x[y] = 0;
@@ -102,6 +82,3 @@ void Video_X11_16::dosetpal(PALETTEENTRY pal[256], int size) {
 
   dirty(0, 0, width-1, height-1);
 }
-
-#endif /* UGS_LINUX_X11 */
-

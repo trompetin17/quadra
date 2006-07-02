@@ -1,30 +1,13 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #include "types.h"
 #include "bitmap.h"
 #include "video.h"
 #include "sprite.h"
-#include "byteorder.h"
-
-RCSID("$Id$")
 
 #define FONT_SIZE (141-32)
 
@@ -49,6 +32,8 @@ Sprite::Sprite(const Bitmap& b, const int hx, const int hy, const bool dx):
 	Bitmap(b[0], b.width, b.height, b.realwidth, COPY)
 {
 	set_hotspot(hx, hy);
+	if(dx)
+		create_directx_surface();
 }
 
 void Sprite::draw(const Bitmap& d, const int dx, const int dy) const {
@@ -60,8 +45,8 @@ void Sprite::draw(const Bitmap& d, const int dx, const int dy) const {
 	for(int y=clip_y1; y<=clip_y2; y++) {
 		for(int i=clip_x1; i<=clip_x2; i++) {
 			Byte pel = *(operator[](y-ty)+(i-tx));
-			// optimization since the mask is always 0
-			// because of Svgalib
+			// optimisation etant donne que le mask est toujours == 0
+			// a cause de SVGALIB
 			if(pel)
 			  d.fast_pel(i, y, pel);
 		}
@@ -96,12 +81,9 @@ Fontdata::Fontdata(Res &res, int s) {
 	int w, h, rw;
 	for(int i=0; i<FONT_SIZE; i++) {
 		res.read(&w, sizeof(int));
-                w = INTELDWORD(w);
 		if(w != 0) {
 			res.read(&h, sizeof(int));
-                        h = INTELDWORD(h);
 			res.read(&rw, sizeof(int));
-                        rw = INTELDWORD(rw);
 			tmp = new Bitmap(w, h, rw);
 			res.read((*tmp)[0], rw*h);
 			spr[i] = new Sprite(*tmp, 0, 0, 0);
@@ -161,11 +143,11 @@ int Fontdata::translate(const char **m) const {
 	char c;
 	c = *(*m)++;
 	if(c == 32)
-		return -1;  // special code for space
+		return -1;  // code special pour l'espace
 	if(c > 32 && c < 127)
-		return c-33; // standard value
+		return c-33; // valeur standard
 	switch(c) {
-		// ascii 183 followed with a number to do a glyph
+		// ascii 183 suivit d'un chiffre pour faire un glyph (exemple: ·2)
 		case '·':
 			ret=(int) (*(*m)++)-48 + 133;
 			if(ret<133 || ret>137)

@@ -1,34 +1,17 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 /* version Linux */
-#include "autoconf.h"
 #ifdef SOCKS
 #include <stdio.h>
 #include <socks.h>
 extern "C" int SOCKSinit(char *);
 #endif
-#ifdef HAVE_MCHECK_H
-#ifndef NDEBUG
+#ifdef _DEBUG
 #include <mcheck.h>
-#endif
 #endif
 #include <stdlib.h>
 #include <signal.h>
@@ -48,10 +31,6 @@ extern "C" int SOCKSinit(char *);
 #include "command.h"
 #include "main.h"
 
-RCSID("$Id$")
-
-int ux_argc;
-char** ux_argv;
 bool alt_tab = false;
 Time_mode time_control = TIME_NORMAL;
 char cmd_line[1024];
@@ -73,10 +52,8 @@ char exe_directory[1024];
 static bool ignore_sigpipe=false;
 
 int main(int ARGC, char **ARGV, char **ENV) {
-#ifdef HAVE_MCHECK_H
-#ifndef NDEBUG
+#ifdef _DEBUG
   mcheck(NULL);
-#endif
 #endif
   INIT_DEBUG;
 #ifdef SOCKS
@@ -96,9 +73,6 @@ int main(int ARGC, char **ARGV, char **ENV) {
 		}
 		else
 			skelton_msgbox("SIGPIPE handler isn't default, ignoring.\n");
-
-  ux_argc = ARGC;
-  ux_argv = ARGV;
 
 	//Copy the whole thing
 	strncpy(exe_directory, ARGV[0], sizeof(exe_directory));

@@ -1,21 +1,7 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- * 
- * Quadra, an action puzzle game
- * Copyright (C) 1998-2000  Ludus Design
- * 
- * This program is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
- * 
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+ * Copyright (c) 1998-2000 Ludus Design enr.
+ * All Rights Reserved.
+ * Tous droits réservés.
  */
 
 #ifndef _HEADER_MENU
@@ -82,6 +68,7 @@ class Menu_main: public Menu {
 	Zone *b_single, *b_multi, *b_setup, *b_help, *b_quit;
 	Zone *b_tut, *b_option, *b_logo, *b_demo;
 	int delay;
+	bool old_registered;
 	int old_language;
 	void reset_delay();
 	void redraw();
@@ -103,11 +90,21 @@ public:
 class Menu_help: public Menu_standard {
 	Font *font2;
 	Zone *b_quit;
-	Zone *b_www, *b_email, *b_online;
+	Zone *b_www, *b_email, *b_online, *b_register;
 	void call_internet(const char *s);
 public:
 	Menu_help();
 	virtual void init();
+	virtual void step();
+};
+
+class Menu_register: public Menu_quit {
+	Zone *b_quit, *b_ok, *z_invalid;
+	Zone_text_input *z_pass;
+	char name[64];
+	char pass[64];
+public:
+	Menu_register(Inter *in, const Palette &p);
 	virtual void step();
 };
 
@@ -117,7 +114,6 @@ class Menu_option: public Menu_standard {
 	Zone *b_quit;
 	int old_language,old_music,old_mouse_speed,old_port;
 	char old_server[256];
-	char old_proxy[128];
 public:
 	Menu_option();
 	virtual ~Menu_option();
