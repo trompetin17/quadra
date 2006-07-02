@@ -1,4 +1,4 @@
-#!perl -w
+#! /usr/bin/perl -w
 
 use strict;
 use CGI;
@@ -6,7 +6,7 @@ use RecReader;
 
 my $cgi = new CGI;
 
-my $dir = "games/";
+my $dir = "/projects/quadra/stats/games/";
 opendir DIR, $dir || &error("Can't read directory.");
 my @files = readdir DIR;
 closedir DIR;

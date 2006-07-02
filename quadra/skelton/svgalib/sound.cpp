@@ -20,11 +20,9 @@
 
 #include <stdio.h>
 
-#include "autoconf.h"
-#ifdef HAVE_LINUX_SOUNDCARD_H
+#include <mcheck.h>
 #include <linux/soundcard.h>
 #include <sys/ioctl.h>
-#endif
 
 #include "error.h"
 #include "types.h"
@@ -72,33 +70,6 @@ struct fmt_chunk {
 };
 
 Sound *sound = NULL;
-
-#ifndef HAVE_LINUX_SOUNDCARD_H
-
-Sound::Sound(): dspfd(-1), fragsize(0), fragbuf(NULL), active(false) {
-}
-
-void Sound::process() {
-}
-
-Sound::~Sound() {
-}
-
-Sample::Sample(Res& re, int nb): audio_data(NULL), sampling(0),
-                                 length(0), refcount(1) {
-}
-
-Sample::~Sample() {
-}
-
-Sfx::Sfx(Sample *sam, Dword dwPlayFlags, int vo, int pa, int f, int pos):
-  playing(NULL) {
-}
-
-Sfx::~Sfx() {
-}
-
-#else
 
 Sound::Sound(): dspfd(-1), fragsize(0), fragbuf(NULL), active(false) {
   int i;
@@ -520,5 +491,3 @@ Sfx::~Sfx() {
   if(playing)
     playing->sfx = NULL;
 }
-
-#endif

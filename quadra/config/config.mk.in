@@ -39,13 +39,18 @@ libdir:=@libdir@
 libgamesdir:=$(libdir)/games
 datadir:=@datadir@
 datagamesdir:=$(datadir)/games
-CXXFLAGS:=@CXXFLAGS@ @CPPFLAGS@
+CXXFLAGS:=@CXXFLAGS@ @DEFS@
 X_CFLAGS:=@X_CFLAGS@
 X_LIBS:=@X_LIBS@
-LDFLAGS:=@LDFLAGS@
+
+test:=@HAVE_LIBX11@
 
 ifneq ("@enable_debug@", "yes")
 CXXFLAGS+=-DNDEBUG
+endif
+
+ifeq ("@enable_profile@", "yes")
+CXXFLAGS+=-pg
 endif
 
 ifeq ("@with_svgalib@", "yes")

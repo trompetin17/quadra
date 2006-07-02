@@ -1,20 +1,15 @@
 dnl Process this file with autoconf to produce a configure script.
+AC_REVISION($Id$)
 
-AC_INIT([quadra])
-AC_CONFIG_SRCDIR([source/quadra.cpp])
+AC_INIT(source/quadra.cpp)
 
 AC_PATH_XTRA
 AC_ARG_WITH(svgalib,
   [  --without-svgalib       Svgalib support])
-AC_ARG_WITH(libpng,
-  [  --with-libpng           Specify location for libpng])
 AC_ARG_ENABLE(debug,
   [  --enable-debug          debugging options])
-
-if test ! -z "$with_libpng"; then
-   CPPFLAGS="$CPPFLAGS -I$with_libpng"
-   LDFLAGS="$LDFLAGS -L$with_libpng"
-fi
+AC_ARG_ENABLE(profile,
+  [  --enable-profile        profiling options])
 
 dnl Checks for programs.
 AC_PROG_CXX
@@ -43,15 +38,11 @@ AC_CHECK_HEADERS(X11/extensions/XShm.h X11/extensions/xf86vmode.h,,
 ])
 AC_CHECK_HEADER(zlib.h,, nozlib=1)
 AC_CHECK_HEADER(png.h,, nolibpng=1)
-AC_CHECK_HEADERS(machine/endian.h)
-AC_CHECK_HEADERS(machine/byte_order.h)
-AC_CHECK_HEADERS(linux/cdrom.h)
-AC_CHECK_HEADERS(linux/soundcard.h)
-AC_CHECK_HEADERS(mcheck.h)
 
 dnl Checks for typedefs, structures, and compiler characteristics.
 
 dnl Checks for library functions.
+AC_CHECK_FUNCS(basename)
 
 if test "$with_svgalib" = "yes" -a -n "$nosvgalib"; then
 	AC_MSG_ERROR(Svgalib could not be found.)
@@ -96,8 +87,7 @@ fi
 AC_SUBST(with_x)
 AC_SUBST(with_svgalib)
 AC_SUBST(enable_debug)
+AC_SUBST(enable_profile)
 
-AC_CONFIG_HEADERS([include/autoconf.h])
-AC_CONFIG_FILES([config/config.mk])
-AC_OUTPUT
+AC_OUTPUT(config/config.mk)
 

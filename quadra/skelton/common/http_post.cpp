@@ -18,13 +18,14 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <stdlib.h>
+#include <malloc.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include "error.h"
 #include "version.h"
 #include "net.h"
+#include "../../include/version.h"
 #include "http_post.h"
 
 RCSID("$Id$")
@@ -53,10 +54,6 @@ void Http_post::add_data_encode(const char* m, ...) {
 	va_end(marker);
 	Http_request::url_encode(st, buf);
 	add_data_raw(buf.get());
-}
-
-void Http_post::add_data_raw(const Buf &m) {
-	data.append(m.get(), m.size());
 }
 
 void Http_post::add_data_raw(const char* m) {

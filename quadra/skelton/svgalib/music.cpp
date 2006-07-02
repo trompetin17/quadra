@@ -18,7 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "autoconf.h"
 #ifndef NDEBUG
 #include <stdio.h>
 #endif
@@ -26,17 +25,13 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#ifdef HAVE_LINUX_CDROM_H
 #include <linux/cdrom.h>
-#endif
 #include "error.h"
 #include "types.h"
 #include "command.h"
 #include "music.h"
 
 RCSID("$Id$")
-
-#ifdef HAVE_LINUX_CDROM_H
 
 #define CDROM_DEVICE "/dev/cdrom"
 
@@ -58,17 +53,7 @@ public:
   virtual void stop();
 };
 
-#endif
-
 Music *music=NULL;
-
-#ifndef HAVE_LINUX_CDROM_H
-
-Music* Music::alloc() {
-  return new MusicNull;
-}
-
-#else
 
 Music* Music::alloc() {
   if(!command.token("nocd"))
@@ -176,4 +161,3 @@ void MusicLinux::close() {
   active = false;
 }
 
-#endif

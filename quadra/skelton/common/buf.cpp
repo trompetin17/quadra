@@ -27,15 +27,6 @@
 
 RCSID("$Id$")
 
-Buf::Buf(const Buf &buf) {
-	data=NULL;
-	size_=0;
-	capacity=0;
-	inc=buf.inc;
-	reserve(buf.capacity);
-	append(buf.data, buf.size());
-}
-
 Buf::Buf(Dword size, Dword in) {
 	data=NULL;
 	size_=0;

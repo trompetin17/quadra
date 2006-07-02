@@ -33,7 +33,6 @@ maintainerclean: distclean
 	rm -f $(wildcard $(REALCLEAN))
 
 dist: distclean quadra.spec configure ChangeLog manual-dist-stuff
-	rm -rf autom4te.cache
 
 ChangeLog:
 	rm -f ChangeLog
@@ -57,20 +56,18 @@ endif
 # /usr/share/gnome/apps/Games/Quadra.desktop
 
 quadra.spec: packages/quadra.spec.in source/config.cpp
-	sed -e 's%@VERSION@%$(VERSION)%g' >$@ <$<
+	sed $< -e 's%@VERSION@%$(VERSION)%g' > $@
 
 Quadra.desktop: packages/Quadra.desktop.in config/config.mk
-	sed -e 's%@bindir@%$(bindir)%g' -e 's%@datadir@%$(datadir)%g' >$@ <$<
+	sed $< -e 's%@bindir@%$(bindir)%g' -e 's%@datadir@%$(datadir)%g' > $@
 
 configure: configure.in
-	autoreconf
+	autoconf
 
 .PHONY: manual-dist-stuff
 manual-dist-stuff:
 	@echo "-----------------------------------------------------------"
 	@echo "remember to edit the version number in the following files:"
-	@echo "include/version.h"
-	@echo "packages/quadra.nsi"
 	@echo "packages/readme-win32.txt"
 
 ifeq ($(MAKECMDGOALS),dustclean)
