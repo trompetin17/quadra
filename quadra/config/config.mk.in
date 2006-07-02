@@ -39,10 +39,11 @@ libdir:=@libdir@
 libgamesdir:=$(libdir)/games
 datadir:=@datadir@
 datagamesdir:=$(datadir)/games
-CXXFLAGS:=@CXXFLAGS@ @CPPFLAGS@
+CXXFLAGS:=@CXXFLAGS@ @DEFS@
 X_CFLAGS:=@X_CFLAGS@
 X_LIBS:=@X_LIBS@
-LDFLAGS:=@LDFLAGS@
+
+test:=@HAVE_LIBX11@
 
 ifneq ("@enable_debug@", "yes")
 CXXFLAGS+=-DNDEBUG
@@ -57,4 +58,3 @@ ifeq ("@with_x@", "yes")
 UGS_LINUX_X11=1
 CXXFLAGS+=-DUGS_LINUX_X11
 endif
-

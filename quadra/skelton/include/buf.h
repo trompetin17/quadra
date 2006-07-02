@@ -29,7 +29,6 @@ class Buf {
 	Dword capacity;
 	Dword inc;
 public:
-	Buf(const Buf &buf);
 	Buf(Dword size=0, Dword in=16);
 	virtual ~Buf();
 	Byte* get() const {

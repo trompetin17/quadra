@@ -22,11 +22,6 @@
 #define _HEADER_ARRAY
 #include <vector>
 
-#ifdef UGS_DIRECTX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
-
 #ifndef max
 #define max(a,b) (((a) > (b)) ? (a) : (b))
 #endif
@@ -42,7 +37,7 @@ public:
 		v.push_back(t);
 	}
 	void add_before(const T& t, int i) {
-		v.insert(v.begin() + i, t);
+		v.insert(&v[i], t);
 	}
 	bool remove_item(const T& t) {
 		for(int i=0; i<size(); i++)
@@ -56,7 +51,7 @@ public:
 		v.pop_back();
 	}
 	void remove(int i) {
-		v.erase(v.begin() + i);
+		v.erase(&v[i]);
 	}
 	int size() const {
 		return v.size();

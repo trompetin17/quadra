@@ -278,9 +278,6 @@ void DirectX_Video::snap_shot(int x, int y, int w, int h) {
 	skelton_msgbox("ok\n");
 }
 
-void DirectX_Video::toggle_fullscreen() {
-}
-
 void DirectX_Video::start_frame() {
 	COPPER(0,0,0);
 	lock();

@@ -33,15 +33,6 @@ public:
 	virtual void stop() = 0;
 };
 
-class MusicNull: public Music {
-public:
-	virtual void open() {};
-	virtual void close() {};
-	virtual void play(int quel, bool loop=false) {};
-	virtual void replay() {};
-	virtual void stop() {};
-};
-
 extern Music *music;
 
 #endif

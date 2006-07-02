@@ -406,8 +406,7 @@ void Net_server::playerwantjoin(Packet *p2) {
 			if(game->server_max_players && game->net_list.size() >= game->server_max_players)
 				playeraccepted.accepted = 5; // game is full, can't join
 			if(game->server_max_teams && game->net_list.count_teams() >= game->server_max_teams) {
-                               unsigned i;
-				for(i=0; i<MAXPLAYERS; ++i) {
+				for(unsigned i=0; i<MAXPLAYERS; ++i) {
 					Canvas* c=game->net_list.get(i);
 					if(c && c->color==p->team)
 						break;

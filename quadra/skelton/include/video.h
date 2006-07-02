@@ -102,7 +102,6 @@ public:
   virtual void restore() = 0;
   virtual void clean_up() = 0;
   virtual void snap_shot(int x, int y, int w, int h) = 0;
-  virtual void toggle_fullscreen() = 0;
 };
 
 extern Video* video;

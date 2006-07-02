@@ -31,7 +31,6 @@
 #include "clock.h"
 #include "chat_text.h"
 #include "recording.h"
-#include "byteorder.h"
 
 RCSID("$Id$")
 
@@ -53,11 +52,9 @@ bool Recording::create(const char *n) {
 }
 
 void Recording::write_hunk(Byte h) {
-	int i;
 	if(!res)
 		return;
-	i = INTELDWORD(h);
-	res->write(&i, sizeof(h));
+	res->write(&h, sizeof(h));
 }
 
 void Recording::start_for_multi(Packet* p) {
@@ -73,13 +70,11 @@ void Recording::write_packet(Packet* p) {
 	if(!res)
 		return;
 	write_hunk(11);
-	Dword d = INTELDWORD(frame);
-	res->write(&d, sizeof(d));
+	res->write(&frame, sizeof(frame));
 	Net_buf n;
 	p->write(&n);
 	Word size=n.len();
-	Word w = INTELWORD(size);
-	res->write(&w, sizeof(w));
+	res->write(&size, sizeof(size));
 	res->write(n.buf, size);
 }
 
@@ -92,15 +87,12 @@ void Recording::end_single(Canvas* c) {
 	memset(playername, 0, sizeof(playername));
 	strcpy(playername, c->name);
 	score=c->stats[CS::SCORE].get_value();
-	lines=c->stats[CS::LINESCUR].get_value();
+	lines=c->lines;
 	level=c->level;
 	res->write(playername, sizeof(playername));
-	Dword d = INTELDWORD(score);
-	res->write(&d, sizeof(d));
-	d = INTELDWORD(lines);
-	res->write(&d, sizeof(d));
-	d = INTELDWORD(level);
-	res->write(&d, sizeof(d));
+	res->write(&score, sizeof(score));
+	res->write(&lines, sizeof(lines));
+	res->write(&level, sizeof(level));
 }
 
 void Recording::end_multi() {
@@ -125,8 +117,7 @@ void Recording::write_summary() {
 
 	Dword size=buf.len();
 	write_hunk(13);
-	Dword d = INTELDWORD(size);
-	res->write(&d, sizeof(d));
+	res->write(&size, sizeof(size));
 	res->write(buf.get(), size);
 }
 
@@ -191,7 +182,7 @@ bool Playback::check_scores(Canvas* c) {
 		return false;
 	if(c->stats[CS::SCORE].get_value() != score)
 		return false;
-	if(c->stats[CS::LINESCUR].get_value() != lines)
+	if(c->lines != lines)
 		return false;
 	if(c->level != level)
 		return false;
@@ -248,10 +239,8 @@ void Playback::read_all() {
 
 void Playback::read_seed() {
 	res->read(&seed, sizeof(seed));
-	seed = INTELDWORD(seed);
 	for(int i=0; i<3; i++) {
 		res->read(&player[i].repeat, sizeof(player[0].repeat));
-		player[i].repeat = INTELDWORD(player[i].repeat);
 	}
 }
 
@@ -274,11 +263,8 @@ void Playback::read_info() {
 	res->read(&player[0].name, sizeof(player[0].name));
 	player[0].name[sizeof(player[0].name)-1]=0;
 	res->read(&score, sizeof(score));
-	score = INTELDWORD(score);
 	res->read(&lines, sizeof(lines));
-	lines = INTELDWORD(lines);
 	res->read(&level, sizeof(level));
-	level = INTELDWORD(level);
 }
 
 void Playback::read_packet() {
@@ -286,9 +272,7 @@ void Playback::read_packet() {
 	Word size=0;
 	Net_buf n;
 	res->read(&frame, sizeof(frame));
-	frame = INTELDWORD(frame);
 	res->read(&size, sizeof(size));
-	size = INTELWORD(size);
 	if(size>sizeof(n.buf))
 		return;
 	res->read(n.buf, size);
@@ -327,7 +311,6 @@ void Playback::read_packet() {
 void Playback::read_summary() {
 	Dword size;
 	res->read(&size, sizeof(size));
-	size = INTELDWORD(size);
 	Buf buf(size+1);
 	res->read(buf.get(), size);
 	buf[size]=0;

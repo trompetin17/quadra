@@ -23,7 +23,6 @@
 #include "error.h"
 #include "res.h"
 #include "resfile.h"
-#include "byteorder.h"
 
 RCSID("$Id$")
 
@@ -35,8 +34,8 @@ Resdata::Resdata(char *resname, int ressize, Byte *resdata, Resdata *list) {
 }
 
 Resdata::~Resdata() {
-	delete[] name;
-	delete[] data;
+	delete name;
+	delete data;
 	if(next)
 		delete next;
 }
@@ -50,10 +49,10 @@ Resfile::Resfile(const char *fname, bool ro) {
 		res = new Res_dos(fname, RES_CREATE);
 
 	if(res->exist) {
-		skelton_msgbox("Resfile %s is fine\n", fname);
-		thaw();
+	  skelton_msgbox("Resfile %s is fine\n", fname);
+	  thaw();
 	} else
-		skelton_msgbox("Resfile %s does not exist\n", fname);
+	  skelton_msgbox("Resfile %s does not exist\n", fname);
 }
 
 Resfile::~Resfile() {
@@ -79,13 +78,11 @@ void Resfile::thaw() {
 
 	do {
 		res->read(&resnamelen, sizeof(resnamelen));
-		resnamelen = INTELDWORD(resnamelen);
 		if(resnamelen == 0)
 			break;
 		resname = new char[resnamelen];
 		res->read(resname, resnamelen);
 		res->read(&ressize, sizeof(ressize));
-		ressize = INTELDWORD(ressize);
 		resdata = new Byte[ressize];
 		res->read(resdata, ressize);
 
@@ -142,6 +139,6 @@ void Resfile::remove(const char* resname) {
 		ptr->next = NULL;
 		delete ptr;
 	}
-	// Can somebody tell me why Resfile::list isn't an Array<Resdata>?
-	// We all know linked lists suck, don't we? Whatever...
+	//Can somebody tell me why Resfile::list isn't an Array<Resdata>?
+	//  We all know linked lists suck, don't we? Whatever...
 }

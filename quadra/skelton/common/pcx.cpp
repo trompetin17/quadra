@@ -19,7 +19,6 @@
  */
 
 #include "pcx.h"
-#include "byteorder.h"
 
 RCSID("$Id$")
 

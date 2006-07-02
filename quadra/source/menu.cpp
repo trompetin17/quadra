@@ -179,7 +179,7 @@ Menu_highscore::Menu_highscore(int hscore, int *playagain, bool show_playb) {
 
   playlast = NULL;
   if(show_playback) {
-    snprintf(st, sizeof(st) - 1, "%s/last.qrec", quadradir);
+    snprintf(st, sizeof(st) - 1, "%s/last.rec", quadradir);
     Res_dos *res = new Res_dos(st, RES_TRY);
     if(res->exist) {
       y += 6;
@@ -251,7 +251,7 @@ void Menu_highscore::start_sync() {
     msgbox("Menu_highscore::start_sync: encoded size=%i\n", strlen(buf.get()));
     delete demofile;
     demofile=NULL;
-    sync_request->add_data_large(buf);
+    sync_request->add_data(buf.get());
     sync_request->add_data("\n");
   }
   else
@@ -356,7 +356,7 @@ void Menu_highscore::step() {
         }
       }
       if(result == playlast) {
-        snprintf(st, sizeof(st) - 1, "%s/last.qrec", quadradir);
+        snprintf(st, sizeof(st) - 1, "%s/last.rec", quadradir);
         play_demo(st);
       }
     } else {
@@ -514,7 +514,7 @@ void Menu_multi_join::step() {
 
   if(result==b_create) {
     removewatch();
-    if(address[0] == 0)
+    if(address[0] == 0 && local_net)
       refresh();
     call(new Create_game(bit_, inter->font, font2_, pal, true, local_net));
   }
@@ -534,7 +534,7 @@ void Menu_multi_join::step() {
   if(lg && (list_game->in_listbox(inter->double_clicked) || result==b_join)) {
     Packet_gameinfo *p = lg->p;
     if(p->version==20 || p->version==22 || p->version==23 || p->version==Config::net_version) {
-      if(address[0] == 0)
+      if(address[0] == 0 && local_net)
         refresh();
       join_game(p->name, p->from_addr, p->port);
     }

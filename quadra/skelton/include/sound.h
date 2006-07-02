@@ -92,7 +92,6 @@ public:
 	Sample(Res& re, int nb);
 	virtual ~Sample();
 	void stop();
-	int refcount;
 };
 
 #ifdef UGS_LINUX

@@ -56,7 +56,6 @@ inline int closesocket(int fd) {
 #include "net_buf.h"
 #include "http_request.h"
 #include "net.h"
-#include "byteorder.h"
 
 RCSID("$Id$")
 
@@ -210,7 +209,7 @@ bool Net_connection::checktcp() {
 	if(_state!=connected)
 		return false;
 	if(buf->size()>=sizeof(Word)) {
-		Word s = INTELWORD(*(Word *) buf->get());
+		Word s = *(Word *) buf->get();
 		if(buf->size()>=sizeof(Word)+s)
 			return true;
 	}
@@ -222,7 +221,7 @@ void Net_connection::receivetcp(Net_buf *p) {
 		return;
 	p->from = this;
 	p->from_addr = INADDR_LOOPBACK;
-	Word size = INTELWORD(*(Word *) buf->get());
+	Word size = *(Word *) buf->get();
 	memcpy(p->buf, buf->get()+sizeof(Word), size);
 	buf->remove_from_start(size+sizeof(Word));
 	incoming_inactive=0;
@@ -250,7 +249,7 @@ void Net_connection::sendtcp(Packet *p2) {
 	p2->write(&p);
 	Word size=p.len();
 	static Byte outbuf[1026];
-	*(Word *) outbuf=INTELWORD(size);
+	*(Word *) outbuf=size;
 	memcpy(&outbuf[2], p.buf, size);
 	sendtcp(outbuf, size+2);
 }
@@ -479,7 +478,7 @@ bool Net_connection_tcp::checktcp() {
 		incoming_size+=temp;
 	}
 	if(tcpbufsize>=sizeof(Word)) {
-		Word pacsize=INTELWORD(*(Word *)tcpbuf);
+		Word pacsize=*(Word *)tcpbuf;
 		if(!pacsize || (pacsize >= NETBUF_SIZE && pacsize != (('/'*256) +'/'))) {
 			skelton_msgbox("Garbage received on connection #%i (%04X). Shutting it.\n", tcpsock, pacsize);
 			_state=disconnected; // forcing a graceful shutdown
@@ -555,7 +554,7 @@ void Net_connection_tcp::sendtcp(Packet *p2) {
 	p2->write(&p);
 	Word size=p.len();
 	static Byte outbuf[1026];
-	*(Word *) outbuf=INTELWORD(size);
+	*(Word *) outbuf=size;
 	memcpy(&outbuf[2], p.buf, size);
 	sendtcp(outbuf, size+2);
 }
@@ -1043,7 +1042,7 @@ void Net::start_server(bool sock) {
 		else {
 			skelton_msgbox("Ok\n");
 			sockaddr_in sin;
-			socklen_t len=sizeof(sin);
+			addr_size_t len=sizeof(sin);
 			callwsa(getsockname(sc->getFD(), (sockaddr *) &sin, &len));
 			sc->from=ntohl(sin.sin_addr.s_addr);
 			msgbox("server_connection: %p\n", sc);
@@ -1291,7 +1290,7 @@ void Net::packetreceived(Net_buf *nb, bool tcp) {
 
 void Net::receiveudp(int sock, Net_buf *p) {
 	sockaddr_in tsin;
-	socklen_t tsin_size = sizeof(tsin);
+	addr_size_t tsin_size = sizeof(tsin);
 	int temp = recvfrom(sock, (char *) p->buf, NETBUF_SIZE, 0, (sockaddr *) &tsin, &tsin_size);
 	p->from = NULL;
 	p->from_addr = ntohl(tsin.sin_addr.s_addr);
@@ -1314,7 +1313,7 @@ bool Net::accept() {
 	if(!active)
 		return false;
 	sockaddr_in bob;
-	socklen_t boblen=sizeof(bob);
+	addr_size_t boblen=sizeof(bob);
 
 	if(!server_connection || server_connection->state()==Net_connection::invalid)
 		return false;

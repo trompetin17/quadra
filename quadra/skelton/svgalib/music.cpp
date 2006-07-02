@@ -18,7 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "autoconf.h"
 #ifndef NDEBUG
 #include <stdio.h>
 #endif
@@ -26,17 +25,12 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
-#ifdef HAVE_LINUX_CDROM_H
 #include <linux/cdrom.h>
-#endif
 #include "error.h"
 #include "types.h"
-#include "command.h"
 #include "music.h"
 
 RCSID("$Id$")
-
-#ifdef HAVE_LINUX_CDROM_H
 
 #define CDROM_DEVICE "/dev/cdrom"
 
@@ -45,7 +39,6 @@ private:
   int fd;
   int playing;
   bool loop_all;
-  bool is_playing;
 	unsigned char starttrack;
 	unsigned char endtrack;
 public:
@@ -58,28 +51,14 @@ public:
   virtual void stop();
 };
 
-#endif
-
 Music *music=NULL;
 
-#ifndef HAVE_LINUX_CDROM_H
-
 Music* Music::alloc() {
-  return new MusicNull;
-}
-
-#else
-
-Music* Music::alloc() {
-  if(!command.token("nocd"))
-    return new MusicLinux;
-  else
-    return new MusicNull;
+	return new MusicLinux;
 }
 
 MusicLinux::MusicLinux() {
   active = false;
-  is_playing = false;
   open();
 }
 
@@ -113,8 +92,6 @@ void MusicLinux::play(int quel, bool loop) {
   if(status < 0)
     perror("CDROMPLAYTRKIND");
 #endif
-
-  is_playing = true;
 }
 
 void MusicLinux::replay() {
@@ -124,7 +101,7 @@ void MusicLinux::replay() {
 void MusicLinux::stop() {
 	int status;
 
-  if(!active || !is_playing)
+  if(!active)
     return;
 
 	status = ioctl(fd, CDROMSTOP);
@@ -176,4 +153,3 @@ void MusicLinux::close() {
   active = false;
 }
 
-#endif

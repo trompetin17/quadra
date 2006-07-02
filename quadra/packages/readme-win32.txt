@@ -1,8 +1,9 @@
-Quadra version 1.2.0 for Windows
-Copyright (c) 1998-2003 Ludus Design Inc.
+Quadra version 1.1.8 for Windows
+Copyright (c) 1998-2001 Ludus Design Inc.
 All rights reserved.
 
-THANK YOU for downloading Quadra. This document contains installing information and references to our support for Quadra.
+THANK YOU for downloading Quadra. This document contains installing information
+and references to our support for Quadra.
 
 Quadra is an addictive puzzle and competitive, action-packed multiplayer game all-in-one!
 
@@ -19,10 +20,15 @@ Here are some key features:
 -  Windows and Linux versions available
 
 PREVIOUS QUADRA VERSION
-If you have any version of Quadra older than 1.1.9, we recommend that you uninstall it first since we have changed our install system and cannot guarantee that installing this version over an old version will work.
+
+If you had previously installed Quadra (such as version 1.1.3), the installer will warn you that it has detected your previous installation. You MUST ensure that Quadra and QSnoop are not currently running before proceding. You can look for QSnoop in your Windows tray-bar. If it's there, close it by right-clicking on the small icon and select "Exit".
+
 You should choose to install in the same folder as your previous version. Your recorded demo files and settings won't be overwritten.
 
 DIRECTX
-You'll need to have Microsoft DirectX version 5.0 (or more) for Quadra. If you have Windows NT, you'll need to update to the latest service pack. Please visit our web site for link and info about these requirements at: http://quadra.sourceforge.net/
-Quadra has been succesfully tested with DirectX 7, 8 and 9.
+
+You'll need to have Microsoft DirectX version 5.0 (or more) for Quadra. If you have Windows NT, you'll need to update to the latest service pack. Please visit our web site for link and info about these requirements at:
+http://www.ludusdesign.com/links.html
+
+Quadra has been succesfully tested with DirectX 7.0 and DirectX 8.0
 

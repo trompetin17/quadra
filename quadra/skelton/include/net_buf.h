@@ -31,14 +31,12 @@ public:
 	Dword from_addr;
 	Byte buf[NETBUF_SIZE];
 	void write_dword(Dword v) {
-    *point++ = (v >> 24) & 0xff;
-    *point++ = (v >> 16) & 0xff;
-    *point++ = (v >> 8)  & 0xff;
-    *point++ = v & 0xff;
+		*(Dword *) point = htonl(v);
+		point += sizeof(Dword);
 	}
 	void write_word(Word v) {
-    *point++ = (v >> 8)  & 0xff;
-    *point++ = v & 0xff;
+		*(Word *) point = htons(v);
+		point += sizeof(Word);
 	}
 	void write_byte(Byte v) {
 		*(Byte *) point = v;
@@ -56,21 +54,17 @@ public:
 	}
 	Dword read_dword() {
 		if(((unsigned int)len())<=NETBUF_SIZE-sizeof(Dword)) {
-      Dword ret;
-      ret = *point << 24; point++;
-      ret |= *point << 16; point++;
-      ret |= *point << 8; point++;
-      ret |= *point; point++;
-      return ret;
+			Dword ret = ntohl(*(Dword *) point);
+			point += sizeof(Dword);
+			return ret;
 		}
 		else
 			return 0;
 	}
 	Word read_word() {
 		if(((unsigned int)len())<=NETBUF_SIZE-sizeof(Word)) {
-      Dword ret;
-      ret = *point << 8; point++;
-      ret |= *point; point++;
+			Word ret = ntohs(*(Word *) point);
+			point += sizeof(Word);
 			return ret;
 		}
 		else

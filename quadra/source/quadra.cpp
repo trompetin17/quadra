@@ -24,12 +24,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #endif
-#ifdef UGS_DIRECTX
-#include <shlobj.h>
-#include <shlwapi.h>
-#endif
 #include <stdlib.h>
-#include <exception>
 #include "packet.h"
 #include "types.h"
 #include "net.h"
@@ -1822,15 +1817,6 @@ void Player_init::net_call(Packet *p2) {
 
 void init_directory() {
 	strcpy(quadradir, exe_directory);
-#ifdef UGS_DIRECTX
-	if(SHGetFolderPath(0, CSIDL_APPDATA|CSIDL_FLAG_CREATE, 0, SHGFP_TYPE_CURRENT, quadradir) < 0) {
-		msgbox("SHGetFolderPath failed, using exe_directory");
-	}
-	else {
-		PathAppend(quadradir, "Quadra");
-		CreateDirectory(quadradir, 0);
-	}
-#endif
 #ifdef UGS_LINUX
 	struct passwd *pw = NULL;
 
@@ -2165,9 +2151,6 @@ void start_game() {
 	if(!dir)
 		dir = DATAGAMESDIR;
 #endif
-#ifdef UGS_DIRECTX
-	dir = exe_directory;
-#endif
 	resmanager=new Resmanager();
 	snprintf(fn, sizeof(fn) - 1, "%s/quadra.res", dir);
 	resmanager->loadresfile(fn);
@@ -2302,8 +2285,6 @@ void start_game() {
 				char *temp=command_get_param("attack2clean <type> [strength]");
 				p.potato_clean_attack=read_attack_param(temp);
 			}
-			if(command.token("boringrules"))
-				p.boring_rules = true;
 			if(command.token("nolevelup"))
 				p.level_up = false;
 			if(command.token("levelup"))
@@ -2361,19 +2342,6 @@ void start_game() {
 			}
 		}
 		else {
-			if(command.token("connectfile")) {
-				char *temp = command_get_param("connectfile <filename>");
-				char st[1024];
-				Res_dos file(temp);
-				if(file.exist) {
-					snprintf(st, sizeof(st), "-connect %*.*s", file.size(), file.size(), (char *)file.buf());
-					st[sizeof(st) - 1] = 0;
-					command.add(st);
-				}
-				else
-					msgbox("Can't find connectfile %s, ignoring.\n", temp);
-
-			}
 			if(command.token("connect")) {
 				if(!net->active)
 					(void) new Error("Network failed to initialize or not present\nCan't connect.\n");
@@ -2419,7 +2387,7 @@ void start_game() {
 				try {
 					overmind.step();
 				}
-				catch(std::exception *e) {
+				catch(exception *e) {
 					msgbox("Exception caught from overmind.step(): %s\n", e->what());
 				}
 				#ifdef PAINTDETECTOR2000
@@ -2438,7 +2406,7 @@ void start_game() {
 			try {
 				ecran->draw_zone();
 			}
-			catch(std::exception *e) {
+			catch(exception *e) {
 				msgbox("Exception caught from ecran->draw_zone(): %s\n", e->what());
 			}
 

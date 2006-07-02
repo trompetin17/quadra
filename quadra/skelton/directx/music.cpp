@@ -23,7 +23,6 @@
 #include "types.h"
 #include "error.h"
 #include "music.h"
-#include "command.h"
 
 RCSID("$Id$")
 
@@ -45,10 +44,7 @@ public:
 Music *music=NULL;
 
 Music* Music::alloc() {
-  if(!command.token("nocd"))
-    return new MusicWin32;
-  else
-    return new MusicNull;
+	return new MusicWin32;
 }
 
 MusicWin32::MusicWin32() {

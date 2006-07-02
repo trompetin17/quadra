@@ -174,7 +174,6 @@ public:
 	Byte potato_team;
 	bool single;
 	bool terminated;
-	bool boring_rules;
 	Packet_gameserver() {
 		packet_id = P_GAMESERVER;
 		name[0] = 0;

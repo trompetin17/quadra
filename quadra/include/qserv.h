@@ -25,13 +25,11 @@
 
 class Http_post;
 class Dict;
-class Textbuf;
 
 class Qserv {
 	Http_post *req;
 	char status[256];
 	Dict *reply;
-	void create_req();
 public:
 	static Dword http_addr;
 	static int http_port;
@@ -39,7 +37,6 @@ public:
 	virtual ~Qserv();
 	bool done();
 	void add_data(const char *s, ...);
-	void add_data_large(const Textbuf &buf); // 'buf' must be url-encoded already
 	void send();
 	bool bad_reply();
 	const char *get_status();
