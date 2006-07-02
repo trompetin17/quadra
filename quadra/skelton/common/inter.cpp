@@ -77,7 +77,7 @@ void Zone::leaved() {
 void Zone::set_child(Zone* chil) {
 	child = chil;
 	child->parent = this;
-	child->kb_focusable = false; // prevents focusing a 'child'
+	child->kb_focusable = false; // empeche de focuser un 'child'
 }
 
 int Zone::in() const {
@@ -101,8 +101,8 @@ Zone_sprite::Zone_sprite(Inter *in, const char *nam, int px, int py): Zone(in) {
 		x = (video->width - w) / 2;
 	if(py == -1)
 		y = (video->height - h) / 2;
-	w = h = 0; // special: zone_sprite is not clickable
-	stay_on_top = true; // special: the zone_sprite are constantly redrawn
+	w = h = 0; // special: zone_sprite pas clickable
+	stay_on_top = true; // special: les zone_sprite se reblittent constamment.
 }
 
 Zone_sprite::~Zone_sprite() {
@@ -465,7 +465,7 @@ Zone_panel(in, px, py, pw, in->font->height()+2) {
 
 Zone_text_input::~Zone_text_input() {
 	if(focus)
-		lost_focus(1); // force losing the focus if delete zone
+		lost_focus(1); // force une perte de focus si delete zone
 	delete font_selected;
 }
 
@@ -483,7 +483,7 @@ void Zone_text_input::clicked(int quel) {
 		focus = 10;
 		curpos = strlen(st);
 		actual_len = curpos;
-		select_start = 0; // select_all by default
+		select_start = 0; // select_all par defaut
 		panx = 0;
 		input->deraw();
 		input->clear_key();
@@ -553,8 +553,8 @@ void Zone_text_input::draw() {
 				x2 = curpos;
 				x1 = select_start;
 			}
-			x3 = inter->font->width(st, x1)-2; // -2: removes the 'shrink' added by width()
-			x4 = inter->font->width(st, x2)-2; // -2: removes the 'shrink' added by width()
+			x3 = inter->font->width(st, x1)-2; // -2: enleve le 'shrink' ajouter par width()
+			x4 = inter->font->width(st, x2)-2; // -2: enleve le 'shrink' ajouter par width()
 			pan->rect(x3-panx, 0, x4-x3+2, inter->font->height(), curcolor);
 
 			char tube_char = st[x2];
@@ -584,13 +584,13 @@ void Zone_text_input::lost_focus(int cancel) {
 void Zone_text_input::process() {
 	Byte c;
 	if(focus) {
-		// clipboard support in Windows
+		// Support du Clipboard en Doze
 		check_clipboard();
 		for(int i=0; i<input->key_pending; i++) {
 			c = input->key_buf[i].c;
 			if((c == 8) || (c == 127)) {  // backspace
-				if(!cut_selection()) { // if nothing selected has been cut,
-					if(curpos > 0) { // proceed to a normal backspace
+				if(!cut_selection()) { // si rien de selecter n'a ete couper,
+					if(curpos > 0) { // procede a un backspace normal
 						curpos--;
 						memmove(&st[curpos], &st[curpos+1], actual_len - curpos);
 						actual_len--;
@@ -598,10 +598,10 @@ void Zone_text_input::process() {
 				}
 				continue;
 			}
-			if(input->key_buf[i].special) { // moving keys and others
+			if(input->key_buf[i].special) { // touches de deplacement et autres
 				if(c == 46) {// delete
-					if(!cut_selection()) { // if nothing selected has been cut,
-						if(curpos != actual_len) { // proceed with a normal delete
+					if(!cut_selection()) { // si rien de selecter n'a ete couper,
+						if(curpos != actual_len) { // procede a un delete normal
 							memmove(&st[curpos], &st[curpos+1], actual_len - curpos);
 							actual_len--;
 						}
@@ -615,10 +615,10 @@ void Zone_text_input::process() {
 						select_start = -1;
 					}
 				}
-				if(c == 37 && curpos > 0) { // left arrow
+				if(c == 37 && curpos > 0) { // fleche gauche
 					curpos--;
 				}
-				if(c == 39 && curpos != actual_len) { // right arrow
+				if(c == 39 && curpos != actual_len) { // fleche droite
 					curpos++;
 				}
 				if(c == 36) { // home
@@ -764,8 +764,8 @@ void Zone_text_input::entered() {
 
 Zone_input_numeric::Zone_input_numeric(Inter* in, int *pvar, int ncar, int pmin, int pmax, const Palette &pal, int px, int py, int pw):
 	Zone_text_input(in, pal, (sprintf(temp_st, "%i",*pvar), temp_st), ncar, px, py, pw) {
-	/* is there any other way to write the previous line, or
-	   is C++ really shitty? */
+	/* P.S.: ya-tu une autre facon d'ecrire la ligne si-dessus, ou ben
+	   le C++ c'est vraiment de la marde? */
 	var_min = pmin;
 	var_max = pmax;
 	num_var = pvar;
@@ -778,7 +778,7 @@ void Zone_input_numeric::lost_focus(int cancel) {
 			num = 0;
 		if(num >= var_min && num <= var_max) {
 			*num_var = num;
-		} else {  // if invalid, cancel the input
+		} else {  // si invalide, cancel l'entree
 			cancel = 1;
 		}
 	}
@@ -817,7 +817,7 @@ void Zone_text_field::set_val(int* s) {
 }
 
 void Zone_text_field::set_val(const char* s) {
-	var = NULL; // it's a string
+	var = NULL; // c'est une string
 	if(s) {
 		strncpy(st, s, sizeof(st)-1);
 		st[sizeof(st)-1] = 0;
@@ -837,9 +837,9 @@ void Zone_text_field::draw() {
 		video->vb->rect(x+1, y+1, w-2, h-2, 210);
 	}
 	if(var) {
-		font->draw(st, pan, w - font->width(st) - 3, 0);  // numbers are right-aligned
+		font->draw(st, pan, w - font->width(st) - 3, 0);  // alignement des numerics a droite
 	} else {
-		font->draw(st, pan, 3, 0);  // text is left-aligned
+		font->draw(st, pan, 3, 0);  // alignement du texte a gauche
 	}
 }
 
@@ -964,7 +964,7 @@ void Inter::process() {
 	}
 
 	if(focus) {
-		int lost = -1;
+		int lost=-1;
 		if(input->quel_key == KEY_ESCAPE)
 			lost=1;
 		if(input->quel_key == KEY_ENTER || input->quel_key == KEY_PADENTER)
@@ -977,10 +977,10 @@ void Inter::process() {
 			input->quel_key = -1;
 		}
 	} else {
-		// keyboard control stuff
+		// stuff pour keyboard control
 		if(!kb_visible) {
-			if(kb_focus != NULL) { // if a zone was focused and the kb_visible became false
-				de_tag(kb_focus); // we must untag it
+			if(kb_focus != NULL) { // si une zone etait focuser et que le kb_visible est devenu faux
+				de_tag(kb_focus); // il faut la detagger.
 				kb_focus = NULL;
 			}
 			if(kb_active) {
@@ -997,7 +997,7 @@ void Inter::process() {
 					}
 					if(!kb_focus)
 						kb_focus = kb_find_upmost();
-					if(kb_focus) { // if there is a focusable zone in the whole interface
+					if(kb_focus) { // si une zone 'focusable' dans toute l'interface
 						last_mouse_x = cursor->x;
 						last_mouse_y = cursor->y;
 						kb_anim = 0;
@@ -1012,7 +1012,7 @@ void Inter::process() {
 			}
 		} else {
 			if(last_mouse_x != cursor->x || last_mouse_y != cursor->y || alt_tab) {
-				// the mouse has moved, remove the kb_focus
+				// la souris a bouge: enleve le kb_focus
 				kb_visible = false;
 				if(kb_focus) {
 					de_tag(kb_focus);
@@ -1022,7 +1022,7 @@ void Inter::process() {
 				if(!kb_focus) {
 					kb_focus = kb_find_closest();
 				}
-				if(kb_focus && (kb_focus->enabled < 0 || !kb_focus->kb_focusable)) { // if the keyboard zone has been disabled or is not kb_focusable any more
+				if(kb_focus && (kb_focus->enabled < 0 || !kb_focus->kb_focusable)) { // si la zone keyboard a ete disabler ou n'est plus kb_focusable
 					de_tag(kb_focus);
 					kb_focus = kb_find_closest();
 					if(kb_focus)
@@ -1078,7 +1078,7 @@ void Inter::process() {
 	}
 	if(cursor && !cursor->visible) {
 		if(last_mouse_x != cursor->x || last_mouse_y != cursor->y) {
-			// the mouse moved, make the pointer reappear
+			// la souris a bouge: refait apparaitre le curseur
 			cursor->visible = true;
 		}
 	}
@@ -1274,7 +1274,7 @@ Zone *Inter::kb_find_prev() {
 	int i;
 	int debut =nzone()-1;
 
-	// find the currently focused zone
+	// trouve la zone actuellement focuser...
 	for(i = nzone()-1; i >= first_zone; i--) {
 		Zone *z = zone[i];
 		if(z == kb_focus) {
@@ -1282,26 +1282,26 @@ Zone *Inter::kb_find_prev() {
 			break;
 		}
 	}
-	// then find the previous focusable zone
+	// ensuite trouve la 'previous' zone focusable (a partir de celle trouve)
 	for(i = debut-1; i >= first_zone; i--) {
 		Zone *z = zone[i];
 		if(z->enabled >=0 && z->kb_focusable)
 			return z;
 	}
-	// if there is nothing good, restart from the end (to loop)
+	// si rien de bon, repart de la fin (pour looper)
 	for(i = nzone()-1; i >= first_zone; i--) {
 		Zone *z = zone[i];
 		if(z->enabled >=0 && z->kb_focusable)
 			return z;
 	}
-	return NULL; // if nothing at all
+	return NULL; // si rien pentoute
 }
 
 Zone *Inter::kb_find_next() {
 	int i;
 	int debut =0;
 
-	// find the currently focused zone
+	// trouve la zone actuellement focuser...
 	for(i = nzone()-1; i >= first_zone; i--) {
 		Zone *z = zone[i];
 		if(z == kb_focus) {
@@ -1309,19 +1309,19 @@ Zone *Inter::kb_find_next() {
 			break;
 		}
 	}
-	// then find the next focusable zone
+	// ensuite trouve la 'next' zone focusable (a partir de celle trouve)
 	for(i = debut+1; i < nzone(); i++) {
 		Zone *z = zone[i];
 		if(z->enabled >=0 && z->kb_focusable)
 			return z;
 	}
-	// if there is nothing good, restart from the start (to loop)
+	// si rien de bon, repart du debut (pour looper)
 	for(i = first_zone; i < nzone(); i++) {
 		Zone *z = zone[i];
 		if(z->enabled >=0 && z->kb_focusable)
 			return z;
 	}
-	return NULL; // if nothing at all
+	return NULL; // si rien pentoute
 }
 
 void Inter::select_zone(Zone *z, int quel) {
@@ -1350,14 +1350,14 @@ void Inter::select_zone(Zone *z, int quel) {
 		z->clicked(quel);
 	}
 
-	// double-click (TODO: doesn't support 'child' zones)
+	// double-click (TODO: ne supporte pas les 'child' Zone)
 	if(double_clicked_first == z &&	double_click_delay > 0) {
 		double_clicked = z;
 		double_clicked_first = NULL;
 		z->double_clicked();
 	} else {
 		double_clicked_first = z;
-		double_click_delay = 70; // fixed 70 hundreths of second delay
+		double_click_delay = 70; // delai fix de 70/100 de seconde
 	}
 
 	if(kb_visible && kb_focus != z) {
@@ -1366,7 +1366,7 @@ void Inter::select_zone(Zone *z, int quel) {
 		kb_focus = z;
 		tag(kb_focus);
 	}
-	input->mouse.quel = -1; // clear to prevent multiple clicks in the same frame
+	input->mouse.quel = -1; // clear pour empecher multiple click dans la meme frame
 }
 
 void Inter::kb_draw_focus() {

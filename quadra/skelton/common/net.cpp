@@ -56,7 +56,6 @@ inline int closesocket(int fd) {
 #include "net_buf.h"
 #include "http_request.h"
 #include "net.h"
-#include "byteorder.h"
 
 RCSID("$Id$")
 
@@ -210,7 +209,7 @@ bool Net_connection::checktcp() {
 	if(_state!=connected)
 		return false;
 	if(buf->size()>=sizeof(Word)) {
-		Word s = INTELWORD(*(Word *) buf->get());
+		Word s = *(Word *) buf->get();
 		if(buf->size()>=sizeof(Word)+s)
 			return true;
 	}
@@ -222,7 +221,7 @@ void Net_connection::receivetcp(Net_buf *p) {
 		return;
 	p->from = this;
 	p->from_addr = INADDR_LOOPBACK;
-	Word size = INTELWORD(*(Word *) buf->get());
+	Word size = *(Word *) buf->get();
 	memcpy(p->buf, buf->get()+sizeof(Word), size);
 	buf->remove_from_start(size+sizeof(Word));
 	incoming_inactive=0;
@@ -250,7 +249,7 @@ void Net_connection::sendtcp(Packet *p2) {
 	p2->write(&p);
 	Word size=p.len();
 	static Byte outbuf[1026];
-	*(Word *) outbuf=INTELWORD(size);
+	*(Word *) outbuf=size;
 	memcpy(&outbuf[2], p.buf, size);
 	sendtcp(outbuf, size+2);
 }
@@ -298,7 +297,7 @@ Dword Net_connection::getbufsize() const {
 	return buf->size();
 }
 
-/* constructor for client_connection and server_connection */
+//Constructeur pour client_connection et server_connection
 Net_connection_tcp::Net_connection_tcp(int p, bool ppacket_based) {
 	outgoing_buf.reserve(1024);
 	packet_based=ppacket_based;
@@ -312,7 +311,7 @@ Net_connection_tcp::Net_connection_tcp(int p, bool ppacket_based) {
 	tcpbufsize=0;
 	tcppacsize=0;
 
-	tcpsock = socket(AF_INET, SOCK_STREAM, 0);
+	tcpsock = socket(PF_INET, SOCK_STREAM, 0);
 	if(net->getlasterror(tcpsock)) {
 		return;
 	}
@@ -355,7 +354,7 @@ Net_connection_tcp::Net_connection_tcp(int p, bool ppacket_based) {
 	skelton_msgbox("Opening TCP socket %i\n",tcpsock);
 }
 
-/* constructor for accepted connections */
+//Constructeur pour connections acceptées
 Net_connection_tcp::Net_connection_tcp(int sock, Dword adr, int port, bool ppacket_based) {
 	outgoing_buf.reserve(1024);
 	packet_based=ppacket_based;
@@ -439,10 +438,10 @@ void Net_connection_tcp::connect(const char* host, int port) {
 	if(net->name_handle==0) {
 #endif /* UGS_DIRECTX */
 		destaddr = net->getaddress(host);
-		if(net->port_resolve) // if 'host' contains a port, like "host:port"
-			destport = net->port_resolve; // override the specified port
+		if(net->port_resolve) // si 'host' contient un port genre "host:port"
+			destport = net->port_resolve; // override le port en parametre
 		msgbox("Net_connection_tcp::connect: host=%s, destaddr=%x port=%i\n", host, destaddr, destport);
-		if(destaddr) { // if immediately resolved
+		if(destaddr) { // si resou immediatement
 			connect(destaddr, destport);
 			return;
 		}
@@ -459,8 +458,8 @@ bool Net_connection_tcp::checktcp() {
 		return false;
 	if(tcppacsize)
 		return true;
-	while(net->checkreceive(tcpsock) > 0 && tcpbufsize<NETBUF_SIZE) {
-		int temp = recv(tcpsock, (char *) &tcpbuf[tcpbufsize], NETBUF_SIZE-tcpbufsize, 0);
+	while(net->checkreceive(tcpsock) > 0 && tcpbufsize<1024) {
+		int temp = recv(tcpsock, (char *) &tcpbuf[tcpbufsize], 1024-tcpbufsize, 0);
 		// reset by remote side !
 		net->getlasterror(temp);
 		char *msg = net->failed();
@@ -479,8 +478,8 @@ bool Net_connection_tcp::checktcp() {
 		incoming_size+=temp;
 	}
 	if(tcpbufsize>=sizeof(Word)) {
-		Word pacsize=INTELWORD(*(Word *)tcpbuf);
-		if(!pacsize || (pacsize >= NETBUF_SIZE && pacsize != (('/'*256) +'/'))) {
+		Word pacsize=*(Word *)tcpbuf;
+		if(!pacsize || (pacsize >= 1024 && pacsize != (('/'*256) +'/'))) {
 			skelton_msgbox("Garbage received on connection #%i (%04X). Shutting it.\n", tcpsock, pacsize);
 			_state=disconnected; // forcing a graceful shutdown
 			return false;
@@ -516,7 +515,7 @@ void Net_connection_tcp::receivetcp(Net_buf *p) {
 	p->from  = this;
 	p->from_addr = from;
 	memcpy(p->buf, tcpbuf+sizeof(Word), tcppacsize);
-	memmove(tcpbuf, tcpbuf+sizeof(Word)+tcppacsize, NETBUF_SIZE-(tcppacsize+sizeof(Word)));
+	memmove(tcpbuf, tcpbuf+sizeof(Word)+tcppacsize, 1024-(tcppacsize+sizeof(Word)));
 	tcpbufsize-=tcppacsize+sizeof(Word);
 	tcppacsize=0;
 }
@@ -555,7 +554,7 @@ void Net_connection_tcp::sendtcp(Packet *p2) {
 	p2->write(&p);
 	Word size=p.len();
 	static Byte outbuf[1026];
-	*(Word *) outbuf=INTELWORD(size);
+	*(Word *) outbuf=size;
 	memcpy(&outbuf[2], p.buf, size);
 	sendtcp(outbuf, size+2);
 }
@@ -576,6 +575,7 @@ void Net_connection_tcp::commit() {
 	if(!size)
 		return;
 	Dword temp = send(tcpsock, (const char *)(outgoing_buf.get()), size, 0);
+	outgoing_buf.resize(0);
 	if(net->getlasterror(temp)) {
 		char st[64];
 		net->stringaddress(st, address(), getdestport());
@@ -583,11 +583,10 @@ void Net_connection_tcp::commit() {
 		_state=disconnected;
 		return;
 	}
-	outgoing_buf.remove_from_start(temp);
-	if(outgoing_buf.size() > 16384) {
+	if(temp != size) {
 		char st[64];
 		net->stringaddress(st, address(), getdestport());
-		skelton_msgbox("Net_connection_tcp::commit: outgoing_buf size exceeds maximum: %i! Closing %s.\n", outgoing_buf.size(), st);
+		skelton_msgbox("Net_connection_tcp::commit: sent %i bytes but packet was %i! Closing %s.\n", temp, size, st);
 		_state=disconnected;
 		return;
 	}
@@ -709,14 +708,13 @@ Net::~Net() {
 void Net::init_local_addresses() {
 	if(!active)
 		return;
-	skelton_msgbox("Net::init_local_addresses: getting hostname\n");
 	if(getlasterror(gethostname(host_name, 1024))) {
 		skelton_msgbox("Net::Net: gethostname() failed. Ignoring\n");
 		host_name[0] = 0;
 	}
 	else {
 		skelton_msgbox("Net::Net: gethostname() is %s\n", host_name);
-		// find the list of IP interfaces
+		// trouve la liste des interfaces IP du cok en cours
 		struct hostent *host;
 		host = gethostbyname(host_name);
 		if(host) {
@@ -735,7 +733,7 @@ void Net::init_local_addresses() {
 				if(a>>16==192*256+168)
 					pub = false;
 				//Same thing for 172.16/12
-				if(a>>20==172*16+1)
+				if(a>>20==172*64+16)
 					pub = false;
 				//And again for 10/8
 				if(a>>24==10)
@@ -793,7 +791,7 @@ int Net::open_udpsock(Dword adr) {
 	if(!active)
 		return -1;
 	int sock;
-	sock = socket(AF_INET, SOCK_DGRAM, 0);
+	sock = socket(PF_INET, SOCK_DGRAM, 0);
 	if(getlasterror(sock)) {
 		skelton_msgbox("Net::open_udpsock: error creating socket [%s]\n", failed());
 		return -1;
@@ -880,7 +878,7 @@ void Net::step(bool loop_only) {
 			char *temp = failed();
 			if(temp) {
 				skelton_msgbox("Net::step: net error in select(): [%s]. Ignored\n", temp);
-				break; // flush a potential network error
+				break; // flush erreur potentiel de net
 			}
 			if(!tube && done)
 				break;
@@ -1043,7 +1041,7 @@ void Net::start_server(bool sock) {
 		else {
 			skelton_msgbox("Ok\n");
 			sockaddr_in sin;
-			socklen_t len=sizeof(sin);
+			addr_size_t len=sizeof(sin);
 			callwsa(getsockname(sc->getFD(), (sockaddr *) &sin, &len));
 			sc->from=ntohl(sin.sin_addr.s_addr);
 			msgbox("server_connection: %p\n", sc);
@@ -1223,12 +1221,12 @@ Dword Net::getaddress(const char *host) {
 	        lAddr = ntohl(*(Dword*)lpstHost->h_addr_list[0]);
 		    }
 			#endif
-			// should be replaced by this (async)
+			// devrait etre remplacer par ceci (async):
 			#ifdef UGS_DIRECTX
 				gethostbyname_cancel();
 				name_handle = WSAAsyncGetHostByName(hwnd, WM_USER, tube, name_buf, MAXGETHOSTSTRUCT);
-				if(name_handle == 0) {// if error return 0 
-					name_resolve = 0; // impossible to resolve DNS because of Winsock and/or Windows
+				if(name_handle == 0) {// si erreur retourne 0
+					name_resolve = 0; // impossible de résoudre DNS à cause de Winsock et/ou Doze
 				}
 			#endif
     }
@@ -1291,8 +1289,8 @@ void Net::packetreceived(Net_buf *nb, bool tcp) {
 
 void Net::receiveudp(int sock, Net_buf *p) {
 	sockaddr_in tsin;
-	socklen_t tsin_size = sizeof(tsin);
-	int temp = recvfrom(sock, (char *) p->buf, NETBUF_SIZE, 0, (sockaddr *) &tsin, &tsin_size);
+	addr_size_t tsin_size = sizeof(tsin);
+	int temp = recvfrom(sock, (char *) p->buf, 1024, 0, (sockaddr *) &tsin, &tsin_size);
 	p->from = NULL;
 	p->from_addr = ntohl(tsin.sin_addr.s_addr);
 	if(getlasterror(temp)) {
@@ -1314,7 +1312,7 @@ bool Net::accept() {
 	if(!active)
 		return false;
 	sockaddr_in bob;
-	socklen_t boblen=sizeof(bob);
+	addr_size_t boblen=sizeof(bob);
 
 	if(!server_connection || server_connection->state()==Net_connection::invalid)
 		return false;
@@ -1363,7 +1361,7 @@ bool Net::checkerror(int quel) {
 #ifdef UGS_DIRECTX
 	switch(quel) {
 //	case WSAEWOULDBLOCK:	last_error = "The socket is marked as non-blocking and this operation would block."; break;
-	case WSAEWOULDBLOCK: skelton_msgbox("Net::checkerror: WSAEWOULDBLOCK ignored.\n"); return false; // special: not really an error
+	case WSAEWOULDBLOCK: skelton_msgbox("Net::checkerror: WSAEWOULDBLOCK ignored.\n"); return false; // special: pas vraiment une erreur
 	case WSASYSNOTREADY: last_error = "The underlying network subsystem is not ready for network communication."; break;
 	case WSAVERNOTSUPPORTED: last_error = "The version of Winsock API support requested is not provided by this implementation."; break;
 	case WSAEINVAL:	last_error = "Operation invalid or not supported by this Windows Sockets DLL"; break;

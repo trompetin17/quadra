@@ -18,8 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef UGS_LINUX_SVGA
-
 #include "types.h"
 #include "wraplib.h"
 
@@ -108,6 +106,3 @@ public:
 extern "C" Svgalib* createSvgalib() {
   return new SvgalibImpl;
 }
-
-#endif /* UGS_LINUX_SVGA */
-

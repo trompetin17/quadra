@@ -18,8 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-// "bloc" is simply "block" in french.
-
 #include "color.h"
 #include "quadra.h"
 #include "bloc.h"
@@ -35,7 +33,8 @@ Bloc::Bloc(int q, int c, int px, int py) {
 	bx=px;
 	by=py;
 	calc_xy();
-	y -= 17<<4;  // to force the block to start at the beginning of its initiall position
+	y -= 17<<4;  // pour forcer le bloc a commencer au debut de sa
+							 // position initiale
 	rot=0;
 }
 

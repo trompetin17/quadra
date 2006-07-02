@@ -22,7 +22,6 @@
 #include "bitmap.h"
 #include "video.h"
 #include "sprite.h"
-#include "byteorder.h"
 
 RCSID("$Id$")
 
@@ -60,8 +59,8 @@ void Sprite::draw(const Bitmap& d, const int dx, const int dy) const {
 	for(int y=clip_y1; y<=clip_y2; y++) {
 		for(int i=clip_x1; i<=clip_x2; i++) {
 			Byte pel = *(operator[](y-ty)+(i-tx));
-			// optimization since the mask is always 0
-			// because of Svgalib
+			// optimisation etant donne que le mask est toujours == 0
+			// a cause de SVGALIB
 			if(pel)
 			  d.fast_pel(i, y, pel);
 		}
@@ -96,12 +95,9 @@ Fontdata::Fontdata(Res &res, int s) {
 	int w, h, rw;
 	for(int i=0; i<FONT_SIZE; i++) {
 		res.read(&w, sizeof(int));
-                w = INTELDWORD(w);
 		if(w != 0) {
 			res.read(&h, sizeof(int));
-                        h = INTELDWORD(h);
 			res.read(&rw, sizeof(int));
-                        rw = INTELDWORD(rw);
 			tmp = new Bitmap(w, h, rw);
 			res.read((*tmp)[0], rw*h);
 			spr[i] = new Sprite(*tmp, 0, 0, 0);
@@ -161,11 +157,11 @@ int Fontdata::translate(const char **m) const {
 	char c;
 	c = *(*m)++;
 	if(c == 32)
-		return -1;  // special code for space
+		return -1;  // code special pour l'espace
 	if(c > 32 && c < 127)
-		return c-33; // standard value
+		return c-33; // valeur standard
 	switch(c) {
-		// ascii 183 followed with a number to do a glyph
+		// ascii 183 suivit d'un chiffre pour faire un glyph (exemple: ·2)
 		case '·':
 			ret=(int) (*(*m)++)-48 + 133;
 			if(ret<133 || ret>137)

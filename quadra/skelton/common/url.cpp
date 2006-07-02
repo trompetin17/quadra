@@ -21,7 +21,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
-// for isalpha:
+//Pour isalpha:
 #include <ctype.h>
 #include "url.h"
 
@@ -59,6 +59,7 @@ void Url::getFull(char* buf) const {
 		sprintf(n, ":%i", getPort());
 		strcat(buf, n);
 	}
+	strcat(buf, "/");
 	strcat(buf, getPath());
 }
 
@@ -95,12 +96,8 @@ void Url::setPort(const Word p) {
 }
 
 void Url::setPath(const char* p) {
-	if(strlen(p)<sizeof(path)-1) {
-		if(p[0] != '/')
-			strcpy(path, "/");
-		else
-			path[0]=0;
-		strcat(path, p);
+	if(strlen(p)<sizeof(path)) {
+		strcpy(path, p);
 	}
 }
 
@@ -136,7 +133,7 @@ void Url::setFull(const char* u) {
 	//    '-' or '.' to be legal in scheme names. It just wouldn't
 	//    feel right (if everybody followed standards, life would
 	//    be boring anyway)
-	sep=strstr(rest, "://");
+	sep=strchr(rest, ':');
 	if(sep) {
 		bool legalscheme=true;
 		char* p;
@@ -151,13 +148,26 @@ void Url::setFull(const char* u) {
 			memcpy(buf, rest, len);
 			buf[len]=0;
 			setScheme(buf);
-			strcpy(rest, sep+3);
+			strcpy(rest, sep+1);
 		}
 		else
 			setScheme("");
 	}
 	else
 		setScheme("");
+	//Skip 2 slashes if present
+	if(rest[0]=='/' && rest[1]=='/') {
+		strcpy(rest, rest+2);
+	}
+	else {
+		//Skip a single '/' if present (we forgive fucked up urls)
+		if(rest[0]=='/') {
+			strcpy(rest, rest+1);
+		}
+		else {
+			//We don't even have 1 slash, no sweat
+		}
+	}
 	//The next slash is supposed to be our path separator
 	sep=strchr(rest, '/');
 	if(sep) {

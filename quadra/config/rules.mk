@@ -18,7 +18,7 @@
 #
 # $Id$
 
-.PHONY: clean distclean dustclean maintainerclean dist installdirs install ChangeLog
+.PHONY: clean distclean dustclean maintainerclean dist installdirs install
 
 dustclean:
 	rm -f $(wildcard $(shell find . -name 'core' -print) $(shell find . -name '*~' -print) $(shell find . -name '.#*' -print))
@@ -32,45 +32,29 @@ distclean: clean
 maintainerclean: distclean
 	rm -f $(wildcard $(REALCLEAN))
 
-dist: distclean quadra.spec configure ChangeLog manual-dist-stuff
-	rm -rf autom4te.cache
-
-ChangeLog:
-	rm -f ChangeLog
-	-cvs2cl.pl
+dist: distclean quadra.spec configure manual-dist-stuff
 
 installdirs:
-	mkdir -p $(bindir)
-	mkdir -p $(libgamesdir)
-	mkdir -p $(datagamesdir)
-	mkdir -p $(datadir)/pixmaps
+	mkdir $(prefix)
+	mkdir $(prefix)/games
+	mkdir $(prefix)/lib
+	mkdir $(prefix)/lib/games
 
 install: installdirs $(TARGETS)
-	$(INSTALL_PROGRAM) quadra $(bindir)/quadra
-ifdef UGS_LINUX_SVGA
-	$(INSTALL_PROGRAM) quadra-svga.so $(libgamesdir)/quadra-svga.so
-endif
-	$(INSTALL_DATA) quadra.res $(datagamesdir)/quadra.res
-	$(INSTALL_DATA) images/quadra.xpm $(datadir)/pixmaps/quadra.xpm
-# FIXME: the Quadra.desktop file should go to these places:
-# /etc/X11/applnk/Games/Quadra.desktop
-# /usr/share/gnome/apps/Games/Quadra.desktop
+	$(INSTALL_PROGRAM) quadra $(prefix)/games/quadra
+	$(INSTALL_PROGRAM) quadra-svga.so $(prefix)/lib/games/quadra-svga.so
+	$(INSTALL_DATA) quadra.res $(prefix)/lib/games/quadra.res
 
 quadra.spec: packages/quadra.spec.in source/config.cpp
-	sed -e 's%@VERSION@%$(VERSION)%g' >$@ <$<
-
-Quadra.desktop: packages/Quadra.desktop.in config/config.mk
-	sed -e 's%@bindir@%$(bindir)%g' -e 's%@datadir@%$(datadir)%g' >$@ <$<
+	sed $< -e 's/@VERSION@/$(VERSION)/g' > $@
 
 configure: configure.in
-	autoreconf
+	autoconf
 
 .PHONY: manual-dist-stuff
 manual-dist-stuff:
-	@echo "-----------------------------------------------------------"
 	@echo "remember to edit the version number in the following files:"
-	@echo "include/version.h"
-	@echo "packages/quadra.nsi"
+	@echo "VisualC++/quadra.rc"
 	@echo "packages/readme-win32.txt"
 
 ifeq ($(MAKECMDGOALS),dustclean)

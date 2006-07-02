@@ -95,12 +95,12 @@ void Fade::newdest(const Palette& dst, int frame) {
   int j=0;
 
 #ifdef UGS_LINUX_X11
-  /* shit, this is ugly */
+  /* shit, c'est effrayant */
   if(dynamic_cast<Video_X11*>(video))
     if(!dynamic_cast<Video_X11_8*>(video)) {
       frame = frame / 4;
 
-      /* avoid crashing with a division by zero or such similar horror */
+      /* évitont de planter avec une div par zéro ou quelques autre horreur */
       if(frame < 2)
 	frame = 2;
     }
@@ -119,10 +119,8 @@ int Fade::step() {
   if(currentframe==destframe)
     return 1;
   else {
-#ifdef UGS_LINUX_X11
     if(dynamic_cast<Video_X11_8*>(video))
       usleep(3000);
-#endif
     for(int i(0); i<768; i++)
       current[i]+=delta[i];
     currentframe++;

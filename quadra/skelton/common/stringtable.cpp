@@ -41,9 +41,9 @@ Stringtable::Stringtable(Byte *b, Dword size) {
 }
 
 Stringtable& Stringtable::operator=(const Stringtable& src) {
-	delete[] table;
+	delete table;
 	if(mustfree)
-		delete[] buf;
+		delete buf;
 	mustfree=true;
 	num = src.size();
 	int i;
@@ -76,13 +76,13 @@ void Stringtable::parse(char *buf, Dword size) {
 		ptr++;
 	}
 
-	/* the == 13 && != 10 is to prevent losing a single char line */
+	/* le == 13 && != 10, c'est pour pas qu'une ligne de 1 char soit perdue */
 	if((buf[size-1] != 10) ||
 		 (buf[size-1] == 13 &&
 			buf[size-2] != 10))
 		num++;
 
-	/* with a fence, so that we don't segfault */
+	/* avec une clôture, pas de danger de se segmenter la face */
 	buf[size] = 0;
 
 	table = new char*[num];
@@ -94,12 +94,12 @@ void Stringtable::parse(char *buf, Dword size) {
 		table[index] = &buf[ptr];
 
 		while(ptr < size) {
-			if(buf[ptr] == 10) { // for UNIX (just a '10')
+			if(buf[ptr] == 10) { // pour UNIX (juste un '10')
 				buf[ptr] = 0;
 				ptr++;
 				break;
 			}
-			if(buf[ptr] == 13) { // for DOZE (a '13', THEN a '10')
+			if(buf[ptr] == 13) { // pour DOZE (un '13', PUIS un '10')
 				buf[ptr] = 0;
 				ptr++;
 				if((ptr < size) && (buf[ptr] == 10)) {
@@ -115,7 +115,7 @@ void Stringtable::parse(char *buf, Dword size) {
 }
 
 Stringtable::~Stringtable() {
-	delete[] table;
+	delete table;
 	if(mustfree)
-		delete[] buf;
+		delete buf;
 }

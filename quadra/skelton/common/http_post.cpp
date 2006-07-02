@@ -18,22 +18,20 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <stdlib.h>
+#include <malloc.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdarg.h>
 #include "error.h"
-#include "version.h"
-#include "net.h"
 #include "http_post.h"
 
 RCSID("$Id$")
 
-Http_post::Http_post(const char* aHost, int port, const char *path): Http_request(aHost, port), data(0, 1024) {
+Http_post::Http_post(const char *host, int port, const char *path): Http_request(host, port), data(0, 1024) {
 	init(path);
 }
 
-Http_post::Http_post(const char* aHost, Dword hostaddr, int port, const char *path): Http_request(aHost, hostaddr, port), data(0, 1024) {
+Http_post::Http_post(Dword hostaddr, int port, const char *path): Http_request(hostaddr, port), data(0, 1024) {
 	init(path);
 }
 
@@ -55,32 +53,16 @@ void Http_post::add_data_encode(const char* m, ...) {
 	add_data_raw(buf.get());
 }
 
-void Http_post::add_data_raw(const Buf &m) {
-	data.append(m.get(), m.size());
-}
-
 void Http_post::add_data_raw(const char* m) {
 	data.append((const Byte*)m, strlen(m));
 }
 
 void Http_post::send() {
-	char st[256];
 	url.resize(0);
 	url.append("POST ");
 	url.append(cgi);
-	url.append(" HTTP/1.0\r\n");
-	if(host) {
-		url.append("Host: ");
-		url.append(host);
-		url.append("\r\n");
-	}
-	sprintf(st, "User-Agent: Quadra/%i.%i.%i\r\n",
-	        VERSION_MAJOR, VERSION_MINOR, VERSION_PATCHLEVEL);
-  	url.append(st);
-	//Try to make those idiot proxies behave. Long life e2e!!! :)
-	url.append("Pragma: no-cache\r\n");
-	url.append("Cache-Control: no-cache\r\n");
-	url.append("Content-type: application/x-www-form-urlencoded\r\nContent-length: ");
+	url.append(" HTTP/1.0\r\nContent-type: application/x-www-form-urlencoded\r\nContent-length: ");
+	char st[16];
 	sprintf(st, "%i\r\n\r\n", data.size());
 	url.append(st);
 	url.append(data.get(), data.size());

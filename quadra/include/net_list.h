@@ -99,9 +99,7 @@ public:
 	bool accept_connection(Net_connection *nc);
 	void client_deconnect(Net_connection *nc);
 	Byte syncpoint;
-	unsigned count_teams(bool include_gone=true) const;
-	unsigned count_alive() const;
-	unsigned size(bool include_gone=true) const;
+	int size();
 	int add_player(Canvas *c);
 	void set_player(Canvas *c, int pos, bool msg);
 	//Should be called on server only: initiate drop player procedure

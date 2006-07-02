@@ -92,7 +92,7 @@ Multi_player::Multi_player(int *got_high) {
 					break;
 				case 2: pane[i] = new Pane_comboinfo(*pane_info[i]); break;
 			}
-		} else { // else multi_player mode
+		} else { // sinon mode multi_player
 			pane[i] = new Pane_option(*pane_info[i]);
 		}
 		pane_exec[i]->add(pane[i]);
@@ -117,7 +117,7 @@ void Multi_player::step() {
 	if(wait_timer==500) {
 		int col;
 		Byte side;
-		for(col = -1; col<9; col++) {
+		for(col=-1; col<9; col++) {
 			for(side=0; side<16; side++) {
 				char st[32];
 				Bitmap the_bit(18, 18, 18);
@@ -128,7 +128,7 @@ void Multi_player::step() {
 				}
 				else
 					strcpy(st, "e0.png");
-				Raw raw(18, 18, col!=-1? 8:2);
+				Png raw(18, 18, col!=-1? 8:2);
 				Res_dos res(st, RES_CREATE);
 				if(!res.exist) {
 					skelton_msgbox("Can't create file!\n");
@@ -206,7 +206,7 @@ void Multi_player::step() {
 	}
 
 	if(_debug) {
-		int snap_can = -1;
+		int snap_can=-1;
 		if(input->keys[KEY_F2] & PRESSED) {
 			input->keys[KEY_F2] = 0;
 			snap_can = 0;
@@ -232,7 +232,8 @@ Multi_player::~Multi_player() {
 	if(zone_pause)
 		delete zone_pause;
 	for(i=0; i<3; i++) {
-		pane[i] = NULL; // very important, becase the delete pane_exec[i] destroy Panes that access pane[]
+		pane[i] = NULL; // Tres important car les delete pane_exec[i] detruisent des Pane
+		                //  qui accedent a pane[]
 		overmind.stop(pane_exec[i]);
 		delete pane_exec[i];
 		delete pane_info[i];
@@ -242,7 +243,7 @@ Multi_player::~Multi_player() {
 	delete bit;
 	delete courrier;
 	if(!game->single && !playback)
-		config.write(); // save the config only in multi-player AND not in a demo
+		config.write(); // save la config seulement en multi-player ET pas dans une demo
 }
 
 void Multi_player::check_pause() {
@@ -257,7 +258,7 @@ void Multi_player::check_pause() {
 	if(game->paused != pause) {
 		pause = game->paused;
 		if(pause) {
-			if(game->delay_start == 0) // prevents the sound at the start
+			if(game->delay_start == 0) // empeche de faire le son au debut
 				Sfx stmp(sons.pause, 0, -300, 0, 11025);
 			zone_pause = new Zone_sprite(inter, "gamepaus.png");
 		} else {
@@ -314,7 +315,7 @@ void Demo_multi_player::init_playback() {
 			game->seed = playback->seed;
 	}
 	if(game)
-		game->frame_start = overmind.framecount; // re-adjust the frame_start before starting the playback
+		game->frame_start = overmind.framecount; // re-ajuste le frame_start avant de commencer le playback
 }
 
 Demo_multi_player::~Demo_multi_player() {
@@ -368,9 +369,9 @@ void Single_player_iterate::init() {
 		game->loopback_connection->joined=true;
 		game->loopback_connection->trusted=true;
 		char fn[1024];
-		snprintf(fn, sizeof(fn) - 1, "%s/last.qrec", quadradir);
+		snprintf(fn, sizeof(fn) - 1, "%s/last.rec", quadradir);
 		game->prepare_recording(fn);
-		game->prepare_logging();
+		game->prepare_logging(Clock::absolute_time());
 	}
 	call(new Multi_player(&hscore));
 }

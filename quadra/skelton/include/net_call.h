@@ -26,8 +26,6 @@ class Packet;
 class Net_callable {
 public:
 	virtual void net_call(Packet *p)=0;
-	virtual ~Net_callable() {
-	}
 };
 
 #endif

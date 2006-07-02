@@ -18,8 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef UGS_LINUX_SVGA
-
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -44,7 +42,7 @@ Svgalib* getSvgalib() {
 
     dir = getenv("QUADRADIR");
     if(!dir)
-      dir = LIBGAMESDIR;
+      dir = "/usr/lib/games";
 
     snprintf(fn, sizeof(fn) - 1, "%s/quadra-svga.so", dir);
 
@@ -70,6 +68,4 @@ Svgalib* getSvgalib() {
 
   return svgalib;
 }
-
-#endif /* UGS_LINUX_SVGA */
 

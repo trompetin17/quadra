@@ -18,25 +18,38 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _HEADER_RES_COMPRESS
-#define _HEADER_RES_COMPRESS
+#ifndef _HEADER_PCX24
+#define _HEADER_PCX24
 
-#include "res.h"
+#include "types.h"
+class Res;
 
-class Res_compress: public Res_mem {
-	Res_mode mode;
-	Res *res;
-	Res_dos *res_dos;
-	mutable Dword ressize;
-	mutable Dword write_pos;
-	void read_uncompress();
-public:
-	Byte *write_compress(Dword *size);
-	bool exist;
-	Res_compress(const char *fil, Res_mode pmode=RES_READ, bool res_doze=false);
-	virtual ~Res_compress();
-	virtual void write(const void *b, int nb);
-	virtual Dword size();
+#pragma pack(1)
+class Pcx24 {
+	struct Head {
+		Byte manufacturer;
+		Byte version;
+		Byte encoding;
+		Byte bpp;
+		Word x1,y1,x2,y2;
+		Word hdpi, vdpi;
+		Byte colormap[48];
+		Byte reserved;
+		Byte nplane;
+		Word byteperline;
+		Word paletteinfo;
+		Word screensizeh, screensizev;
+		Byte filler[54];
+	} h;
+	int width_, height_;
+	Byte* pic_;
+ public:
+	Pcx24(Res& res);
+	virtual ~Pcx24();
+	int width() const { return width_; }
+	int height() const { return height_; }
+	Byte* pic() const { return pic_; }
 };
+#pragma pack()
 
 #endif

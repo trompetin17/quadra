@@ -18,11 +18,7 @@
 #
 # $Id$
 
-TARGETS+=quadra quadra.res
-
-ifdef UGS_LINUX_SVGA
-TARGETS+=quadra-svga.so
-endif
+TARGETS+=quadra quadra.res quadra-svga.so
 
 QUADRA_OBJECTS:=$(patsubst %.cpp,%.o,$(wildcard source/*.cpp))
 

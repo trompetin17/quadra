@@ -64,7 +64,7 @@ Rémi Veilleux: Programming, design, graphics
 Stéphane Lajoie: Programming
 Pierre Phaneuf: Linux port
 Our web site:
-http://quadra.sourceforge.net/
+http://www.ludusdesign.com
 This is a beta version. Do NOT distribute!
 Click on 'Back ·0' to return to main menu
 Quadra(tm) by Ludus Design
@@ -379,7 +379,7 @@ Please select another server, or change your port number.
 The Quadra server is using an older version (%i).
 The server must be updated to your version %i.
 The Quadra server is using a more recent version (%i).
-Please check for Quadra update at our web site 'quadra.sourceforge.net'.
+Please check for Quadra update at our web site 'www.ludusdesign.com'.
 Address book
 Connect
 Looking for %s...
@@ -434,7 +434,7 @@ Public game server address:
 Advanced options:
 Invalid game server address.
 Go to the "Option" menu and enter a valid address.
-Default server: http://quadra.sourceforge.net/cgi-bin/qserv.pl
+Default server: http://ludusdesign.com/cgibin/qserv.pl
 Quadra version %i.%i.%i
 NOT REGISTERED
 No Quadra server found at specified address.
@@ -566,8 +566,8 @@ You get the
       hot potato!
 You got rid of
     the hot potato!
-
-
+ngStats log:
+ngWorldStats log:
 gdesc_en.txt
 Blind
 Waiting for the
@@ -576,8 +576,8 @@ Press a key to
         restart.
 %s wins the round!
 Nobody
-·2 Unable to log game
-·2 Logging game
+·2 Unable to log game '%s'
+·2 Logging game as '%s'
 Points per min.
 Blocks per min.
 Rotate twice...
@@ -591,4 +591,3 @@ Avg. combo
 Rank
 Speed
 Combos
-HTTP proxy server:

@@ -27,7 +27,7 @@
 
 RCSID("$Id$")
 
-/* This is a test */
+/* Ceci est un test */
 
 void start_game() {
   Sample* thesample;

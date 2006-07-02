@@ -18,7 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <stdarg.h>
 #include "error.h"
 #include "packets.h"
 #include "config.h"
@@ -96,7 +95,6 @@ char *packet_name[] = {
 	"P_CLIENTREMOVEBONUS",
 	"P_SERVERNAMETEAM",
 	"P_GAMESTAT",
-	"P_SERVERLOG",
 };
 
 int Quadra_param::tcpport() {
@@ -202,7 +200,6 @@ Packet *Quadra_param::alloc_packet(Word pt) {
 		case P_CLIENTREMOVEBONUS: return new Packet_clientremovebonus();
 		case P_SERVERNAMETEAM: return new Packet_servernameteam();
 		case P_GAMESTAT: return new Packet_gamestat();
-		case P_SERVERLOG: return new Packet_serverlog();
 		default: return NULL;
 	}
 }
@@ -247,11 +244,7 @@ void Quadra_param::client_connect(Net_connection *adr) {
 		return;
 	char st[64], st1[256];
 	Net::stringaddress(st, adr->address(), adr->getdestport());
-	Packet_serverlog log("connect");
-	log.add(Packet_serverlog::Var("id", adr->id()));
-	log.add(Packet_serverlog::Var("address", st));
-	if(game && game->net_server)
-		game->net_server->record_packet(&log);
+	log_step("connect\t%u\t%s", adr->id(), st);
 	sprintf(st1, ST_CONNECTFROMBOB, st);
 	message(-1, st1, true, false, true);
 }
@@ -264,12 +257,7 @@ void Quadra_param::client_deconnect(Net_connection *adr) {
 		game->net_list.client_deconnect(adr);
 	char st[64], st1[256];
 	Net::stringaddress(st, adr->address(), adr->getdestport());
-
-	Packet_serverlog log("disconnect");
-	log.add(Packet_serverlog::Var("id", adr->id()));
-	if(game && game->net_server)
-		game->net_server->record_packet(&log);
-
+	log_step("disconnect\t%u", adr->id());
 	sprintf(st1, ST_DISCONNECTFROMBOB, st);
 	message(-1, st1, true, false, true);
 	if(!game)
@@ -277,9 +265,11 @@ void Quadra_param::client_deconnect(Net_connection *adr) {
 	for(int j=0; j<MAXPLAYERS; j++) {
 		Canvas *c = game->net_list.get(j);
 		if(c && c->remote_adr == adr) {
-			c->remote_adr = NULL; // this net_connection is now destroyed
+			c->remote_adr = NULL; // cette net_connection est desormais detruite.
 			if(c->idle != 3) { 
-				/* sends an automatic 'P_GONE' for every active players of the client that has been disconnected.  */
+				/* envoie un 'P_GONE' automatique pour tout les joueurs actifs du client qui a ete
+					 deconnecte.
+				*/
 				if(c->idle != 2 && !c->dying) {
 					Packet_dead d;
 					d.player = j;
@@ -317,8 +307,8 @@ void send_msg(Net_connection *nc, char *msg, ...) {
 	va_end(marker);
 	if(nc->packet_based) {
 		Packet_chat p;
-		p.team = -1;
-		p.to_team = -1;
+		p.team=-1;
+		p.to_team=-1;
 		strncpy(p.text, st, 255);
 		p.text[255]=0;
 		if(game && game->loopback_connection==nc)

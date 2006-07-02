@@ -179,7 +179,7 @@ Menu_highscore::Menu_highscore(int hscore, int *playagain, bool show_playb) {
 
   playlast = NULL;
   if(show_playback) {
-    snprintf(st, sizeof(st) - 1, "%s/last.qrec", quadradir);
+    snprintf(st, sizeof(st) - 1, "%s/last.rec", quadradir);
     Res_dos *res = new Res_dos(st, RES_TRY);
     if(res->exist) {
       y += 6;
@@ -251,7 +251,7 @@ void Menu_highscore::start_sync() {
     msgbox("Menu_highscore::start_sync: encoded size=%i\n", strlen(buf.get()));
     delete demofile;
     demofile=NULL;
-    sync_request->add_data_large(buf);
+    sync_request->add_data(buf.get());
     sync_request->add_data("\n");
   }
   else
@@ -356,7 +356,7 @@ void Menu_highscore::step() {
         }
       }
       if(result == playlast) {
-        snprintf(st, sizeof(st) - 1, "%s/last.qrec", quadradir);
+        snprintf(st, sizeof(st) - 1, "%s/last.rec", quadradir);
         play_demo(st);
       }
     } else {
@@ -365,7 +365,7 @@ void Menu_highscore::step() {
         status->set_val(ST_HIGHSTATUSCANCELED);
       }
     }
-  } else { // demo mode of the main menu
+  } else { // mode 'demo' du menu principal
     time_demo--;
     if(result || input->quel_key != -1 || time_demo == 0)
       quit = true;
@@ -378,7 +378,7 @@ void Menu_highscore::play_demo(const char *st) {
     call(new Fade_in(pal));
     call(new Call_setfont(pal, new Demo_multi_player(res)));
     call(new Fade_out(pal));
-    // the 'delete res' is done by ~Demo_multi_player
+    // le 'delete res' est fait par ~Demo_multi_player
   } else {
     msgbox("Menu_highscore::step: Unable to open demo '%s'\n", st);
     delete res;
@@ -514,12 +514,12 @@ void Menu_multi_join::step() {
 
   if(result==b_create) {
     removewatch();
-    if(address[0] == 0)
+    if(address[0] == 0 && local_net)
       refresh();
     call(new Create_game(bit_, inter->font, font2_, pal, true, local_net));
   }
   if(result==b_refresh || result==b_refresh_internet) {
-    address[0] = 0; // ignore the IP address written in the box
+    address[0] = 0; // ignore l'adresse IP ecrite dans la boite
     refresh();
   }
   if(result==b_info) {
@@ -533,8 +533,8 @@ void Menu_multi_join::step() {
     refresh_player();
   if(lg && (list_game->in_listbox(inter->double_clicked) || result==b_join)) {
     Packet_gameinfo *p = lg->p;
-    if(p->version==20 || p->version==22 || p->version==23 || p->version==Config::net_version) {
-      if(address[0] == 0)
+    if(p->version==20 || p->version==22 || p->version==Config::net_version) {
+      if(address[0] == 0 && local_net)
         refresh();
       join_game(p->name, p->from_addr, p->port);
     }
@@ -641,7 +641,7 @@ void Menu_multi_join::net_call(Packet *p2) {
     sprintf(st, "%s", p->name);
   else
     sprintf(st, "%s", ST_GAMENONAME);
-  Listgame *lg = new Listgame(st, p); // the packet 'p' will be deleted by ~Listgame
+  Listgame *lg = new Listgame(st, p); // le packet 'p' sera deleter par ~Listgame()
 
   int deja = list_game->search(lg);
   if(deja != -1) {
@@ -700,7 +700,7 @@ void Menu_multi_refresh::resolve() {
     parent->join_game(NULL, to, net->port_resolve);
   } else {
     cancel = NULL;
-    call(new Wait_time(50)); // waits 1/2 second (in case the hosts resolves itself very quickly)
+    call(new Wait_time(50)); // attend 1/2 seconde (au cas ou le host se resolve tres vite)
   }
 }
 
@@ -723,7 +723,7 @@ void Menu_multi_refresh::step() {
     } else {
       int port = net->port_resolve;
       if(!port)
-        port = config.info.port_number; // default value
+        port = config.info.port_number; // valeur par defaut
       parent->join_game(NULL, name_temp, port);
       ret();
       return;
@@ -839,12 +839,12 @@ void Menu_multi_internet::parsegames() {
           if(team<0 || team>7)
             team=0;
         }
-        int status = -1;
+        int status=-1;
         temp = d2->find("status");
         if(temp) {
           status = atoi(temp);
           if(status<0 || status>3)
-            status = -1;
+            status=-1;
         }
         int handicap=0;
         temp = d2->find("handicap");
@@ -1183,7 +1183,7 @@ void Menu_setup_key::step() {
   Menu::step();
   int i,loop=0;
   for(i=1; i<256; i++) {
-    // denies the Enter key (it is dedicated to chat)
+    // refuse la touche 'ENTER' (car dedie au Chat!)
     if(i == KEY_ENTER)
       continue;
     if(input->keys[i] & PRESSED) {
@@ -1347,7 +1347,7 @@ Menu_option::Menu_option() {
     Png png(res);
     ptemp.load(png);
   }
-  for(int i=184; i<256; i++) // copies the colors of the blocs from fond0.png
+  for(int i=184; i<256; i++) // copie les couleurs des blocs de l'image fond0.png
     pal.setcolor(i, ptemp.r(i), ptemp.g(i), ptemp.b(i));
   inter->set_font(new Font(*fonts.normal, pal, 255,255,255));
   set_fteam_color(pal);
@@ -1389,10 +1389,6 @@ Menu_option::Menu_option() {
   (void)new Zone_text_input(inter, pal, config.info.game_server_address, 255, 380, 310, 240);
   (void)new Zone_text(fteam[3], inter, ST_DEFAULTGAMESERVER, 40, 334);
   strcpy(old_server, config.info.game_server_address);
-
-	(void)new Zone_text(fteam[7], inter, ST_OPTIONS_PROXY, 40, 370);
-	(void)new Zone_text_input(inter, pal, config.info2.proxy_address, 127, 380, 370, 240);
-	strcpy(old_proxy, config.info2.proxy_address);
 }
 
 Menu_option::~Menu_option() {
@@ -1424,7 +1420,7 @@ Menu_option::~Menu_option() {
     for(i=0; i<MAXTEAMS; i++)
       set_team_name(i, NULL);
   }
-  if(strcmp(old_server, config.info.game_server_address) || strcmp(old_proxy, config.info2.proxy_address)) {
+  if(strcmp(old_server, config.info.game_server_address)) {
     Qserv::http_addr=0;
     Qserv::http_port=0;
   }
@@ -1636,7 +1632,7 @@ void Menu_main::redraw() {
 void Menu_main::init() {
   Menu::init();
   call(new Menu_main_startmusic());
-  call(new Wait_time(6)); // to force the palette being set BEFORE the music starts
+  call(new Wait_time(6)); // Pour forcer la palette a se setter AVANT que la musique commence
   call(new Setpalette(pal));
   reset_delay();
 }
@@ -1673,7 +1669,7 @@ void Menu_main::step() {
 #ifdef UGS_DIRECTX
   if(result == b_logo) {
     call(new Fade_in(pal));
-    call(new Menu_internet(ST_HELP20)); // web site URL
+    call(new Menu_internet(ST_HELP20)); // adresse du site web :)
     call(new Fade_to(Palette(), pal));
   }
 #endif
@@ -1698,11 +1694,14 @@ void Menu_main::step() {
     call(new Fade_out(pal));
   }
   if(result == b_single) {
-    //-roncli 4/29/01 This doesn't suck anymore. :-D
     call(new Fade_in(pal));
+    call(new Single_player(PRESET_SINGLE));
+    call(new Fade_out(pal));
+    //This sucks, see ya in 1.2.0 (maybe :))
+    /*call(new Fade_in(pal));
     call(new Menu_single());
     call(new Fade_out(pal));
-    
+    */
   }
   if(result == b_demo) {
     call(new Fade_in(pal));
@@ -2056,7 +2055,7 @@ void Menu_stat::display() {
       }
       y += 34;
     } else if(score.player_count[team] == 1) {
-      y += 12; // leave space between the players/totals of each team
+      y += 12; // laisse espace entre les joueurs/totaux de chaque team
     }
   }
   video->need_paint = 2;
@@ -2075,32 +2074,24 @@ void Menu_stat::init() {
 void Menu_stat::step() {
   Menu_standard::step();
   bool force_blit=false;
-  //Add appropriate button(s)
+  //Add appropriate button
   if(game->server && game->network && !game->terminated && !b_stop)
     b_stop = new Zone_text_button2(inter, bit, font2, ST_STOPGAME, 8, 455);
   //Remove end-of-game button if already terminated
   if(b_stop && game->terminated) {
     delete b_stop;
     b_stop = NULL;
-		// delete the rejoin button when deleting the stop button; it may
-		//   be recreated right after but at least it will be in the correct place
-		delete b_restart;
-		b_restart = NULL;
     video->need_paint = 2;
   }
   if(net->active && !game->server && !net->connected()) {
     delete b_restart;
     b_restart=NULL;
-		video->need_paint = 2;
   }
   if(!playback && !b_restart)
-    if(game->server)
-			if(game->terminated)
-				b_restart = new Zone_text_button2(inter, bit, font2, ST_RESTARTGAME, 8, 455);
-			else
-				b_restart = new Zone_text_button2(inter, bit, font2, ST_REJOINGAME, 8+(b_stop? b_stop->w+4:0), 455);
+    if(game->server && game->terminated)
+      b_restart = new Zone_text_button2(inter, bit, font2, ST_RESTARTGAME, 8, 455);
     else
-      if(net->active && net->connected())
+      if(!game->server && net->active && net->connected())
         b_restart = new Zone_text_button2(inter, bit, font2, ST_REJOINGAME, 8, 455);
   if(result) {
     if(result == b_quit)
@@ -2111,12 +2102,8 @@ void Menu_stat::step() {
     }
     if(result == b_restart) {
       if(game->server) {
-				if(game->terminated) {
-					game->stop_stuff();
-					game->restart();
-				}
-				else
-					game->abort = false;
+        game->stop_stuff();
+        game->restart();
         exec(new Call_setfont(pal, new Multi_player_launcher()));
       }
       else {
@@ -2184,7 +2171,7 @@ Menu_multi_book::Menu_multi_book(Bitmap *bit, Font *font, Font *font2, const Pal
   address = adr;
   new Zone_bitmap(inter, bit, 0, 0);
   cancel = new Zone_text_button2(inter, bit, font2, ST_BACK, 560, 450);
-  if(address) { // if connecting address already provided
+  if(address) { // si address de connexion deja fourni
     new Zone_text(inter, ST_CONNECT, 20);
   } else {
     new Zone_text(inter, ST_ADDRESSBOOKTITLE, 20);

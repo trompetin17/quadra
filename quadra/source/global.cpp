@@ -22,10 +22,7 @@
 #include "sound.h"
 #include "config.h"
 #include "nglog.h"
-#include "net_server.h"
-#include "game.h"
 #include "global.h"
-#include "packets.h"
 
 RCSID("$Id$")
 
@@ -94,12 +91,7 @@ void set_team_name(Byte team, const char *name) {
 		da_name=team_name[team];
 	else
 		da_name=english_teams[team];
-	Packet_serverlog log("team_name");
-	log.add(Packet_serverlog::Var("name", da_name));
-
-  if(game)
-    if(game->net_server)
-      game->net_server->record_packet(&log);
+	log_step("team_name\t%s\t%s", log_team(team), da_name);
 }
 
 bool quitting=false;

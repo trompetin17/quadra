@@ -54,4 +54,3 @@ like error messages, computer model, video and sound card models and
 operating system version.
 
 Have fun playing Quadra!
-

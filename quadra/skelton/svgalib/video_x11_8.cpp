@@ -18,8 +18,6 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifdef UGS_LINUX_X11
-
 #include <signal.h>
 #define Font XFont
 #include <X11/Xlib.h>
@@ -69,7 +67,7 @@ void Video_X11_8::flip() {
     newpal = false;
   }
 
-  /* reset the dirty rect */
+  /* reset le dirty rect */
   for(y = 0; y < 480; y++) {
     min_x[y] = vb->width;
     max_x[y] = 0;
@@ -91,6 +89,3 @@ void Video_X11_8::dosetpal(PALETTEENTRY pal[256], int size) {
 
   XStoreColors(display, cmap, colors, size);
 }
-
-#endif /* UGS_LINUX_X11 */
-

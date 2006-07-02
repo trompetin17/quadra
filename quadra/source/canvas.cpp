@@ -35,13 +35,12 @@
 #include "texte.h"
 #include "chat_text.h"
 #include "nglog.h"
-#include "net_server.h"
 #include "canvas.h"
 
 RCSID("$Id$")
 
 Canvas::Canvas(int qplayer, int game_seed, Palette *p): rnd(game_seed) {
-// constructs a local Canvas
+// construit un Canvas local
 	snapshot[0]=0;
 	best_move=best_clean=best_recurse=0;
 	memset(player_hash, 0, sizeof(player_hash));
@@ -52,7 +51,6 @@ Canvas::Canvas(int qplayer, int game_seed, Palette *p): rnd(game_seed) {
 	z_lines=z_potatolines=z_linestot=z_potatolinestot=NULL;
 	team_potato_lines=team_potato_linestot=0;
 	send_for_clean=false;
-	handicap_crowd=0;
 	potato_team_on_last_stamp=255;
 	potato_lines=0;
 	gone_time=0;
@@ -81,7 +79,7 @@ Canvas::Canvas(int qplayer, int game_seed, Palette *p): rnd(game_seed) {
 }
 
 Canvas::Canvas(int game_seed, Byte team, const char *nam, int ph_repeat, int pv_repeat, bool psmooth, bool pshadow, int phandicap, Net_connection *adr, int qplayer, bool wait_down): rnd(game_seed) {
-// constructs a remote Canvas
+// construit un Canvas remote
 	snapshot[0]=0;
 	best_move=best_clean=best_recurse=0;
 	memset(player_hash, 0, sizeof(player_hash));
@@ -92,7 +90,6 @@ Canvas::Canvas(int game_seed, Byte team, const char *nam, int ph_repeat, int pv_
 	z_lines=z_potatolines=z_linestot=z_potatolinestot=NULL;
 	team_potato_lines=team_potato_linestot=0;
 	send_for_clean=false;
-	handicap_crowd=0;
 	potato_team_on_last_stamp=255;
 	potato_lines=0;
 	gone_time=0;
@@ -243,17 +240,15 @@ void Canvas::reinit() {
   if(down_speed > 180)
     down_speed = 180;
   level = game->level_start;
-  depth = complexity = bonus = 0;
-	stats[LINESCUR].set_value(0);
+  lines = depth = complexity = bonus = 0;
   level_up = color_flash = 0;
-  over->framecount = 0; // initialize the counter when the player starts
+  over->framecount = 0; // initialise le compteur lorsque le joueur demarre
 	if(game->net_version()>=23 && game->survivor)
 		idle = 2;
 	else
 		idle = 1;
 	dying = false;
 	state = PLAYING;
-	handicap_crowd=0;
 	potato_team_on_last_stamp=255;
 	send_for_clean=false;
 	should_remove_bonus=false;
@@ -267,19 +262,15 @@ void Canvas::restart() {
   delete_bloc();
   set_next();
   last_attacker = 255;
-  for(int i=0; i<MAXPLAYERS; i++) {
+  for(int i=0; i<MAXPLAYERS; i++)
     attacks[i] = 0;
-		handicaps[i] = 0;
-	}
   level = game->level_start;
-  depth = complexity = bonus = 0;
-	stats[LINESCUR].set_value(0);
+  lines = depth = complexity = bonus = 0;
   level_up = color_flash = 0;
   calc_speed();
-  idle = 1; // starts 'idle' to allow joins if the game is on pause and the player just started
+  idle = 1; // start 'idle' pour permettre de joindre si game sur pause et joueur tout juste demarre
 	state = PLAYING;
 	dying=false;
-	handicap_crowd=0;
 	potato_team_on_last_stamp=255;
 	send_for_clean=false;
 	should_remove_bonus=false;
@@ -287,7 +278,7 @@ void Canvas::restart() {
 }
 
 void Canvas::clear_key_all() {
-  for(int i=0; i<7; i++) // clears the key states of the player
+  for(int i=0; i<7; i++) // vide le statut des touches du joueur
     clear_key(i);
 }
 
@@ -371,7 +362,7 @@ void Canvas::set_message(const char *m1, const char *m2) {
 }
 
 void Canvas::add_text_scroller(const char *st, int xoffset, int yoffset) {
-	if(inter && !small_watch) { // if the canvas is currently visible
+	if(inter && !small_watch) { // si canvas visible presentemment
 		Executor *tmp2 = new Executor(true);
 		tmp2->add(new Player_text_scroll(this, st, xoffset, yoffset));
 		over->start(tmp2);
@@ -401,13 +392,7 @@ void Canvas::add_packet(Canvas *sender, Byte nb, Byte nc, Byte lx, Attack attack
 	if(!sender)
 		return;
 
-	Packet_serverlog log("player_attacked");
-	log.add(Packet_serverlog::Var("id", id()));
-	log.add(Packet_serverlog::Var("attacker_id", sender->id()));
-	log.add(Packet_serverlog::Var("type", attack.log_type()));
-	log.add(Packet_serverlog::Var("size", attack.type==ATTACK_FULLBLIND? nb*nc:nb));
-	if(game->net_server)
-		game->net_server->record_packet(&log);
+	log_step("player_attacked\t%u\t%u\t%s\t%i", id(), sender->id(), attack.log_type(), attack.type==ATTACK_FULLBLIND? nb*nc:nb);
 
 	//Nothing further to do if attack is none.
 	if(attack.type==ATTACK_NONE)
@@ -419,9 +404,9 @@ void Canvas::add_packet(Canvas *sender, Byte nb, Byte nc, Byte lx, Attack attack
 	if(temp > 255)
 		temp = 255;
 	attacks[qui] = temp;
-	if(last_attacker != 255) { // if there is a last attacker
-		if(attacks[qui] >= attacks[last_attacker]) // if larger or equal to the last best
-			last_attacker = qui; // it's the one that becomes the best
+	if(last_attacker != 255) { // si ya un dernier attackant
+		if(attacks[qui] >= attacks[last_attacker]) // si plus gros ou egal au dernier plus hot
+			last_attacker = qui; // c'est lui qui devient le plus hot
 	} else
 		last_attacker = qui;
 
@@ -496,16 +481,8 @@ void Canvas::give_line() {
 		log_it=true;
 		best_recurse=move_value;
 	}
-	if(log_it) {
-		Packet_serverlog log("player_snapshot");
-		log.add(Packet_serverlog::Var("id", id()));
-		log.add(Packet_serverlog::Var("lines", depth));
-		log.add(Packet_serverlog::Var("clean", send_for_clean? "true":"false"));
-		log.add(Packet_serverlog::Var("combo", complexity));
-		log.add(Packet_serverlog::Var("snapshot", snapshot));
-		if(game->net_server)
-			game->net_server->record_packet(&log);
-	}
+	if(log_it)
+		log_step("player_snapshot\t%i\t%i\t%s\t%i\t%s", id(), depth, send_for_clean? "true":"false", complexity, snapshot);
   switch(depth) {
     case 1: score_add = 250; break;
     case 2: score_add = 500; break;
@@ -530,7 +507,7 @@ void Canvas::give_line() {
   stats[SCORE].add(score_add);
   i = depth-1;
 	bool enough=(depth >= game->combo_min);
-	if(game->net_version()==23) {
+	if(game->net_version()>=23) {
 		int alive_count=0;
 		for(i=0; i<MAXPLAYERS; i++) {
 			Canvas *c=game->net_list.get(i);
@@ -543,30 +520,9 @@ void Canvas::give_line() {
 		else
 			alive_count=0;
 		i = max(0, depth-1-alive_count);
-		// this is a bug, it should have been done like net_version >= 24 (below)
-		//   but it must remain as is for network compatibility
 		enough=i? true:false;
 	}
-	if(game->net_version()>=24) {
-		if(!send_for_clean && !game->boring_rules)
-			while(i && handicap_crowd >= stamp_per_handicap) {
-				handicap_crowd -= stamp_per_handicap;
-				--i;
-			}
-		if(!i)
-			enough = false;
-	}
-
-	Packet_serverlog log("player_lines_cleared");
-	log.add(Packet_serverlog::Var("id", id()));
-	log.add(Packet_serverlog::Var("lines", depth));
-	log.add(Packet_serverlog::Var("clean", send_for_clean? "true":"false"));
-	log.add(Packet_serverlog::Var("attack_size", clean_bonus+(enough? i:0)));
-	log.add(Packet_serverlog::Var("combo", complexity));
-	log.add(Packet_serverlog::Var("points", score_add));
-	if(game->net_server)
-		game->net_server->record_packet(&log);
-
+	log_step("player_lines_cleared\t%u\t%i\t%s\t%i\t%i\t%u", id(), depth, send_for_clean? "true":"false", clean_bonus+(enough? i:0), complexity, score_add);
 	Attack clean_att, normal_att;
 	normal_att=game->normal_attack;
 	clean_att=game->clean_attack;
@@ -600,9 +556,9 @@ void Canvas::give_line() {
 			message(color, st);
 		}
 	}
-  if(i && enough) { // sends nothing if depth < combo_min
+  if(i && enough) { // envoie rien si depth < que combo_min
 		if(i>=3 && chat_text && !send_for_clean) {
-			// if does a 'quad' minimally and not clean
+			// si fait un 'quad' minimum et pas clean
 			char st[256];
 			if(normal_att.type==ATTACK_NONE)
 				sprintf(st, ST_BOBCLEARSBOBLINEBOB, name, depth, depth!=1? "s":"");
@@ -611,7 +567,7 @@ void Canvas::give_line() {
 			message(color, st);
 		}
     game->net_list.send(this, i, complexity, last_x, normal_att, false);
-    if(inter && !small_watch) { // if the canvas is currently visible
+    if(inter && !small_watch) { // si canvas visible presentemment
 			char st[256];
 			if(depth == 2)
 				sprintf(st, ST_CLEARDOUBLE, score_add);
@@ -632,9 +588,9 @@ void Canvas::give_line() {
 	stats[CLEAR00+i].add(1);
 	stats[COMBO00+complexity-1].add(1);
 
-  stats[LINESCUR].add(depth);
+  lines += depth;
   stats[LINESTOT].add(depth);
-  if(game->level_up && stats[LINESCUR].get_value() >= level*15) {
+  if(game->level_up && lines >= level*15) {
     level++;
     calc_speed();
     Executor *tmp = new Executor(true);
@@ -643,7 +599,7 @@ void Canvas::give_line() {
   }
   depth = 0;
   complexity=0;
-  send_for_clean=false;
+	send_for_clean=false;
 }
 
 void Canvas::change_level_single() {
@@ -678,18 +634,16 @@ void Canvas::change_level(const int level, Palette *pal, Bitmap *bit) {
 
   video->need_paint = 2;
   delete res;
-
-  if(sons.flash && (--sons.flash->refcount == 0))
+  if(sons.flash)
     delete sons.flash;
-  if(sons.depose3 && (--sons.depose3->refcount == 0))
+  if(sons.depose3)
     delete sons.depose3;
-  if(sons.depose2 && (--sons.depose2->refcount == 0))
+  if(sons.depose2)
     delete sons.depose2;
-  if(sons.depose && (--sons.depose->refcount == 0))
+  if(sons.depose)
     delete sons.depose;
-  if(sons.drip && (--sons.drip->refcount == 0))
+  if(sons.drip)
     delete sons.drip;
-
   sons.flash = sons.depose3 = sons.depose2 = sons.depose = sons.drip = NULL;
   char *foo0, *foo1, *foo2, *foo3, *foo4;
   switch(num) {
@@ -764,19 +718,19 @@ void Canvas::change_level(const int level, Palette *pal, Bitmap *bit) {
   }
   {
     Res_doze res(foo0);
-    sons.flash = new Sample(res, 2); // when we do a ligne (flash)
+    sons.flash = new Sample(res, 2); // quand fait une ligne (flash)
   }
   {
     Res_doze res(foo1);
-    sons.depose3 = new Sample(res, 2); // drop
+    sons.depose3 = new Sample(res, 2); // depose
   }
   {
     Res_doze res(foo2);
-    sons.depose2 = new Sample(res, 2); // drop
+    sons.depose2 = new Sample(res, 2); // depose
   }
   {
     Res_doze res(foo3);
-    sons.depose = new Sample(res, 2); // drop
+    sons.depose = new Sample(res, 2); // depose
   }
   {
     Res_doze res(foo4);
@@ -820,8 +774,8 @@ void Canvas::hide() {
 }
 
 Byte Canvas::check_key(int i) {
-  if(ecran && ecran->focus) {  // prevents controlling while inputting into a zone_text_input that has the focus
-    clear_key(i); // prevents rotating from happening after an input (because bit 'was released!')
+  if(ecran && ecran->focus) {  // empeche de controler pendant de l'input dans un zone_text_input qui a le focus
+    clear_key(i); // empeche le 'rotate' de s'effectuer apres un input (car bit 'was released!')
     return 0;
   }
 	else

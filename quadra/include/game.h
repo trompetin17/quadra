@@ -116,8 +116,6 @@ public:
 	void check_potato();
 	Byte next_potato_team();
 	int server_accept_player, server_accept_connection;
-	int server_max_players, server_max_teams;
-	int server_min_players, server_min_teams;
 	Net_connection *loopback_connection;
 	Net_list net_list;
 	bool valid_frag; //Survivor only
@@ -129,7 +127,6 @@ public:
 	int seed, game_end_value;
 	Attack normal_attack, potato_normal_attack;
 	Attack clean_attack, potato_clean_attack;
-	bool boring_rules;
 	bool any_attack();
 	bool paused;
 	Word delay_start;
@@ -145,7 +142,7 @@ public:
 	bool gameinfo_completed() const;
 	void endgame();
 	void prepare_recording(const char *fn);
-	void prepare_logging();
+	void prepare_logging(const char *filename);
 	int get_multi_level();
 	void set_seed(Packet_serverrandom *p);
 	char *get_motd();
@@ -178,7 +175,6 @@ public:
 	int game_end_value;
 	bool game_public;
 	bool network;
-	bool boring_rules;
 	void set_preset(Game_preset preset);
 	Game_params();
 };

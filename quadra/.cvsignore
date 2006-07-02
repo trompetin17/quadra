@@ -2,7 +2,10 @@
 *.res
 output.txt
 *.rec
-*.qrec
+*.lnk
+*.PIF
+*.pif
+qsnoop
 quadra
 quadra.res
 quadra.spec
@@ -12,8 +15,3 @@ configure
 config.log
 config.cache
 config.status
-Quadra.desktop
-ChangeLog
-gmon.out
-autom4te.cache
-quadra.exe

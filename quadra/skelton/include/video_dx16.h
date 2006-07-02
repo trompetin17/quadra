@@ -18,25 +18,39 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#ifndef _HEADER_RES_COMPRESS
-#define _HEADER_RES_COMPRESS
+#ifndef _HEADER_VIDEO_DX16
+#define _HEADER_VIDEO_DX16
 
-#include "res.h"
+#include "video.h"
+#include "array.h"
 
-class Res_compress: public Res_mem {
-	Res_mode mode;
-	Res *res;
-	Res_dos *res_dos;
-	mutable Dword ressize;
-	mutable Dword write_pos;
-	void read_uncompress();
+class Surface_basedx;
+class Surface;
+
+class Video16: public Video {
 public:
-	Byte *write_compress(Dword *size);
-	bool exist;
-	Res_compress(const char *fil, Res_mode pmode=RES_READ, bool res_doze=false);
-	virtual ~Res_compress();
-	virtual void write(const void *b, int nb);
-	virtual Dword size();
+  LPDIRECTDRAW lpdd;
+  LPDIRECTDRAWSURFACE lpddsprimary, lpddsback;
+  LPDIRECTDRAWPALETTE lpddpal;
+  DDSURFACEDESC ddsdlock;
+	Surface_basedx *back;
+	Array<Surface *> surfaces;
+  static int screen_shot;
+	int green_high;
+  Video16(int w, int h, int b, const char *wname);
+  virtual ~Video16();
+  void lock();
+  void unlock();
+  void flip();
+  void start_frame();
+  void end_frame();
+  void setpal(const Palette& p);
+  virtual void dosetpal(PALETTEENTRY pal[256], int size);
+  void restore();
+  void clean_up();
+  void snap_shot(int x, int y, int w, int h);
+	void add_surface(Surface *s);
+	void remove_surface(Surface *s);
 };
 
-#endif
+#endif /* _HEADER_VIDEO_DX16 */

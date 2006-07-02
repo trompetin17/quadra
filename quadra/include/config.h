@@ -32,8 +32,6 @@ public:
 	static bool xtreme;
 	static char user_name[];
 	int warning;
-	//WARNING: Everything in the following structs is pretty much set in stone. A full
-	//         understanding of config.cpp is needed to change anything.
 	struct {
 		int language;
 		int setup_player, cdmusic;
@@ -64,7 +62,8 @@ public:
 		int whole_bunch_of_stuff[11];
 	} player2[3];
 	struct {
-		char proxy_address[128];
+		int some_stuff[16];
+		char yet_more_stuff[64];
 	} info2;
 	char fname[1024];
 	Config();
@@ -72,11 +71,6 @@ public:
 	void default_config();
 	void read();
 	void write();
-
-	//Get the hash value for a player
-	void get_player_hash(Byte* buf, unsigned qplayer);
-	//Get the hash value for a player's team
-	void get_team_hash(Byte* buf, unsigned qplayer);
 };
 
 extern Config config;
