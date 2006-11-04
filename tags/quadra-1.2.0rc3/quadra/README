@@ -1,0 +1,65 @@
+Quadra Source Release
+=====================
+
+This is the Quadra source release.
+
+Requirements
+------------
+
+ - a C++ compiler (gcc was tested on Linux and Visual C++ on Windows)
+ - zlib (http://www.info-zip.org/pub/infozip/zlib/)
+ - libpng (http://www.libpng.org/pub/png/libpng.html)
+ - DirectX 5 (Windows only)
+ - X Window System libraries with XPM support (Linux only)
+
+Building on Unix-style systems
+------------------------------
+
+To compile and install this software on a Unix-like system, do this:
+
+$ make (if you checked out the source code from Subversion)
+$ ./configure
+$ make
+$ make install (optional)
+
+There you go! There is a 'quadra' binary and a 'quadra.res' resource
+file in the top-level directory. If not, then something went
+wrong. :-)
+
+You can run this with the following command (in bash):
+
+QUADRADIR=. ./quadra
+
+If you ran the "make install" command, then you have 'quadra'
+installed on your system and you can just run it (no need to set
+QUADRADIR).
+
+Building on Mac OS X
+--------------------
+
+A common problem on Mac OS X is that the libpng library is not
+available. This is relatively easy to work around, by downloading the
+libpng sources (available at http://libpng.sourceforge.net/, look for
+a libpng-1.2.X.tar.gz file), compiling them (no need to install it on
+your system!) and then adding a "--with-libpng=/path/to/libpng" to the
+"configure" command line.
+
+Building on Windows
+-------------------
+
+To compile Quadra on a Windows machine, use the Visual C++ workspace
+and project file in the VisualC++ subdirectory. Make sure you have
+zlib, libpng and DirectX properly installed for development on your
+machine.
+
+Any questions?
+--------------
+
+If you have any problem, patches, suggestions, bug reports or are
+simply looking for help, please take advantage of the resources
+available on our web site (http://quadra.sourceforge.net/)! Among
+others, we have a support request system, mailing lists, a bug
+tracking system and plenty of other goodies, check it out!
+
+Good luck, and have fun!
+
