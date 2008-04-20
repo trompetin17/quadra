@@ -1,0 +1,2 @@
+qserv http://ludusdesign.com/cgi-bin/qserv.pl
+version/stable 1.2.0
