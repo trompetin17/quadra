@@ -1,5 +1,5 @@
 #summary Dedicated Server Documentation
-#labels Phase-Deploy
+#labels Phase-Deploy,Featured
 
 This is a quickly put together document intended for people who
 would like to run one or more dedicated Quadra servers.
@@ -8,106 +8,107 @@ would like to run one or more dedicated Quadra servers.
 
 Here's a list of command line options related to the running of a Quadra dedicated server:
 
-  * `-dedicated`
-  Tells quadra to run as a dedicated server. By default, this will create a free-for-all server that will only terminate when the task is killed.
+ * `-dedicated`
 
-  * `-admin <x>`
+ Tells quadra to run as a dedicated server. By default, this will create a free-for-all server that will only terminate when the task is killed.
 
-  Set the remote administration password to x. Remote administration is disabled unless this option is specified. The usage of the remote administration feature is explained in the next section.
+ * `-admin <x>`
 
-  Note to Linux server administrators: if you use this option as is, all users on your system will be able to see the password by issuing the "ps" command. A good workaround is to place the -admin option (or a "/setpasswd" command) in a file and then start Quadra with the "-exec <file>" option.
+ Set the remote administration password to x. Remote administration is disabled unless this option is specified. The usage of the remote administration feature is explained in the next section.
 
-  * `-public`
+ Note to Linux server administrators: if you use this option as is, all users on your system will be able to see the password by issuing the "ps" command. A good workaround is to place the -admin option (or a "/setpasswd" command) in a file and then start Quadra with the "-exec <file>" option.
 
-  Make the game public, so that it shows up in QSnoop (or within the game when the user clicks "TCP/IP Internet") all over the internet. Without this option, clients must know the internet address of the server to connect.
+ * `-public`
 
-  * `-port <x>`
+ Make the game public, so that it shows up in QSnoop (or within the game when the user clicks "TCP/IP Internet") all over the internet. Without this option, clients must know the internet address of the server to connect.
 
-  Listen to port x instead of what is in the config.  When running multiple servers, a different port must be specified for each.
+ * `-port <x>`
 
-  * `-endfrag <x>`
+ Listen to port x instead of what is in the config.  When running multiple servers, a different port must be specified for each.
 
-  The game will end and declare a winner when a team reaches x frags. The server will then auto-restart a new game with the same parameters.
+ * `-endfrag <x>`
 
-  * `-endtime <x>`
+ The game will end and declare a winner when a team reaches x frags. The server will then auto-restart a new game with the same parameters.
 
-  The game will end and declare a winner after x minutes. The server will then auto-restart a new game with the same parameters.
+ * `-endtime <x>`
 
-  * `-endpoints <x>`
+ The game will end and declare a winner after x minutes. The server will then auto-restart a new game with the same parameters.
 
-  The game will end and declare a winner when a team scores x points. The server will then auto-restart a new game with the same parameters.
+ * `-endpoints <x>`
 
-  * `-endlines <x>`
+ The game will end and declare a winner when a team scores x points. The server will then auto-restart a new game with the same parameters.
 
-  The game will end and declare a winner when a team clears x lines. The server will then auto-restart a new game with the same parameters.
+ * `-endlines <x>`
 
-  * `-once`
+ The game will end and declare a winner when a team clears x lines. The server will then auto-restart a new game with the same parameters.
 
-  Prevent server from restarting after the game's end condition has been reached. The server will automatically shut down instead.
+ * `-once`
 
-  * `-name <x>`
+ Prevent server from restarting after the game's end condition has been reached. The server will automatically shut down instead.
 
-  Set game name to x.
+ * `-name <x>`
 
-  * `-ffa`
+ Set game name to x.
 
-  Run the game in free-for-all mode (default).
+ * `-ffa`
 
-  * `-survivor`
+ Run the game in free-for-all mode (default).
 
-  Run the game in survivor mode.
+ * `-survivor`
 
-  * `-peace`
+ Run the game in survivor mode.
 
-  Run the game in peace mode (no attacks).
+ * `-peace`
 
-  * `-blind <x>`
+ Run the game in peace mode (no attacks).
 
-  Run the game in blind mode. When attacked by their opponents, the players will have some blind blocks to place. The blocks will stay invisible for some x time (default is 30, which is about 5 seconds).
+ * `-blind <x>`
 
-  * `-fullblind <x>`
+ Run the game in blind mode. When attacked by their opponents, the players will have some blind blocks to place. The blocks will stay invisible for some x time (default is 30, which is about 5 seconds).
 
-  Another type of blind mode where the whole canvas turns invisible instead of only a few blocks. x determines the length of time of the invisibility and defaults to 12 (2 seconds) per attack "line".
+ * `-fullblind <x>`
 
-  * `-hotpotato`
+ Another type of blind mode where the whole canvas turns invisible instead of only a few blocks. x determines the length of time of the invisibility and defaults to 12 (2 seconds) per attack "line".
 
-  Run the game in hot potato mode.
+ * `-hotpotato`
 
-  * `-attack`, `-attackclean`, `-attack2`, `-attack2clean <type> [strength]`
+ Run the game in hot potato mode.
 
-  Change default attack types. Available types are lines, none, blind and fullblind. The last two may be followed by an optionnal strength parameter to specify the length of time of the blindness.
+ * `-attack`, `-attackclean`, `-attack2`, `-attack2clean <type> [strength]`
 
-  The options `-attack2` and `-attack2clean` apply to the team holding the hot potato in that game mode.
+ Change default attack types. Available types are lines, none, blind and fullblind. The last two may be followed by an optionnal strength parameter to specify the length of time of the blindness.
 
-  * `-nolevelup`
+ The options `-attack2` and `-attack2clean` apply to the team holding the hot potato in that game mode.
 
-  Disable levelup (default).
+ * `-nolevelup`
 
-  * `-levelup`
+ Disable levelup (default).
 
-  Enable levelup.
+ * `-levelup`
 
-  * `-level <x>`
+ Enable levelup.
 
-  Start players on specified level.
+ * `-level <x>`
 
-  * `-combomin <x>`
+ Start players on specified level.
 
-  Set the minimum combo required to send attack lines.
+ * `-combomin <x>`
 
-  * `-nohandicap`
+ Set the minimum combo required to send attack lines.
 
-  Prevent players to set a handicap when joining the game.
+ * `-nohandicap`
 
-  * `-record <x>`
+ Prevent players to set a handicap when joining the game.
 
-  Record the game(s) played on the server. If the server is set to auto-restart (default), the recorded filenames will be x0000.rec, x0001.rec and so on. If auto-restart is disabled (using option -once), a single x.rec file will be created.
+ * `-record <x>`
 
-  Warning: any existing file of the same name will be overwritten.
+ Record the game(s) played on the server. If the server is set to auto-restart (default), the recorded filenames will be x0000.rec, x0001.rec and so on. If auto-restart is disabled (using option -once), a single x.rec file will be created.
 
-  * `-exec <x>`
+ Warning: any existing file of the same name will be overwritten.
 
-  Read file x and consider each line as a command line option or a remote adminitration command to be issued right after the game's creation. Lines starting with '-' are added to the command line and lines starting with '/' are executed as remote admin commands (with full administrative rights). Anything else is ignored.
+ * `-exec <x>`
+
+ Read file x and consider each line as a command line option or a remote adminitration command to be issued right after the game's creation. Lines starting with '-' are added to the command line and lines starting with '/' are executed as remote admin commands (with full administrative rights). Anything else is ignored.
 
 = Remote administration =
 
@@ -123,42 +124,42 @@ where address is the internet address of the Quadra server and port is the port 
 
 The commands are as follows:
 
-  * `/help`
+ * `/help`
 
-  Print a summary of available commands.
+ Print a summary of available commands.
 
-  * `/admin <password>`
+ * `/admin <password>`
 
-  Turn on administrator mode. The password must exactly match the one specified with the command line option -admin when the server was started. The only commands available to clients that haven't yet provided the correct password are /admin, /score and /bye.
+ Turn on administrator mode. The password must exactly match the one specified with the command line option -admin when the server was started. The only commands available to clients that haven't yet provided the correct password are /admin, /score and /bye.
 
-  * `/list`
+ * `/list`
 
-  List the IP addresses and port of all currently active connections, with the name(s) of the player(s) on that connection.
+ List the IP addresses and port of all currently active connections, with the name(s) of the player(s) on that connection.
 
-  * `/drop <player|address:port>`
+ * `/drop <player|address:port>`
 
-  Drop a player or the connection(s) coming from a specific IP address. Specifying only an address without the port number will drop all connections coming from that address.
+ Drop a player or the connection(s) coming from a specific IP address. Specifying only an address without the port number will drop all connections coming from that address.
 
-  * `/acceptplayers <0|1>`
+ * `/acceptplayers <0|1>`
 
-  Allow (1) or disallow (0) new players to join the game.
+ Allow (1) or disallow (0) new players to join the game.
 
-  * `/acceptconnects <0|1>`
+ * `/acceptconnects <0|1>`
 
-  Allow (1) or disallow (0) new client computers to join the game.
+ Allow (1) or disallow (0) new client computers to join the game.
 
-  * `/endgame`
+ * `/endgame`
 
-  End current game. If the server is set to auto-restart (default), a new game will be started. If the command line option -once was specified, the server will shut down.
+ End current game. If the server is set to auto-restart (default), a new game will be started. If the command line option -once was specified, the server will shut down.
 
-  * `/quit`
+ * `/quit`
 
-  End current game and shut down the server.
+ End current game and shut down the server.
 
-  * `/score`
+ * `/score`
 
-  Print a scoreboard of the current game.
+ Print a scoreboard of the current game.
 
-  * `/bye`
+ * `/bye`
 
-  Terminate session.
+ Terminate session.
