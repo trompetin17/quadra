@@ -51,8 +51,10 @@ class QServHandler(webapp.RequestHandler):
 					item = None
 
 			if not item:
+				score_data = self.params.copy()
+				del score_data['num']
 				item = models.Score(key_name='score:' + str(score),
-														score=score, data=pickle.dumps(self.params))
+														score=score, data=pickle.dumps(score_data))
 				item.put()
 
 		self.gethighscores()
