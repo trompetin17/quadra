@@ -41,11 +41,19 @@ class QServHandler(webapp.RequestHandler):
 		dir[file] = value
 
 	def postdemo(self):
-		if 'score' in self.params:
+		if 'score' in self.params and 'rec' in self.params:
 			score = int(self.params['score'])
-			item = models.Score(key_name='score:' + str(score),
-													score=score, data=pickle.dumps(self.params))
-			item.put()
+
+			item = models.Score.get_by_key_name('score:' + str(score))
+			if item:
+				data = pickle.loads(item.data)
+				if data['rec'] != self.params['rec']:
+					item = None
+
+			if not item:
+				item = models.Score(key_name='score:' + str(score),
+														score=score, data=pickle.dumps(self.params))
+				item.put()
 
 		self.gethighscores()
 
@@ -55,7 +63,6 @@ class QServHandler(webapp.RequestHandler):
 		scores_entities = {}
 		for score in query:
 			scores_entities[score.score] = score
-			#scores_entities[score.score] = pickle.loads(score.data)
 
 		scores_list = scores_entities.keys()
 		scores_list.sort(None, None, True)
