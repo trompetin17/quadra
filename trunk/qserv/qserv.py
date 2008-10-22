@@ -6,6 +6,19 @@ from google.appengine.ext import webapp
 
 import models
 
+def set_param(params, key, value):
+	path = key.split('/')
+	dir = params
+	file = path.pop()
+
+	while len(path):
+		item = path.pop(0)
+		if item not in dir:
+			dir[item] = {}
+		dir = dir[item]
+
+	dir[file] = value
+
 def format_params(root, params):
 	output = ''
 
@@ -26,19 +39,6 @@ class QServHandler(webapp.RequestHandler):
 		
 	def post(self):
 		return self.process()
-
-	def set_param(self, key, value):
-		path = key.split('/')
-		dir = self.params
-		file = path.pop()
-
-		while len(path):
-			item = path.pop(0)
-			if item not in dir:
-				dir[item] = {}
-			dir = dir[item]
-
-		dir[file] = value
 
 	def postdemo(self):
 		if 'score' in self.params and 'rec' in self.params:
@@ -109,7 +109,7 @@ class QServHandler(webapp.RequestHandler):
 		cmd = lines.pop(0)
 		for line in lines:
 			(key, value) = line.split(None, 1)
-			self.set_param(key, value)
+			set_param(self.params, key, value)
 
 		logging.info('command: ' + cmd)
 		self.response.headers['Content-Type'] = 'text/plain'
