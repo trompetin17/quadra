@@ -40,8 +40,16 @@ def put_score(params):
 			item = None
 
 	if not item:
+		# We scrub a few bits of informations before storing it.
 		score_data = params.copy()
-		del score_data['num']
+		if 'num' in score_data:
+			del score_data['num']
+		if 'port' in score_data:
+			del score_data['port']
+		if 'info' in score_data:
+			score_data['info'] = params['info'].copy()
+			if 'remoteaddr' in score_data['info']:
+				del score_data['info']['remoteaddr']
 		item = models.Score(key_name='score:' + str(score),
 		                    score=score, data=pickle.dumps(score_data))
 		item.put()
