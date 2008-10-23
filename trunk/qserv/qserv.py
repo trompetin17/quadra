@@ -30,6 +30,22 @@ def format_params(root, params):
 
 	return output
 
+def put_score(params):
+	score = int(params['score'])
+
+	item = models.Score.get_by_key_name('score:' + str(score))
+	if item:
+		data = pickle.loads(item.data)
+		if data['rec'] != params['rec']:
+			item = None
+
+	if not item:
+		score_data = params.copy()
+		del score_data['num']
+		item = models.Score(key_name='score:' + str(score),
+		                    score=score, data=pickle.dumps(score_data))
+		item.put()
+
 class QServHandler(webapp.RequestHandler):
 	default_demos = 5
 	scores_to_keep = 5
@@ -42,20 +58,7 @@ class QServHandler(webapp.RequestHandler):
 
 	def postdemo(self):
 		if 'score' in self.params and 'rec' in self.params:
-			score = int(self.params['score'])
-
-			item = models.Score.get_by_key_name('score:' + str(score))
-			if item:
-				data = pickle.loads(item.data)
-				if data['rec'] != self.params['rec']:
-					item = None
-
-			if not item:
-				score_data = self.params.copy()
-				del score_data['num']
-				item = models.Score(key_name='score:' + str(score),
-														score=score, data=pickle.dumps(score_data))
-				item.put()
+			put_score(self.params)
 
 		self.gethighscores()
 
