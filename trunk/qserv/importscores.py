@@ -28,35 +28,27 @@ class FormHandler(_BaseHandler):
 			return
 		self.response.out.write("""<html>
   <body>
-    <form action="submit" method="post">
-      <p>Import from: <input name="url"></p>
+    <form action="submit" method="post" enctype="multipart/form-data">
+      <p>Import from: <input name="highscores" type="file"></p>
+      <p><input value="Upload highscores" type="submit"></p>
     </form>
   </body>
 </html>""")
 
 class ImportHandler(_BaseHandler):
 	def post(self):
-		url = self.request.get('url', '')
-		if not users.is_current_user_admin() or url == '':
+		if not users.is_current_user_admin():
 			self.redirect('status?msg=notadmin')
 			return
 
-		logging.info('importing scores from ' + url)
-
-		response = urlfetch.fetch(url, payload=urllib.urlencode({'data': 'gethighscores\nnum 100\n'}),
-		                          headers={'Content-Type': 'application/x-www-form-urlencoded'},
-		                          method=urlfetch.POST)
-
-		if response.status_code != 200:
-			logging.error('fetch error while importing (%d)' % response.status_code)
-			self.redirect('status?msg=fetcherror')
+		highscores_data = self.request.get('highscores', '')
+		if highscores_data == '':
+			self.redirect('status?msg=missingdata')
 			return
 
-		lines = response.content.splitlines()
-		if not len(lines) or lines.pop(0) != 'Ok':
-			logging.error('invalid response while importing')
-			self.redirect('status?msg=invalid')
-			return
+		lines = highscores_data.splitlines()
+		if lines and lines[0] == 'Ok':
+			lines.pop(0)
 
 		params = {}
 		for line in lines:
@@ -66,7 +58,6 @@ class ImportHandler(_BaseHandler):
 		for score in params.itervalues():
 			if 'score' in score and 'rec' in score:
 				qserv.put_score(score)
-				self.response.out.write('%s: %s\n' % (score['name'], score['score']))
 
 		self.redirect('status?msg=success')
 
@@ -78,8 +69,7 @@ class StatusHandler(_BaseHandler):
 			msg = 'notadmin'
 		msgstrs = {'unknown': 'status unknown',
 		           'notadmin': 'you do not have sufficient rights',
-		           'fetcherror': 'fetch error while importing',
-		           'invalid': 'invalid response from remote qserv',
+		           'missingdata': 'highscore data is missing',
 		           'success': 'success'}
 		self.response.out.write("""<html>
   <body>
