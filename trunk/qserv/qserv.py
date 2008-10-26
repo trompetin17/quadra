@@ -57,7 +57,7 @@ def put_score(params):
 
 class QServHandler(webapp.RequestHandler):
 	default_demos = 5
-	scores_to_keep = 5
+	scores_to_keep = 100
 
 	def get(self):
 		return self.process()
