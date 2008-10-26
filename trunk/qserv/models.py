@@ -6,5 +6,5 @@ class Game(db.Model):
 
 class Score(db.Model):
 	score = db.IntegerProperty(required=True)
-	data = db.TextProperty(required=True)
+	data = db.BlobProperty(required=True)
 	timestamp = db.DateTimeProperty(auto_now=True)
