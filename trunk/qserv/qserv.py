@@ -35,8 +35,12 @@ def put_score(params):
 
 	item = models.Score.get_by_key_name('score:' + str(score))
 	if item:
-		data = pickle.loads(item.data)
-		if data['rec'] != params['rec']:
+		try:
+			data = pickle.loads(item.data)
+			if data['rec'] != params['rec']:
+				item = None
+		except:
+			logging.error('error unpickling score %d, will overwrite' % score)
 			item = None
 
 	if not item:
