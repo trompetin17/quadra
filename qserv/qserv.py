@@ -165,6 +165,17 @@ class QServHandler(webapp.RequestHandler):
 
 			self.response.out.write(format_params(key, info))
 
+	def deletegame(self):
+		game = models.Game.get_by_key_name('game:' +
+		                                   self.params['info']['remoteaddr'] + ':' +
+		                                   str(self.params['port']))
+
+		if game is not None:
+			game.delete()
+			self.response.out.write('Game deleted\n')
+		else:
+			self.response.out.write('Game not found\n')
+
 	def process(self):
 		self.params = {}
 
@@ -195,6 +206,8 @@ class QServHandler(webapp.RequestHandler):
 			self.postgame()
 		elif cmd == 'getgames':
 			self.getgames()
+		elif cmd == 'deletegame':
+			self.deletegame()
 		else:
 			self.response.set_status(500)
 			self.response.out.write('Hi, I\'m the Python Quadra game server.\n'
