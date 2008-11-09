@@ -1,6 +1,8 @@
 
+import datetime
 import logging
 import pickle
+import time
 
 from google.appengine.ext import webapp
 
@@ -56,8 +58,12 @@ def put_score(params):
 		item.put()
 
 class QServHandler(webapp.RequestHandler):
+	# Default number of scores/demos to send on gethighscores
 	default_demos = 5
+	# Number of scores kept in our store
 	scores_to_keep = 100
+	# Timeout before expiring games
+	timeout = datetime.timedelta(0, 180)
 
 	def get(self):
 		return self.process()
@@ -111,6 +117,54 @@ class QServHandler(webapp.RequestHandler):
 																						scores[score]))
 			high += 1
 
+	def postgame(self):
+		key = self.params['info']['remoteaddr'] + ':' + str(self.params['port'])
+
+		game = models.Game(key_name='game:' + key,
+		                   addr=self.params['info']['remoteaddr'],
+		                   port=int(self.params['port']),
+		                   data=pickle.dumps(self.params))
+		game.put()
+
+		self.response.out.write('Game updated\n')
+
+	def getgames(self):
+		games = {}
+		expiration = datetime.datetime.utcnow() - self.timeout
+
+		for game in models.Game.all():
+			if game.timestamp < expiration:
+				game.delete()
+				continue
+			games[(game.addr, game.port)] = pickle.loads(game.data)
+			set_param(games[(game.addr, game.port)], 'info/lastupdate',
+			          int(time.mktime(game.timestamp.timetuple())))
+
+		strip_players = False
+		strip_port = False
+		if 'info' in self.params:
+			if 'quadra_version' in self.params['info']:
+				if self.params['info']['quadra_version'] == '1.1.2':
+					strip_players = True
+			else:
+				if 'qsnoop_version' not in self.params['info']:
+					strip_port = True
+
+		self.response.out.write('Current games\n')
+		seen = {}
+		for addr, info in games.iteritems():
+			key = addr[0]
+			if not strip_port:
+				key += ':' + str(addr[1])
+			if key in seen:
+				continue
+			seen[key] = True
+
+			if strip_players:
+				info.pop('players', None)
+
+			self.response.out.write(format_params(key, info))
+
 	def process(self):
 		self.params = {}
 
@@ -123,12 +177,24 @@ class QServHandler(webapp.RequestHandler):
 			(key, value) = line.split(None, 1)
 			set_param(self.params, key, value)
 
+		try:
+			if int(self.params['port']) > 65535:
+				raise ValueError
+		except:
+			self.params['port'] = 3456
+
+		set_param(self.params, 'info/remoteaddr', self.request.remote_addr)
+
 		logging.info('command: ' + cmd)
 		self.response.headers['Content-Type'] = 'text/plain'
 		if cmd == 'postdemo':
 			self.postdemo()
 		elif cmd == 'gethighscores':
 			self.gethighscores()
+		elif cmd == 'postgame':
+			self.postgame()
+		elif cmd == 'getgames':
+			self.getgames()
 		else:
 			self.response.set_status(500)
 			self.response.out.write('Hi, I\'m the Python Quadra game server.\n'
