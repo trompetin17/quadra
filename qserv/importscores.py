@@ -56,7 +56,6 @@ class ImportHandler(_BaseHandler):
 			qserv.set_param(params, key, value)
 
 		for score in params.itervalues():
-			if 'score' in score and 'rec' in score:
 				qserv.put_score(score)
 
 		self.redirect('status?msg=success')
