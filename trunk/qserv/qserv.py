@@ -8,6 +8,8 @@ from google.appengine.ext import webapp
 
 import models
 
+REQUIRED_SCORE_KEYS = ['score', 'name', 'rec', 'level', 'lines']
+
 def set_param(params, key, value):
 	path = key.split('/')
 	dir = params
@@ -33,6 +35,12 @@ def format_params(root, params):
 	return output
 
 def put_score(params):
+	missing_keys = filter(lambda key: key not in params, REQUIRED_SCORE_KEYS)
+	if missing_keys:
+		logging.error('score missing required key(s): %s'
+		              % ', '.join(missing_keys))
+		return
+
 	score = int(params['score'])
 
 	item = models.Score.get_by_key_name('score:' + str(score))
@@ -40,6 +48,8 @@ def put_score(params):
 		try:
 			data = pickle.loads(item.data)
 			if data['rec'] != params['rec']:
+				logging.warning('new score %d (by "%s") equalled old score (by "%s"),'
+				' ignoring new score' % (score, data['name'], params['name']))
 				item = None
 		except:
 			logging.error('error unpickling score %d, will overwrite' % score)
@@ -72,8 +82,7 @@ class QServHandler(webapp.RequestHandler):
 		return self.process()
 
 	def postdemo(self):
-		if 'score' in self.params and 'rec' in self.params:
-			put_score(self.params)
+		put_score(self.params)
 
 		self.gethighscores()
 
