@@ -21,6 +21,7 @@
 #ifndef _HEADER_FIND_FILE
 #define _HEADER_FIND_FILE
 
+#include <string.h>
 #include "types.h"
 
 class Find_file_entry {
@@ -39,6 +40,7 @@ public:
   static void get_current_directory(char *s);
   virtual bool eof() = 0;
   virtual Find_file_entry get_next_entry() = 0;
+  virtual bool has_error() = 0;
 };
 
 static inline const char *mybasename(const char* f) {
@@ -47,5 +49,4 @@ static inline const char *mybasename(const char* f) {
 		p--;
 	return p+1;
 }
-
 #endif

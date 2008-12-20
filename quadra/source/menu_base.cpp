@@ -18,19 +18,17 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "menu_base.h"
+
 #include "input.h"
 #include "inter.h"
-#include "texte.h"
 #include "global.h"
 #include "zone.h"
 #include "quadra.h"
-#include "menu_base.h"
-
-RCSID("$Id$")
 
 void Menu_quit::step() {
 	Menu::step();
-	if(input->quel_key == 1 || quitting)
+	if(input->last_key.sym == SDLK_ESCAPE || quitting)
 		quit = true;
 	if(quit)
 		exec(new Fade_out(pal));
@@ -39,20 +37,21 @@ void Menu_quit::step() {
 Menu_net_problem::Menu_net_problem(const char *s, const char *context, Bitmap *bit, Font *font) {
 	inter->set_font(font, false);
 	(void)new Zone_bitmap(inter, bit, 0, 0);
-	(void)new Zone_text(inter, ST_NETERROR, 120);
+	(void)new Zone_text(inter, "The following network error occurred:", 120);
 	if(!s)	
 		s = "Generic network error";
 	(void)new Zone_text(inter, s, 160);
-	(void)new Zone_text(inter, ST_NETERROR2, 200);
+	(void)new Zone_text(inter, "If the error persists, please e-mail our "
+                      "technical support.", 200);
 	if(context)
 		(void)new Zone_text(inter, context, 240);
-	cancel = new Zone_text_button2(inter, bit, font, ST_BACK, 560, 450);
+	cancel = new Zone_text_button2(inter, bit, font, "Back ·0", 560, 450);
 }
 
 void Menu_net_problem::step() {
 	Menu::step();
-	if(input->quel_key == 1 || result==cancel) {
-		input->quel_key = 0;
+	if(input->last_key.sym == SDLK_ESCAPE || result == cancel) {
+		input->last_key.sym = SDLK_UNKNOWN;
 		ret();
 	}
 }

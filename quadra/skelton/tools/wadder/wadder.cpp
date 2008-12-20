@@ -112,8 +112,6 @@
 #include "res.h"
 #include "find_file.h"
 
-RCSID("$Id$")
-
 const char usage[] = "usage: wadder <working directory> <output res> <input text>\n";
 Resfile *wad;
 
@@ -177,5 +175,6 @@ int main(int ARGC, char **ARGV, char **ENV) {
 	return 0;
 }
 
-void start_game(void) {
+// RV: this function is needed by error.cpp to clean up subsystems
+void delete_obj() {
 }

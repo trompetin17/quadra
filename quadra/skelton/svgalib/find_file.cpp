@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "find_file.h"
+
 #include <sys/stat.h>
 #ifndef __USE_GNU
 #define __USE_GNU
@@ -26,10 +28,6 @@
 #include <unistd.h>
 #include <time.h>
 #include <glob.h>
-
-#include "find_file.h"
-
-RCSID("$Id$")
 
 Find_file_entry::Find_file_entry(const char *n, bool f) {
   name[0] = 0;
@@ -50,6 +48,7 @@ public:
   Find_file_Unix(const char *n);
   virtual ~Find_file_Unix();
   virtual bool eof();
+  virtual bool has_error();
   virtual Find_file_entry get_next_entry();
 };
 
@@ -85,6 +84,12 @@ Find_file_Unix::~Find_file_Unix() {
 
 bool Find_file_Unix::eof() {
   return !(globbuf.gl_pathc-count);
+}
+
+// RV: Is there a way to detect that the path passed to glob() is not valid?
+bool Find_file_Unix::has_error()
+{
+	return false;
 }
 
 Find_file_entry Find_file_Unix::get_next_entry() {

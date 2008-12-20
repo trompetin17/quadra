@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "multi_player.h"
+
 #include <stdio.h>
 #include "input.h"
 #include "image_png.h"
@@ -27,10 +29,8 @@
 #include "quadra.h"
 #include "pane.h"
 #include "chat_text.h"
-#include "music.h"
 #include "game.h"
 #include "global.h"
-#include "texte.h"
 #include "net_stuff.h"
 #include "recording.h"
 #include "sons.h"
@@ -42,34 +42,28 @@
 #include "net_server.h"
 #include "nglog.h"
 #include "clock.h"
-#include "multi_player.h"
 
-RCSID("$Id$")
-
-Multi_player::Multi_player(int *got_high) {
-	stop=false; //set to true to quit game
-	got_highscore = got_high;
-	last_countdown = -1;
-	menu_stat = NULL;
+Multi_player::Multi_player(int *got_high):
+	got_highscore(got_high),
+	last_countdown(-1),
+	menu_stat(NULL),
+ 	stop(false),
+	bit(NULL) {
 	int i;
 	{
 		Res_doze res("fond0.png");
 		Png img(res);
 		bit = new Bitmap(img);
+		video->clone_palette(bit->surface);
 	}
 	pal.set_size(256);
 	for(i=0; i<9; i++)
-		color[i] = new Color(i, pal);
+		color[i] = new Color(i);
 	font2 = fteam[4];
-	if(game->single) {
-		if(config.info.cdmusic == 1)
-			music->play(2);
+	if(game->single)
 		i = 1;
-	} else {
+	else
 		i = game->get_multi_level();
-		if(config.info.cdmusic == 1)
-			music->play(i+1, true);
-	}
 	Canvas::change_level(i, &pal, bit);
 	set_fteam_color(pal);
 	inter->set_font(new Font(*fonts.normal, pal, 255, 255, 255));
@@ -99,75 +93,21 @@ Multi_player::Multi_player(int *got_high) {
 		overmind.start(pane_exec[i]);
 	}
 	if(playback && playback->single() && !playback->auto_demo) {
-		(void)new Zone_slow_play(inter, bit, font2, ST_SLOWPLAY, 430, 420);
-		(void)new Zone_fast_play(inter, bit, font2, ST_FASTPLAY, 430, 450);
-		b_quit = new Zone_text_button2(inter, bit, font2, ST_BACK, 560, 455);
+		(void)new Zone_slow_play(inter, bit, font2, "Slow motion", 430, 420);
+		(void)new Zone_fast_play(inter, bit, font2, "Fast forward", 430, 450);
+		b_quit = new Zone_text_button2(inter, bit, font2, "Back ·0", 560, 455);
 	}
 	else {
-		b_quit=NULL;
+		b_quit = NULL;
 	}
 }
 
 void Multi_player::step() {
 	Menu_fadein::step();
 
-/* Generate small pics for ngStatsQuadra
-	static Dword wait_timer=0;
-	wait_timer++;
-	if(wait_timer==500) {
-		int col;
-		Byte side;
-		for(col = -1; col<9; col++) {
-			for(side=0; side<16; side++) {
-				char st[32];
-				Bitmap the_bit(18, 18, 18);
-				if(col!=-1) {
-					raw_draw_bloc(video->vb, 0, 0, side, color[col]);
-					video->vb->get_bitmap(&the_bit, 0, 0, 18, 18);
-					sprintf(st, "%c%c.png", '0'+col, 'a'+side);
-				}
-				else
-					strcpy(st, "e0.png");
-				Raw raw(18, 18, col!=-1? 8:2);
-				Res_dos res(st, RES_CREATE);
-				if(!res.exist) {
-					skelton_msgbox("Can't create file!\n");
-					return;
-				}
-				raw.write(res);
-				int i;
-				Byte pa[3];
-				if(col!=-1)
-					for(i=color[col]->shade(0); i<color[col]->shade(0)+8; i++) {
-						pa[0] = pal.r(i);
-						pa[1] = pal.g(i);
-						pa[2] = pal.b(i);
-						res.write(pa, 3);
-					}
-				else {
-					pa[0]=0;
-					pa[1]=0;
-					pa[2]=0;
-					res.write(pa, 3);
-					pa[0]=255;
-					pa[1]=255;
-					pa[2]=255;
-					res.write(pa, 3);
-				}
-				for(i=0; i<18; i++) {
-					Byte pel[18];
-					memcpy(pel, the_bit[i], 18);
-					for(int j=0; j<18; j++)
-						pel[j] = pel[j] & 7;
-					res.write(pel, 18);
-				}
-			}
-		}
-	}*/
-
 	if(playback && playback->auto_demo)
-		if(result || input->quel_key != -1) {
-			input->quel_key = -1;
+		if(result || input->last_key.sym != SDLK_UNKNOWN) {
+			input->last_key.sym = SDLK_UNKNOWN;
 			stop = true;
 		}
 
@@ -187,7 +127,7 @@ void Multi_player::step() {
 		}
 		stop = true;
 	}
-	if(input->quel_key == KEY_ESCAPE)
+	if(input->last_key.sym == SDLK_ESCAPE)
 		game->abort = true;
 	if(game->abort)
 		stop = true;
@@ -203,26 +143,6 @@ void Multi_player::step() {
 			*menu_stat = new Menu_stat();
 		exec(new Fade_out(pal));
 		return;
-	}
-
-	if(_debug) {
-		int snap_can = -1;
-		if(input->keys[KEY_F2] & PRESSED) {
-			input->keys[KEY_F2] = 0;
-			snap_can = 0;
-		}
-		if(input->keys[KEY_F3] & PRESSED) {
-			input->keys[KEY_F3] = 0;
-			snap_can = 1;
-		}
-		if(input->keys[KEY_F4] & PRESSED) {
-			input->keys[KEY_F4] = 0;
-			snap_can = 2;
-		}
-		if(snap_can != -1) {
-			video->vb->rect(snap_can * 214+142, 0, 60, 30, 0);
-			video->snap_shot(snap_can * 214+6, 0, 203, 401);
-		}
 	}
 }
 
@@ -258,7 +178,7 @@ void Multi_player::check_pause() {
 		pause = game->paused;
 		if(pause) {
 			if(game->delay_start == 0) // prevents the sound at the start
-				Sfx stmp(sons.pause, 0, -300, 0, 11025);
+        sons.pause->play(-300, 0, 11025);
 			zone_pause = new Zone_sprite(inter, "gamepaus.png");
 		} else {
 			if(zone_pause)
@@ -269,7 +189,7 @@ void Multi_player::check_pause() {
 	} else {
 		if(game->delay_start && game->delay_start != 500) {
 			if(game->delay_start == 1) {
-				Sfx stmp(sons.start, 0, -300, 0, 11025);
+        sons.start->play(-300, 0, 11025);
 				return;
 			}
 			int chiffre = game->delay_start / 100;
@@ -280,7 +200,7 @@ void Multi_player::check_pause() {
 				sprintf(st, "game_%i.png", chiffre+1);
 				zone_pause = new Zone_sprite(inter, st);
 				last_countdown = chiffre;
-				Sfx stmp(sons.pause, 0, -300, 0, 20025);
+        sons.pause->play(-300, 0, 20025);
 			}
 		}
 	}
@@ -397,9 +317,8 @@ void Zone_slow_play::waiting() {
 
 void Zone_slow_play::process() {
 	Zone_text_button2::process();
-	if(high && (input->keys[KEY_ENTER] & PRESSED || input->keys[KEY_SPACE] & PRESSED)) {
+	if(high && (input->keys[SDLK_RETURN] & PRESSED || input->keys[SDLK_SPACE] & PRESSED))
 		time_control = TIME_SLOW;
-	}
 }
 
 Zone_fast_play::Zone_fast_play(Inter *in, Bitmap *bit, Font *f, const char *t, int px, int py):
@@ -415,9 +334,8 @@ void Zone_fast_play::waiting() {
 
 void Zone_fast_play::process() {
 	Zone_text_button2::process();
-	if(high && (input->keys[KEY_ENTER] & PRESSED || input->keys[KEY_SPACE] & PRESSED)) {
+	if(high && (input->keys[SDLK_RETURN] & PRESSED || input->keys[SDLK_SPACE] & PRESSED))
 		time_control = TIME_FAST;
-	}
 }
 
 void Multi_player_launcher::init() {

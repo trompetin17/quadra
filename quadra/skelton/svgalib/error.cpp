@@ -18,17 +18,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "error.h"
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdio.h>
-#include "error.h"
 #include "video.h"
-
-RCSID("$Id$")
-
-#ifndef NDEBUG
-	int copper=0;
-#endif
 
 #ifndef NDEBUG
 	bool _debug = true;
@@ -38,7 +33,7 @@ RCSID("$Id$")
 
 bool skelton_debug = true;
 
-Error::Error(const char* m, ...) {
+void fatal_msgbox(const char* m, ...) {
 	char st[1024];
 	va_list marker;
 	va_start(marker, m);
@@ -61,17 +56,6 @@ void msgbox(const char* m, ...) {
 
 void skelton_msgbox(const char* m, ...) {
 	if(_debug && skelton_debug) {
-		char st[1024];
-		va_list marker;
-		va_start(marker, m);
-		vsnprintf(st, sizeof(st) - 1, m, marker);
-		va_end(marker);
-		fprintf(stderr, "%s", st);
-	}
-}
-
-void lock_msgbox(const char* m, ...) {
-	if(_debug) {
 		char st[1024];
 		va_list marker;
 		va_start(marker, m);

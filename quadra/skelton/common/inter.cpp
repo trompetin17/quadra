@@ -18,21 +18,21 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "video.h"
-#include "bitmap.h"
+#include "inter.h"
+
+#include <algorithm>
+#include <assert.h>
+
 #include "input.h"
 #include "main.h"
-#include "sound.h"
 #include "cursor.h"
-#include "inter.h"
 #include "image_png.h"
-#include "res.h"
 #include "config.h"
 
-RCSID("$Id$")
-
+using std::find;
 using std::max;
 using std::min;
+using std::vector;
 
 int Inter::last_mouse_x = -1, Inter::last_mouse_y = -1;
 bool Inter::kb_visible = false;
@@ -97,24 +97,24 @@ int Zone::in() const {
 Zone_sprite::Zone_sprite(Inter *in, const char *nam, int px, int py): Zone(in) {
 	Res_doze res(nam);
 	Png png(res);
-	Bitmap bitmap(png);
-	sp = new Sprite(bitmap, 0, 0);
-	w = sp->width;
-	h = sp->height;
+	sp = png.new_surface();
+	SDL_SetColorKey(sp, SDL_SRCCOLORKEY, 0);
+	w = sp->w;
+	h = sp->h;
 	if(px == -1)
-		x = (video->width - w) / 2;
+		x = (video->surface()->w - w) / 2;
 	if(py == -1)
-		y = (video->height - h) / 2;
+		y = (video->surface()->h - h) / 2;
 	w = h = 0; // special: zone_sprite is not clickable
 	stay_on_top = true; // special: the zone_sprite are constantly redrawn
 }
 
 Zone_sprite::~Zone_sprite() {
-	delete sp;
+	SDL_FreeSurface(sp);
 }
 
 void Zone_sprite::draw() {
-	sp->draw(video->vb, x, y);
+	video->vb.put_surface(sp, x, y);
 }
 
 Zone_bitmap::Zone_bitmap(Inter* in, Bitmap* bit, int px, int py, Bitmap* bit2):
@@ -176,19 +176,28 @@ Zone_state_bit::Zone_state_bit(Inter* in, const char* b1, int *pval, int px, int
 	Zone_state(in, pval, px, py) {
 	Res_doze res(b1);
 	Png png(res);
-	state[0] = new Bitmap(png);
-	w = state[0]->width;
-	h = state[0]->height;
+	state[0] = png.new_surface();
+	w = state[0]->w;
+	h = state[0]->h;
 	if(b2) {
 		Res_doze res2(b2);
 		Png png(res2);
-		state[nstate++] = new Bitmap(png);
+		state[nstate++] = png.new_surface();
 	}
 	if(b3) {
 		Res_doze res3(b3);
 		Png png(res3);
-		state[nstate++] = new Bitmap(png);
+		state[nstate++] = png.new_surface();
 	}
+}
+
+Zone_state_bit::~Zone_state_bit() {
+	for(int i=0; i < nstate; i++)
+		SDL_FreeSurface(state[i]);
+}
+
+void Zone_state_bit::draw() {
+  video->vb.put_surface(state[last_val], x, y);
 }
 
 Zone_state_text::Zone_state_text(Inter* in, int *pval, int px, int py, int pw, int ph):
@@ -212,11 +221,11 @@ void Zone_state_text::add_string(const char* s, Font *f) {
 
 void Zone_state_text::draw() {
 	pan->draw();
-	video->vb->vline(x, y, h, 255);
-	video->vb->hline(y, x, w, 255);
+	video->vb.vline(x, y, h, 255);
+	video->vb.hline(y, x, w, 255);
   if (last_val >= 0
       && static_cast<unsigned int>(last_val) < sizeof(fonts) / sizeof(*fonts))
-    fonts[last_val]->draw(state[last_val], pan->pan, CENTER, 0);
+    fonts[last_val]->draw(state[last_val], *pan->pan, CENTER, 0);
 }
 
 void Zone_state_text::leaved() {
@@ -248,7 +257,7 @@ Zone(in, px, py, in->font->width(s)+2, f2->height()) {
 }
 
 Zone_text::Zone_text(Font* f2, Inter* in, const char* s, int py):
-Zone(in, 0, py, video->width, f2->height()) {
+Zone(in, 0, py, video->surface()->w, f2->height()) {
 	font = f2;
 	lock_size = true;
 	set_text(s);
@@ -262,7 +271,7 @@ Zone(in, px, py, pw, in->font->height()) {
 }
 
 Zone_text::Zone_text(Inter* in, const char* s, int py):
-Zone(in, 0, py, video->width, in->font->height()) {
+Zone(in, 0, py, video->surface()->w, in->font->height()) {
 	font = in->font;
 	lock_size = true;
 	set_text(s);
@@ -304,10 +313,10 @@ Zone_text(in, s, px, py, pw) {
 }
 
 void Zone_text_select::draw() {
-	video->vb->hline(y, x, w, 210);
-	video->vb->hline(y+h-1, x, w, 210);
-	video->vb->vline(x, y, h, 210);
-	video->vb->vline(x+w-1, y, h, 210);
+	video->vb.hline(y, x, w, 210);
+	video->vb.hline(y+h-1, x, w, 210);
+	video->vb.vline(x, y, h, 210);
+	video->vb.vline(x+w-1, y, h, 210);
 	actual->draw(st, video->vb, text_x, y);
 }
 
@@ -330,7 +339,7 @@ void Zone_text_select::set_font(Font* f) {
 }
 
 Zone_text_button::Zone_text_button(Inter* in, Bitmap *fond, Font* f, const char* s, int py):
-Zone_text_select(in, f, s, (video->width - f->width(s))>>1, py-2, f->width(s)) {
+Zone_text_select(in, f, s, (video->surface()->w - f->width(s))>>1, py-2, f->width(s)) {
 	h+=4;
 	w+=6;
 	set_bit(fond);
@@ -370,38 +379,38 @@ void Zone_text_button::set_text(const char* s) {
 
 void Zone_text_button::set_bit(Bitmap *fond) {
 	if(fond)
-		bit = new Bitmap((*fond)[y]+x, w-2, h-2, fond->realwidth);
+		bit = new Bitmap((*fond)[y]+x, w-2, h-2, fond->surface->pitch);
 	else
 		bit = NULL;
 }
 
 void Zone_text_button::draw() {
 	if(!bit)
-		video->vb->rect(x+1, y+1, w-2, h-2, 0);
+		video->vb.rect(x+1, y+1, w-2, h-2, 0);
 	if(high) {
 		if(bit)
-			bit->draw(video->vb, x+2, y+2);
+			video->vb.put_bitmap(*bit, x+2, y+2);
 		actual->draw(st, video->vb, text_x+4, y+3);
-		video->vb->vline(x, y, h, 0);
-		video->vb->hline(y, x, w, 0);
-		video->vb->vline(x+w-1, y+1, h-1, 0);
-		video->vb->hline(y+h-1, x+1, w-1, 0);
-		video->vb->vline(x+1, y+1, h-2, 0);
-		video->vb->hline(y+1, x+1, w-2, 0);
-		video->vb->vline(x+w-2, y+2, h-3, 255);
-		video->vb->hline(y+h-2, x+2, w-3, 255);
+		video->vb.vline(x, y, h, 0);
+		video->vb.hline(y, x, w, 0);
+		video->vb.vline(x+w-1, y+1, h-1, 0);
+		video->vb.hline(y+h-1, x+1, w-1, 0);
+		video->vb.vline(x+1, y+1, h-2, 0);
+		video->vb.hline(y+1, x+1, w-2, 0);
+		video->vb.vline(x+w-2, y+2, h-3, 255);
+		video->vb.hline(y+h-2, x+2, w-3, 255);
 	} else {
 		if(bit)
-			bit->draw(video->vb, x, y);
+			video->vb.put_bitmap(*bit, x, y);
 		actual->draw(st, video->vb, text_x+3, y+2);
-		video->vb->vline(x, y, h, 0);
-		video->vb->hline(y, x, w, 0);
-		video->vb->vline(x+w-1, y+1, h-1, 0);
-		video->vb->hline(y+h-1, x+1, w-1, 0);
-		video->vb->vline(x+1, y+1, h-2, 255);
-		video->vb->hline(y+1, x+1, w-2, 255);
-		video->vb->vline(x+w-2, y+2, h-3, 0);
-		video->vb->hline(y+h-2, x+2, w-3, 0);
+		video->vb.vline(x, y, h, 0);
+		video->vb.hline(y, x, w, 0);
+		video->vb.vline(x+w-1, y+1, h-1, 0);
+		video->vb.hline(y+h-1, x+1, w-1, 0);
+		video->vb.vline(x+1, y+1, h-2, 255);
+		video->vb.hline(y+1, x+1, w-2, 255);
+		video->vb.vline(x+w-2, y+2, h-3, 0);
+		video->vb.hline(y+h-2, x+2, w-3, 0);
 	}
 }
 
@@ -426,29 +435,28 @@ Zone(in, px, py, pw, ph) {
 void Zone_panel::resize() {
 	if(pan)
 		delete pan;
-	pan = Video_bitmap::New(x+2, y+2, max(w-4, 0), max(h-4, 0));
+	pan = new Video_bitmap(x+2, y+2, max(w-4, 0), max(h-4, 0));
 	dirt();
 }
 
 void Zone_panel::draw() {
 	if(draw_frame) {
-		video->vb->hline(y, x, w, 210);
-		video->vb->hline(y+h-1, x, w, 210);
-		video->vb->vline(x, y+1, h-2, 210);
-		video->vb->vline(x+w-1, y+1, h-2, 210);
+		video->vb.hline(y, x, w, 210);
+		video->vb.hline(y+h-1, x, w, 210);
+		video->vb.vline(x, y+1, h-2, 210);
+		video->vb.vline(x+w-1, y+1, h-2, 210);
 		if(high) {
-			video->vb->hline(y+1, x+1, w-2, 255);
-			video->vb->hline(y+h-2, x+1, w-2, 255);
-			video->vb->vline(x+1, y+2, h-4, 255);
-			video->vb->vline(x+w-2, y+2, h-4, 255);
+			video->vb.hline(y+1, x+1, w-2, 255);
+			video->vb.hline(y+h-2, x+1, w-2, 255);
+			video->vb.vline(x+1, y+2, h-4, 255);
+			video->vb.vline(x+w-2, y+2, h-4, 255);
 			if(h-4 > 0)
-				video->vb->rect(x+2, y+2, w-4, h-4, 0);
+				video->vb.rect(x+2, y+2, w-4, h-4, 0);
 		} else {
 			if(h-2 > 0)
-				video->vb->rect(x+1, y+1, w-2, h-2, 0);
+				video->vb.rect(x+1, y+1, w-2, h-2, 0);
 		}
 	}
-	pan->setmem();
 }
 
 Zone_text_input::Zone_text_input(Inter* in, const Palette& pal, char* s, int mlen, int px, int py, int pw, int mwidth):
@@ -491,7 +499,6 @@ void Zone_text_input::clicked(int quel) {
 		actual_len = curpos;
 		select_start = 0; // select_all by default
 		panx = 0;
-		input->deraw();
 		input->clear_key();
 		Zone_panel::clicked(quel);
 		high = true;
@@ -499,7 +506,7 @@ void Zone_text_input::clicked(int quel) {
 		first_click = false;
 	} else {
 		first_click = true;
-		if(input->shift_key & SHIFT) {
+		if(SDL_GetModState() & KMOD_SHIFT) {
 			if(select_start == -1)
 				select_start = curpos;
 		} else {
@@ -548,7 +555,7 @@ void Zone_text_input::draw() {
 		if(sx - panx < 0) {
 			panx = max(0, panx - (w>>2));
 		}
-		inter->font->draw(st, pan, -panx, 0);
+		inter->font->draw(st, *pan, -panx, 0);
 
 		if(select_start != -1 && select_start != curpos) {
 			int x1, x2, x3, x4;
@@ -565,7 +572,7 @@ void Zone_text_input::draw() {
 
 			char tube_char = st[x2];
 			st[x2] = 0;
-			font_selected->draw(&st[x1], pan, x3-panx, 0);
+			font_selected->draw(&st[x1], *pan, x3-panx, 0);
 			st[x2] = tube_char;
 		}
 		if(focus > 10) {
@@ -573,7 +580,7 @@ void Zone_text_input::draw() {
 			pan->vline(sx-panx-1, 0, h, curcolor);
 		}
 	} else {
-		inter->font->draw(st, pan, 0, 0);
+		inter->font->draw(st, *pan, 0, 0);
 	}
 }
 
@@ -584,17 +591,13 @@ void Zone_text_input::lost_focus(int cancel) {
 		strcpy(st, val);
 	else
 		strcpy(val, st);
-	input->reraw();
 }
 
 void Zone_text_input::process() {
-	Byte c;
 	if(focus) {
-		// clipboard support in Windows
-		check_clipboard();
-		for(int i=0; i<input->key_pending; i++) {
-			c = input->key_buf[i].c;
-			if((c == 8) || (c == 127)) {  // backspace
+		for(unsigned int i = 0; i < input->key_pending; ++i) {
+			SDLKey sym = input->key_sym_buf[i];
+			if(sym == SDLK_BACKSPACE) {  // backspace
 				if(!cut_selection()) { // if nothing selected has been cut,
 					if(curpos > 0) { // proceed to a normal backspace
 						curpos--;
@@ -604,42 +607,53 @@ void Zone_text_input::process() {
 				}
 				continue;
 			}
-			if(input->key_buf[i].special) { // moving keys and others
-				if(c == 46) {// delete
-					if(!cut_selection()) { // if nothing selected has been cut,
-						if(curpos != actual_len) { // proceed with a normal delete
-							memmove(&st[curpos], &st[curpos+1], actual_len - curpos);
-							actual_len--;
-						}
+
+			// moving keys and others
+			if(sym == SDLK_DELETE) { // delete 
+				if(!cut_selection()) { // if nothing selected has been cut,
+					if(curpos != actual_len) { // proceed with a normal delete
+						memmove(&st[curpos], &st[curpos+1], actual_len - curpos);
+						actual_len--; 
 					}
-				}
-				if(c==37 || c==39 || c==36 || c==35) {
-					if(input->shift_key & SHIFT) {
-							if(select_start == -1)
-								select_start = curpos;
-					} else {
-						select_start = -1;
-					}
-				}
-				if(c == 37 && curpos > 0) { // left arrow
-					curpos--;
-				}
-				if(c == 39 && curpos != actual_len) { // right arrow
-					curpos++;
-				}
-				if(c == 36) { // home
-					curpos = 0;
-				}
-				if(c == 35) { // end
-					curpos = actual_len;
 				}
 				continue;
 			}
-			if(c == 1) { // CTRL-A (select all)
+			if(sym==SDLK_LEFT || sym==SDLK_RIGHT || sym==SDLK_HOME || sym==SDLK_END) {
+				if(SDL_GetModState() & KMOD_SHIFT) {
+					if(select_start == -1)
+						select_start = curpos;
+				} else {
+					select_start = -1;
+				}
+			}
+			if(sym == SDLK_LEFT && curpos > 0) { // left arrow
+				curpos--;
+				continue;
+			}
+			if(sym == SDLK_RIGHT && curpos != actual_len) { // right arrow
+				curpos++;
+				continue;
+			}
+			if(sym == SDLK_HOME) { // home
+				curpos = 0;
+				continue;
+			}
+			if(sym == SDLK_END) { // end
+				curpos = actual_len;
+				continue;
+			}
+
+			if(sym == SDLK_a && (SDL_GetModState() & (KMOD_CTRL | KMOD_META))) { // CTRL-A (select all)
 				curpos = actual_len;
 				select_start = 0;
+				continue;
 			}
-			input_char(c);
+			Byte c = input->key_buf[i];
+			// If 'c' is a valid unicode character, add it to input field
+			if(c)
+			{
+				input_char(c);
+			}
 		}
 		input->key_pending = 0;
 		focus++;
@@ -662,7 +676,7 @@ void Zone_text_input::input_char(const Byte c) {
 			actual_len++;
 		}
 		if(maxwidth != -1) {
-			if(inter->font->width(st) > maxwidth) {
+			while(inter->font->width(st) > maxwidth) {
 				actual_len--;
 				if(curpos > actual_len)
 					curpos = actual_len;
@@ -690,70 +704,6 @@ bool Zone_text_input::cut_selection() {
 	select_start = -1;
 	curpos = x1;
 	return true;
-}
-
-void Zone_text_input::check_clipboard() {
-#ifdef UGS_DIRECTX
-	if(input->shift_key != CONTROL)
-		return;
-	if(!input->keys[DIK_V] & PRESSED && !input->keys[DIK_C] & PRESSED && !input->keys[DIK_X] & PRESSED)
-		return;
-	if(!OpenClipboard(NULL)) {
-		skelton_msgbox("  Error opening clipboard.\n");
-		return;
-	}
-	if(input->keys[DIK_V] & PRESSED) {
-		input->keys[DIK_V] = 0;
-		HANDLE h = GetClipboardData(CF_TEXT);
-		if(h == NULL) {
-			skelton_msgbox("  Error getting clipboard data.\n");
-		} else {
-			char *clip = (char *) h;
-			cut_selection();
-			int ma = strlen(clip);
-			for(int i=0; i<ma; i++)
-				input_char(clip[i]);
-		}
-	}
-	bool cut=false,copy=false;
-	if(input->keys[DIK_X] & PRESSED) {
-		input->keys[DIK_X] = 0;
-		cut = true;
-	}
-	if(input->keys[DIK_C] & PRESSED) {
-		input->keys[DIK_C] = 0;
-		copy = true;
-	}
-	if(copy || cut) {
-		int x1, x2;
-		if(select_start > curpos) {
-			x1 = curpos;
-			x2 = select_start;
-		} else {
-			x2 = curpos;
-			x1 = select_start;
-		}
-		int ma = x2-x1+1;
-		if(ma > 1) {
-			HANDLE mem = GlobalAlloc(GMEM_MOVEABLE|GMEM_DDESHARE, ma);
-			LPVOID buf = GlobalLock(mem);
-			memcpy((char *) buf, &st[x1], ma-1);
-			((char *)buf)[ma-1] = 0;
-			GlobalUnlock(mem);
-			HANDLE h = SetClipboardData(CF_TEXT, mem);
-			if(h == NULL) {
-				skelton_msgbox("  Error setting clipboard data.\n");
-			} else {
-				if(cut) {
-					cut_selection();
-				}
-			}
-		} else {
-			skelton_msgbox("  nothing selected. aborting.\n",ma);
-		}
-	}
-	CloseClipboard();
-#endif
 }
 
 void Zone_text_input::leaved() {
@@ -836,42 +786,41 @@ void Zone_text_field::set_val(const char* s) {
 void Zone_text_field::draw() {
   Zone_panel::draw();
 	if(!draw_frame) {
-		video->vb->hline(y, x, w, 255);
-		video->vb->hline(y+h-1, x, w, 0);
-		video->vb->vline(x, y+1, h-2, 255);
-		video->vb->vline(x+w-1, y+1, h-2, 0);
-		video->vb->rect(x+1, y+1, w-2, h-2, 210);
+		video->vb.hline(y, x, w, 255);
+		video->vb.hline(y+h-1, x, w, 0);
+		video->vb.vline(x, y+1, h-2, 255);
+		video->vb.vline(x+w-1, y+1, h-2, 0);
+		video->vb.rect(x+1, y+1, w-2, h-2, 210);
 	}
 	if(var) {
-		font->draw(st, pan, w - font->width(st) - 3, 0);  // numbers are right-aligned
+		font->draw(st, *pan, w - font->width(st) - 3, 0);  // numbers are right-aligned
 	} else {
-		font->draw(st, pan, 3, 0);  // text is left-aligned
+		font->draw(st, *pan, 3, 0);  // text is left-aligned
 	}
 }
 
-Zone_clear::Zone_clear(Inter* in, int px, int py, int pw, int ph, int c):
-Zone(in, px, py, pw, ph) {
-	color=c;
+Zone_clear::Zone_clear(Inter* in):
+  Zone(in, 0, 0, video->surface()->w, video->surface()->h) {
+	color = 0;
 }
 
 void Zone_clear::draw() {
-	video->vb->rect(x, y, w, h, color);
+	video->vb.rect(x, y, w, h, color);
 }
 
 Inter::Inter() {
 	first_zone = 0;
 	font = NULL;
 	kb_x = kb_y = 0;
-	kb_active = true;
 	flush();
 }
 
 Inter::Inter(Inter *in) {
-	for(int i=0; i<in->nzone(); i++)
-		add(in->zone[i]);
-	first_zone = nzone();
+	vector<Zone*>::iterator it;
+	for (it = in->zone.begin(); it != in->zone.end(); ++it)
+		add(*it);
+	first_zone = zone.size();
 	set_font(in->font, false);
-	kb_active = true;
 	flush();
 }
 
@@ -887,79 +836,33 @@ void Inter::set_font(Font* f1, bool del) {
 }
 
 void Inter::draw_zone() {
-	int i;
-#ifdef UGS_DIRECTX
-	if(!alt_tab)
-#endif
-	{
-		if(video->need_paint) {
-			dirt_all();
-			video->need_paint--;
-		}
-		for(i=0; i<nzone(); i++) {
-			if(zone[i]->dirty && zone[i]->enabled >=0 && !zone[i]->stay_on_top) {
-				zone[i]->dirty--;
-				zone[i]->draw();
-			}
-		}
-		kb_draw_focus();
-		for(i=0; i<nzone(); i++) {
-			if(zone[i]->enabled >=0 && zone[i]->stay_on_top) {
-				zone[i]->draw();
-			}
-		}
-	}
+  if(video->need_paint) {
+    dirt_all();
+    video->need_paint = 0; // RV: Only draw *once*: we are no longer running in backbuffer mode
+  }
+	vector<Zone*>::iterator it;
+  for (it = zone.begin(); it != zone.end(); ++it) {
+    if((*it)->dirty && (*it)->enabled >=0 && !(*it)->stay_on_top) {
+      (*it)->dirty--;
+      (*it)->draw();
+    }
+  }
+  kb_draw_focus();
+  for (it = zone.begin(); it != zone.end(); ++it)
+    if((*it)->enabled >=0 && (*it)->stay_on_top)
+      (*it)->draw();
 }
 
 void Inter::dirt_all() {
-	for(int i=0; i<nzone(); i++)
-		zone[i]->dirt();
+	vector<Zone*>::iterator it;
+  for (it = zone.begin(); it != zone.end(); ++it)
+		(*it)->dirt();
 }
 
 Zone* Inter::do_frame() {
-	process();
-	return clicked;
-}
-
-void Inter::remove(Zone *z) {
-	for(int i=0; i<nzone(); i++)
-		if(zone[i] == z) {
-			remove(i);
-			break;
-		}
-}
-
-void Inter::remove(int i) {
-	if(in == zone[i])
-		in = NULL;
-	if(focus == zone[i])
-		focus = NULL;
-	if(kb_visible && kb_focus == zone[i])
-		kb_focus = NULL;
-	if(double_clicked_first == zone[i]) {
-		double_clicked_first = NULL;
-		double_click_delay = 0;
-	}
-	zone.remove(i);
-}
-
-void Inter::flush() {
-	while(first_zone != nzone())
-		delete zone[first_zone];
-	in = NULL;
-	focus = NULL;
-	clicked = double_clicked = double_clicked_first = NULL;
-	double_click_delay = 0;
-	kb_focus = NULL;
-	kb_x = kb_y = 0;
-	kb_anim = 0;
-	input->quel_key = -1;
-}
-
-void Inter::process() {
 	int i;
 	clicked = double_clicked = NULL;
-	for(i = nzone()-1; i >= first_zone; i--)
+	for(i = zone.size()-1; i >= first_zone; i--)
 		if(zone[i]->enabled >=0)
 			zone[i]->process();
 
@@ -971,16 +874,20 @@ void Inter::process() {
 
 	if(focus) {
 		int lost = -1;
-		if(input->quel_key == KEY_ESCAPE)
-			lost=1;
-		if(input->quel_key == KEY_ENTER || input->quel_key == KEY_PADENTER)
-			lost=0;
+		if(input->last_key.sym == SDLK_ESCAPE)
+			lost = 1;
+		if(input->last_key.sym == SDLK_RETURN
+       || input->last_key.sym == SDLK_KP_ENTER)
+			lost = 0;
+		if(input->last_key.sym == SDLK_TAB) {
+			lost = 0;
+		}
 		if(lost != -1) {
 			focus->lost_focus(lost);
 			if(!kb_visible && in != focus)
 				focus->leaved();
 			focus = NULL;
-			input->quel_key = -1;
+			input->last_key.sym = SDLK_UNKNOWN;
 		}
 	} else {
 		// keyboard control stuff
@@ -989,35 +896,31 @@ void Inter::process() {
 				de_tag(kb_focus); // we must untag it
 				kb_focus = NULL;
 			}
-			if(kb_active) {
-				if(kb_check_key(KEY_DOWNARROW) || kb_check_key(KEY_UPARROW) ||
-					kb_check_key(KEY_LEFTARROW) || kb_check_key(KEY_RIGHTARROW) ||
-					kb_check_key(KEY_TAB)) {
-					kb_focus=NULL;
-					if(in) {
-						if(in->kb_focusable)
-							kb_focus = in;
-						else if(in->parent && in->parent->kb_focusable) {
-							kb_focus = in->parent;
-						}
-					}
-					if(!kb_focus)
-						kb_focus = kb_find_upmost();
-					if(kb_focus) { // if there is a focusable zone in the whole interface
-						last_mouse_x = cursor->x;
-						last_mouse_y = cursor->y;
-						kb_anim = 0;
-						in = NULL;
-						tag(kb_focus);
-						kb_visible = true;
-						if(cursor)
-							cursor->visible = false;
-					}
-					input->quel_key = -1;
-				}
-			}
+      if(kb_check_key(SDLK_DOWN) || kb_check_key(SDLK_UP) ||
+         kb_check_key(SDLK_LEFT) || kb_check_key(SDLK_RIGHT) ||
+         kb_check_key(SDLK_TAB)) {
+        kb_focus=NULL;
+        if(in) {
+          if(in->kb_focusable)
+            kb_focus = in;
+          else if(in->parent && in->parent->kb_focusable) {
+            kb_focus = in->parent;
+          }
+        }
+        if(!kb_focus)
+          kb_focus = kb_find_upmost();
+        if(kb_focus) { // if there is a focusable zone in the whole interface
+          last_mouse_x = cursor->x;
+          last_mouse_y = cursor->y;
+          kb_anim = 0;
+          in = NULL;
+          tag(kb_focus);
+          kb_visible = true;
+        }
+        input->last_key.sym = SDLK_UNKNOWN;
+      }
 		} else {
-			if(last_mouse_x != cursor->x || last_mouse_y != cursor->y || alt_tab) {
+			if(last_mouse_x != cursor->x || last_mouse_y != cursor->y) {
 				// the mouse has moved, remove the kb_focus
 				kb_visible = false;
 				if(kb_focus) {
@@ -1038,28 +941,28 @@ void Inter::process() {
 			if(kb_visible) {
 				bool bouge = false;
 				Zone *temp = NULL;
-				if(kb_check_key(KEY_DOWNARROW)) {
+				if(kb_check_key(SDLK_DOWN)) {
 					temp = kb_find_down();
 					bouge = true;
 				}
-				if(kb_check_key(KEY_TAB)) {
+				if(kb_check_key(SDLK_TAB)) {
 					temp = kb_find_next();
 					bouge = true;
 				}
-				if(kb_check_key(KEY_TAB) && input->shift_key & SHIFT) {
+				if(kb_check_key(SDLK_TAB) && input->last_key.mod & KMOD_SHIFT) {
 					temp = kb_find_prev();
 					bouge = true;
 				}
-				if(kb_check_key(KEY_UPARROW)) {
+				if(kb_check_key(SDLK_UP)) {
 					temp = kb_find_up();
 					bouge = true;
 				}
-				if(kb_check_key(KEY_RIGHTARROW)) {
+				if(kb_check_key(SDLK_RIGHT)) {
 					temp = kb_find_right();
 					if(temp)
 						bouge = true;
 				}
-				if(kb_check_key(KEY_LEFTARROW)) {
+				if(kb_check_key(SDLK_LEFT)) {
 					temp = kb_find_left();
 					if(temp)
 						bouge = true;
@@ -1070,27 +973,23 @@ void Inter::process() {
 						tag(temp);
 						kb_focus = temp;
 					}
-					input->quel_key = -1;
+					input->last_key.sym = SDLK_UNKNOWN;
 				}
 
-				if(input->quel_key == KEY_ENTER || input->quel_key == KEY_PADENTER || kb_check_key(KEY_SPACE)) {
+				if(input->last_key.sym == SDLK_RETURN
+           || input->last_key.sym == SDLK_KP_ENTER
+           || kb_check_key(SDLK_SPACE)) {
 					if(kb_focus) {
 						select_zone(kb_focus, 0);
-						input->quel_key = -1;
+						input->last_key.sym = SDLK_UNKNOWN;
 					}
 				}
 			}
 		}
 	}
-	if(cursor && !cursor->visible) {
-		if(last_mouse_x != cursor->x || last_mouse_y != cursor->y) {
-			// the mouse moved, make the pointer reappear
-			cursor->visible = true;
-		}
-	}
 
 	if(!kb_visible) {
-		for(i=nzone()-1; i >= first_zone; i--) {
+		for(i=zone.size()-1; i >= first_zone; i--) {
 			if(zone[i]->in() && zone[i]->enabled >=0) {
 				if(focus) {
 					if(input->mouse.quel != -1) {
@@ -1123,6 +1022,42 @@ void Inter::process() {
 	}
 	if(double_click_delay)
 		double_click_delay--;
+
+	return clicked;
+}
+
+void Inter::remove(Zone *z) {
+	vector<Zone*>::iterator it = find(zone.begin(), zone.end(), z);
+
+	if (it == zone.end())
+		return;
+		
+	if (in == z)
+		in = NULL;
+	if (focus == z)
+		focus = NULL;
+	if (kb_visible && kb_focus == z)
+		kb_focus = NULL;
+	if (double_clicked_first == z) {
+		double_clicked_first = NULL;
+		double_click_delay = 0;
+	}
+
+	zone.erase(it);
+}
+
+void Inter::flush() {
+	while (first_zone < static_cast<int>(zone.size()))
+		delete zone[first_zone];
+	in = NULL;
+	focus = NULL;
+	clicked = double_clicked = double_clicked_first = NULL;
+	double_click_delay = 0;
+	kb_focus = NULL;
+	kb_x = kb_y = 0;
+	kb_anim = 0;
+	assert(input);
+	input->last_key.sym = SDLK_UNKNOWN;
 }
 
 void Inter::de_tag(Zone *z) {
@@ -1141,37 +1076,26 @@ void Inter::tag(Zone *z) {
 	kb_y = z->y;
 }
 
-void Inter::kb_deactivate() {
-	kb_active = false;
-	kb_visible = false;
-}
-
-void Inter::kb_reactivate() {
-	kb_active = true;
-}
-
 void Inter::kb_alloc_key(const int i) {
-	kb_keys.add(i);
+	kb_keys.push_back(i);
 }
 
 void Inter::kb_free_key(const int i) {
-	kb_keys.remove_item(i);
+	vector<int>::iterator it = find(kb_keys.begin(), kb_keys.end(), i);
+	
+	if (it != kb_keys.end())
+		kb_keys.erase(it);
 }
 
-bool Inter::kb_check_key(const int i) const {
-	if(input->quel_key == i) {
-		for(int j=0; j<kb_keys.size(); j++)
-			if(i == kb_keys[j])
-				return false;
-		return true;
-	}
-	return false;
+bool Inter::kb_check_key(SDLKey i) const {
+	return input->last_key.sym == i
+		&& find(kb_keys.begin(), kb_keys.end(), i) == kb_keys.end();
 }
 
 Zone *Inter::kb_find_upmost() {
 	int best_y = 999;
 	Zone *best = NULL;
-	for(int i = nzone()-1; i >= first_zone; i--)
+	for(int i = zone.size()-1; i >= first_zone; i--)
 		if(zone[i]->enabled >=0 && zone[i]->kb_focusable)
 			if(zone[i]->y < best_y) {
 				best = zone[i];
@@ -1183,7 +1107,7 @@ Zone *Inter::kb_find_upmost() {
 Zone *Inter::kb_find_downmost() {
 	int best_y = -1;
 	Zone *best = NULL;
-	for(int i = nzone()-1; i >= first_zone; i--)
+	for(int i = zone.size()-1; i >= first_zone; i--)
 		if(zone[i]->enabled >=0 && zone[i]->kb_focusable)
 			if(zone[i]->y > best_y) {
 				best = zone[i];
@@ -1195,7 +1119,7 @@ Zone *Inter::kb_find_downmost() {
 Zone *Inter::kb_find_down() {
 	int best_y = 9999999, dist;
 	Zone *best = NULL;
-	for(int i = nzone()-1; i >= first_zone; i--) {
+	for(int i = zone.size()-1; i >= first_zone; i--) {
 		Zone *z = zone[i];
 		if(z->enabled >=0 && z->kb_focusable)
 			if(z->y > kb_y && (abs(z->x - kb_x)>>1) < z->y - kb_y) {
@@ -1212,7 +1136,7 @@ Zone *Inter::kb_find_down() {
 Zone *Inter::kb_find_up() {
 	int best_y = 9999999, dist;
 	Zone *best = NULL;
-	for(int i = nzone()-1; i >= first_zone; i--) {
+	for(int i = zone.size()-1; i >= first_zone; i--) {
 		Zone *z = zone[i];
 		if(z->enabled >=0 && z->kb_focusable)
 			if(z->y < kb_y && (abs(z->x - kb_x)>>1) < kb_y - z->y) {
@@ -1229,7 +1153,7 @@ Zone *Inter::kb_find_up() {
 Zone *Inter::kb_find_right() {
 	int best_y = 9999999, dist;
 	Zone *best = NULL;
-	for(int i = nzone()-1; i >= first_zone; i--) {
+	for(int i = zone.size()-1; i >= first_zone; i--) {
 		Zone *z = zone[i];
 		if(z->enabled >=0 && z->kb_focusable)
 			if(z->x > kb_x && (abs(z->y - kb_y)>>1) < z->x - kb_x) {
@@ -1246,7 +1170,7 @@ Zone *Inter::kb_find_right() {
 Zone *Inter::kb_find_left() {
 	int best_y = 9999999, dist;
 	Zone *best = NULL;
-	for(int i = nzone()-1; i >= first_zone; i--) {
+	for(int i = zone.size()-1; i >= first_zone; i--) {
 		Zone *z = zone[i];
 		if(z->enabled >=0 && z->kb_focusable)
 			if(z->x < kb_x && (abs(z->y - kb_y)>>1) < kb_x - z->x) {
@@ -1263,7 +1187,7 @@ Zone *Inter::kb_find_left() {
 Zone *Inter::kb_find_closest() {
 	int best_y = 9999999, dist;
 	Zone *best = NULL;
-	for(int i = nzone()-1; i >= first_zone; i--) {
+	for(int i = zone.size()-1; i >= first_zone; i--) {
 		Zone *z = zone[i];
 		if(z->enabled >=0 && z->kb_focusable) {
 			dist = (z->x - kb_x)*(z->x - kb_x) + (z->y - kb_y)*(z->y - kb_y);
@@ -1278,10 +1202,10 @@ Zone *Inter::kb_find_closest() {
 
 Zone *Inter::kb_find_prev() {
 	int i;
-	int debut =nzone()-1;
+	int debut = zone.size() - 1;
 
 	// find the currently focused zone
-	for(i = nzone()-1; i >= first_zone; i--) {
+	for(i = zone.size()-1; i >= first_zone; i--) {
 		Zone *z = zone[i];
 		if(z == kb_focus) {
 			debut = i;
@@ -1295,7 +1219,7 @@ Zone *Inter::kb_find_prev() {
 			return z;
 	}
 	// if there is nothing good, restart from the end (to loop)
-	for(i = nzone()-1; i >= first_zone; i--) {
+	for(i = zone.size()-1; i >= first_zone; i--) {
 		Zone *z = zone[i];
 		if(z->enabled >=0 && z->kb_focusable)
 			return z;
@@ -1304,27 +1228,26 @@ Zone *Inter::kb_find_prev() {
 }
 
 Zone *Inter::kb_find_next() {
-	int i;
 	int debut =0;
 
 	// find the currently focused zone
-	for(i = nzone()-1; i >= first_zone; i--) {
+	for (int i = zone.size() - 1; i >= first_zone; --i) {
 		Zone *z = zone[i];
-		if(z == kb_focus) {
+		if (z == kb_focus) {
 			debut = i;
 			break;
 		}
 	}
 	// then find the next focusable zone
-	for(i = debut+1; i < nzone(); i++) {
+	for (int i = debut + 1; i < static_cast<int>(zone.size()); ++i) {
 		Zone *z = zone[i];
-		if(z->enabled >=0 && z->kb_focusable)
+		if (z->enabled >= 0 && z->kb_focusable)
 			return z;
 	}
 	// if there is nothing good, restart from the start (to loop)
-	for(i = first_zone; i < nzone(); i++) {
+	for (int i = first_zone; i < static_cast<int>(zone.size()); ++i) {
 		Zone *z = zone[i];
-		if(z->enabled >=0 && z->kb_focusable)
+		if (z->enabled >=0 && z->kb_focusable)
 			return z;
 	}
 	return NULL; // if nothing at all
@@ -1424,7 +1347,7 @@ void Inter::kb_draw_focus() {
 					break;
 			}
 			if(draw)
-				video->vb->put_pel(x2, y2, 255);
+				video->vb.put_pel(x2, y2, 255);
 			seed++;
 			//if(seed == 8) {
 				draw = !draw;

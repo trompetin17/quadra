@@ -18,19 +18,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "http_request.h"
+
 #include <stdio.h>
 #include <string.h>
 #include "error.h"
 #include "net.h"
-#include "http_request.h"
 
 // Hack: strdup is apparently 'deprecated' on Visual C++ 2005
 // and is replaced by _strdup
 #ifdef WIN32
 #define strdup _strdup
 #endif
-
-RCSID("$Id$")
 
 char Http_request::base64table[] = {
   'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M',
@@ -194,7 +193,7 @@ bool Http_request::done() {
 	if(!sent)
 		sendrequest();
 	Byte tmp[4096];
-	Dword tube=nc->receivetcp(tmp, 4096);
+	Dword tube=nc->receivetcp(tmp, sizeof(tmp));
 	if(tube)
 		buf.append(tmp, tube);
 	if(!tube && nc->state()==Net_connection::disconnected) {

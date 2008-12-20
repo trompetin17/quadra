@@ -18,53 +18,50 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <stdlib.h>
-#include "utils.h"
-#include "version.h"
-#include "color.h"
-#include "random.h"
-#include "net.h"
-#include "image_png.h"
-#include "qserv.h"
-#include "http_request.h"
-#include "cursor.h"
-#include "crypt.h"
-#include "res_compress.h"
-#include "quadra.h"
-#include "cfgfile.h"
-#include "sprite.h"
-#include "overmind.h"
-#include "inter.h"
-#include "input.h"
-#include "dict.h"
-#include "music.h"
-#include "multi_player.h"
-#include "misc.h"
-#include "zone.h"
-#include "net_stuff.h"
-#include "net_server.h"
-#include "multi_provider.h"
-#include "menu_demo_central.h"
-#include "chat_text.h"
-#include "game_menu.h"
-#include "texte.h"
-#include "global.h"
-#include "game.h"
-#include "pane.h"
-#include "fonts.h"
-#include "highscores.h"
-#include "recording.h"
-#include "sons.h"
-#include "main.h"
-#include "canvas.h"
 #include "menu.h"
+
+#include <stdlib.h>
+#include "version.h"
+#include "canvas.h"
+#include "chat_text.h"
+#include "color.h"
+#include "cfgfile.h"
+#include "crypt.h"
+#include "dict.h"
+#include "fonts.h"
+#include "game.h"
+#include "game_menu.h"
+#include "global.h"
+#include "highscores.h"
+#include "http_request.h"
+#include "image_png.h"
+#include "input.h"
+#include "inter.h"
+#include "main.h"
+#include "menu_demo_central.h"
+#include "misc.h"
+#include "multi_player.h"
+#include "multi_provider.h"
+#include "net.h"
+#include "net_server.h"
+#include "net_stuff.h"
+#include "overmind.h"
+#include "pane.h"
+#include "qserv.h"
+#include "quadra.h"
+#include "random.h"
+#include "recording.h"
+#include "res_compress.h"
+#include "sons.h"
+#include "sprite.h"
+#include "zone.h"
 #include "config.h"
 
 #ifdef UGS_DIRECTX
 #include <shellapi.h>
 #endif
 
-RCSID("$Id$")
+using std::vector;
 
 void Menu_do_nothing::step() {
   if(quitting)
@@ -93,23 +90,10 @@ Menu_highscore::Menu_highscore(int hscore, int *playagain, bool show_playb) {
   (void)new Zone_bitmap(inter, bit, 0, 0, true);
 
   const char *pic1, *pic2, *pic1s, *pic2s;
-  if(config.info.language == 1) {
-    {
-      Res_doze res("hscoretf.png");
-      Png png(res);
-      Bitmap btemp(png);
-      btemp.draw(*bit, 138,0);
-    }
-    pic1 = "hscore1f.png";
-    pic2 = "hscore2f.png";
-    pic1s = "hscor1fs.png";
-    pic2s = "hscor2fs.png";
-  } else {
-    pic1 = "hscore1.png";
-    pic2 = "hscore2.png";
-    pic1s = "hscore1s.png";
-    pic2s = "hscore2s.png";
-  }
+  pic1 = "hscore1.png";
+  pic2 = "hscore2.png";
+  pic1s = "hscore1s.png";
+  pic2s = "hscore2s.png";
   b_again = b_quit = NULL;
   if(show_playback) {
     {
@@ -136,19 +120,18 @@ Menu_highscore::Menu_highscore(int hscore, int *playagain, bool show_playb) {
   else
     x = 100;
   int y = 50;
-  (void)new Zone_text(inter, ST_HEROES, x, y);
-  (void)new Zone_text(inter, ST_SCORE, x+190, y);
-  (void)new Zone_text(inter, ST_LINES, x+290, y);
-  (void)new Zone_text(inter, ST_LEVEL, x+390, y);
+  (void)new Zone_text(inter, "Hero", x, y);
+  (void)new Zone_text(inter, "Score", x+190, y);
+  (void)new Zone_text(inter, "Lines", x+290, y);
+  (void)new Zone_text(inter, "Level", x+390, y);
   y += 20;
   Highscores::load();
   refresh_global(y); //int&
 
   if(show_playback && net->active) {
-    sync = new Zone_text_button2(inter, bit, font2, ST_SYNC, x+460, 186);
+    sync = new Zone_text_button2(inter, bit, font2, "·2 Update", x+460, 186);
     status = new Zone_text_field(inter, "", 30, 186, 470);
-    //status = new Zone_text_field(inter, "", 2, 459, 636);
-    status->set_val(ST_HIGHSTATUSNORMAL);
+    status->set_val("Click on ·2 Update to update worldwide highscores.");
   } else {
     sync = NULL;
     status = NULL;
@@ -156,10 +139,10 @@ Menu_highscore::Menu_highscore(int hscore, int *playagain, bool show_playb) {
   sync_request = NULL;
 
   y = 256;
-  (void)new Zone_text(inter, ST_HEROES, x, y);
-  (void)new Zone_text(inter, ST_SCORE, x+190, y);
-  (void)new Zone_text(inter, ST_LINES, x+290, y);
-  (void)new Zone_text(inter, ST_LEVEL, x+390, y);
+  (void)new Zone_text(inter, "Hero", x, y);
+  (void)new Zone_text(inter, "Score", x+190, y);
+  (void)new Zone_text(inter, "Lines", x+290, y);
+  (void)new Zone_text(inter, "Level", x+390, y);
   y += 20;
   for(i=0; i<Highscores::numLocal; i++) {
     if(hscore == i) {
@@ -167,7 +150,7 @@ Menu_highscore::Menu_highscore(int hscore, int *playagain, bool show_playb) {
       (void)new Zone_text_numeric(courrier2, inter, &Highscores::bestlocal[i].score, x+160, y, 80);
       (void)new Zone_text_numeric(courrier2, inter, &Highscores::bestlocal[i].lines, x+260, y, 80);
       (void)new Zone_text_numeric(courrier2, inter, &Highscores::bestlocal[i].level, x+360, y, 80);
-      Sfx stmp(sons.levelup, 0, 0, 0, 11000);
+      sons.levelup->play(0, 0, 11000);
     } else {
       (void)new Zone_text(inter, Highscores::bestlocal[i].name, x, y);
       (void)new Zone_text_numeric(courrier, inter, &Highscores::bestlocal[i].score, x+160, y, 80);
@@ -175,7 +158,7 @@ Menu_highscore::Menu_highscore(int hscore, int *playagain, bool show_playb) {
       (void)new Zone_text_numeric(courrier, inter, &Highscores::bestlocal[i].level, x+360, y, 80);
     }
     if(show_playback)
-      playdemo[i] = new Zone_text_button2(inter, bit, font2, ST_PLAYBACK, x+460, y);
+      playdemo[i] = new Zone_text_button2(inter, bit, font2, "Playback", x+460, y);
     y += 21;
   }
 
@@ -185,8 +168,8 @@ Menu_highscore::Menu_highscore(int hscore, int *playagain, bool show_playb) {
     Res_dos *res = new Res_dos(st, RES_TRY);
     if(res->exist) {
       y += 6;
-      (void)new Zone_text(inter, ST_REPLAYLASTGAME, x, y);
-      playlast = new Zone_text_button2(inter, bit, font2, ST_PLAYBACK, x+460, y);
+      (void)new Zone_text(inter, "Replay last single-player game:", x, y);
+      playlast = new Zone_text_button2(inter, bit, font2, "Playback", x+460, y);
     }
     delete res;
   }
@@ -206,16 +189,16 @@ void Menu_highscore::refresh_global(int& y) {
     x = 60;
   else
     x = 100;
-  zone.deleteall();
+  list.deleteall();
   for(int i=0; i<Highscores::numGlobal; i++) {
     playdemog[i] = NULL;
-    zone.add(new Zone_text(inter, Highscores::bestglobal[i].name, x, y));
-    zone.add(new Zone_text_numeric(courrier, inter, &Highscores::bestglobal[i].score, x+160, y, 80));
-    zone.add(new Zone_text_numeric(courrier, inter, &Highscores::bestglobal[i].lines, x+260, y, 80));
-    zone.add(new Zone_text_numeric(courrier, inter, &Highscores::bestglobal[i].level, x+360, y, 80));
+    list.zones.push_back(new Zone_text(inter, Highscores::bestglobal[i].name, x, y));
+    list.zones.push_back(new Zone_text_numeric(courrier, inter, &Highscores::bestglobal[i].score, x+160, y, 80));
+    list.zones.push_back(new Zone_text_numeric(courrier, inter, &Highscores::bestglobal[i].lines, x+260, y, 80));
+    list.zones.push_back(new Zone_text_numeric(courrier, inter, &Highscores::bestglobal[i].level, x+360, y, 80));
     if(show_playback) {
-      playdemog[i] = new Zone_text_button2(inter, bit, font2, ST_PLAYBACK, x+460, y);
-      zone.add(playdemog[i]);
+      playdemog[i] = new Zone_text_button2(inter, bit, font2, "Playback", x+460, y);
+      list.zones.push_back(playdemog[i]);
     }
     y += 21;
   }
@@ -242,7 +225,7 @@ static void fast_plusonly_url_encode(Textbuf& out, Textbuf& in) {
 }
 
 void Menu_highscore::start_sync() {
-  sync->set_text(ST_CLICKTOCANCEL);
+  sync->set_text("·2 Cancel");
   video->need_paint = 2;
   Res_dos *demofile;
   sync_request = new Qserv();
@@ -283,14 +266,14 @@ void Menu_highscore::start_sync() {
   //Expecting MAX_SCORE global highscores in answer
   sync_request->add_data("num %i\n", MAX_SCORE);
   sync_request->send();
-  status->set_val(ST_HIGHSTATUSCONNECTING);
+  status->set_val("Connecting. Please wait...");
 }
 
 void Menu_highscore::step_sync() {
   bool done = sync_request->done();
   if(!done) {
     if(sync_request->isconnected()) {
-      sprintf(st, ST_HIGHSTATUSRECEIVING, sync_request->getnbrecv());
+      sprintf(st, "Connected. Transfer in progress. %i bytes.", sync_request->getnbrecv());
       status->set_val(st);
     }
     return;
@@ -299,7 +282,7 @@ void Menu_highscore::step_sync() {
   const char *server_status = sync_request->get_status();
   if(!server_status || (strcmp(server_status, "Ok") && strcmp(server_status, "Error"))) {
     stop_sync();
-    status->set_val(ST_HIGHBADSERVER);
+    status->set_val("No Quadra game server found.");
     return;
   }
   Dict *reply=sync_request->get_reply();
@@ -311,7 +294,7 @@ void Menu_highscore::step_sync() {
     const char *msg = reply->find("message");
 	if(!msg)
       msg = "???";
-    sprintf(st, ST_HIGHSTATUSABORTED, msg);
+    sprintf(st, "Error: the server returned [%s].", msg);
     status->set_val(st);
     stop_sync();
     return;
@@ -337,7 +320,7 @@ void Menu_highscore::step_sync() {
       }
     }
   }
-  status->set_val(ST_HIGHSTATUSCOMPLETED);
+  status->set_val("Transfer completed successfully.");
   Highscores::freemem();
   Highscores::load();
   int y=70;
@@ -346,7 +329,7 @@ void Menu_highscore::step_sync() {
 }
 
 void Menu_highscore::stop_sync() {
-  sync->set_text(ST_SYNC);
+  sync->set_text("·2 Update");
   video->need_paint = 2;
   delete sync_request;
   sync_request=NULL;
@@ -390,12 +373,12 @@ void Menu_highscore::step() {
     } else {
       if(result == sync) {
         stop_sync();
-        status->set_val(ST_HIGHSTATUSCANCELED);
+        status->set_val("Transfer interrupted by user.");
       }
     }
   } else { // demo mode of the main menu
     time_demo--;
-    if(result || input->quel_key != -1 || time_demo == 0)
+    if(result || input->last_key.sym != SDLK_UNKNOWN || time_demo == 0)
       quit = true;
   }
 }
@@ -417,7 +400,7 @@ Net_starter* net_starter=NULL;
 
 Net_starter::Net_starter() {
   if(net)
-    (void) new Error("Net already started!\n");
+    fatal_msgbox("Net already started!\n");
   time_control = TIME_FREEZE;
   net=new Net(new Quadra_param());
   if(!net->active) {
@@ -454,41 +437,49 @@ Menu_multi_join::Menu_multi_join(Bitmap *bit, Font *font, Font *font2, const Pal
   local_net = plocal;
   inter->set_font(font, false);
   (void)new Zone_bitmap(inter, bit, 0, 0);
-  (void)new Zone_text(inter, ST_CREATEORJOIN, 20);
-  b_create = new Zone_text_button2(inter, bit, font2, ST_CLICKTOCREATE, 50);
+  (void)new Zone_text(inter, "\"To create or to join, that is the "
+                      "question\" - Rem, 1999", 20);
+  b_create = new Zone_text_button2(inter, bit, font2, "·2 Create a new game",
+                                   50);
   b_refresh = b_refresh_internet = NULL;
   if(local_net)
-    b_refresh = new Zone_text_button2(inter, bit, font2, ST_CLICKTOREFRESH, 80);
+    b_refresh = new Zone_text_button2(inter, bit, font2,
+                                      "·2 Refresh local games", 80);
   else
-    b_refresh_internet = new Zone_text_button2(inter, bit, font2, ST_REFRESHINTERNET, 80);
-  (void)new Zone_text(fteam[7], inter, ST_GAMESLIST, 10, 120);
+    b_refresh_internet = new Zone_text_button2(inter, bit, font2,
+                                               "·2 Refresh Internet games",
+                                               80);
+  (void)new Zone_text(fteam[7], inter, "Server list:", 10, 120);
   selected_game = -1;
   list_game = new Zone_listbox2(inter, bit, font2, &selected_game, 2, 140, 220, 240);
   int y = 120;
-  (void)new Zone_text(fteam[7], inter, ST_SELECTGAMETYPE, 235, y);
+  (void)new Zone_text(fteam[7], inter, "Type:", 235, y);
   z_game_type = new Zone_text_field(inter, "", 480, y, 155); y += 22;
-  (void)new Zone_text(fteam[7], inter, ST_GAMESPEED, 235, y);
+  (void)new Zone_text(fteam[7], inter, "Level up:", 235, y);
   z_game_speed = new Zone_text_field(inter, "", 480, y, 155); y += 22;
-  (void)new Zone_text(fteam[7], inter, ST_GAMELEVELSTART, 235, y);
+  (void)new Zone_text(fteam[7], inter, "Start game at level:", 235, y);
   z_game_level = new Zone_text_field(inter, "", 480, y, 24); y += 22;
-  (void)new Zone_text(fteam[7], inter, ST_GAMEMINIMUM, 235, y);
+  (void)new Zone_text(fteam[7], inter, "Smallest offensive line combo:",
+                      235, y);
   z_game_minimum = new Zone_text_field(inter, "", 480, y, 155); y += 22;
-  (void)new Zone_text(fteam[7], inter, ST_SETGAMEEND, 235, y);
+  (void)new Zone_text(fteam[7], inter, "The game ends when:", 235, y);
   z_game_end = new Zone_text_field(inter, "", 480, y, 155); y += 22;
-  (void)new Zone_text(fteam[7], inter, ST_GAMESTATUS, 235, y);
+  (void)new Zone_text(fteam[7], inter, "Status:", 235, y);
   z_game_status = new Zone_text_field(inter, "", 480, y, 155); y += 22;
-  //new Zone_text(fteam[7], inter, ST_PLAYERINGAME, 240, 260);
   list_player = new Zone_listbox2(inter, bit, font2, NULL, 235, y, 390, 136);
-  b_join = new Zone_text_button2(inter, bit, font2, ST_CLICKTOJOIN, 395);
+  b_join = new Zone_text_button2(inter, bit, font2, "·2 Join selected game",
+                                 395);
 
-  (void)new Zone_text(fteam[7], inter, ST_ENTERADDRESS, 30, 420);
+  (void)new Zone_text(fteam[7], inter, "Or enter the IP address of the server:",
+                      30, 420);
   address[0] = 0;
   (void)new Zone_input_address(this, pal, inter, address, 254, 340, 420, 240);
-  b_info = new Zone_text_button2(inter, bit, font2, ST_CHECKIP, 35, 450);
+  b_info = new Zone_text_button2(inter, bit, font2, "·2 Check IP info",
+                                 35, 450);
   b_book = NULL;
   if(!local_net)
-    b_book = new Zone_text_button2(inter, bit, font2, ST_ADDRESSBOOK, 345, 450);
-  cancel = new Zone_text_button2(inter, bit, font2, ST_BACK, 560, 450);
+    b_book = new Zone_text_button2(inter, bit, font2, "·2 Address book", 345, 450);
+  cancel = new Zone_text_button2(inter, bit, font2, "Back ·0", 560, 450);
 }
 
 Menu_multi_join::~Menu_multi_join() {
@@ -506,7 +497,9 @@ void Menu_multi_join::removewatch() {
 void Menu_multi_join::init() {
   Menu::init();
   if(!net->active) {
-    exec(new Menu_net_problem(net->last_error, ST_NETWORKDOWN, bit_, inter->font));
+    exec(new Menu_net_problem(net->last_error,
+                              "You will not be able to play on the Internet.",
+                              bit_, inter->font));
   } else {
     net->close_all_udp();
     net->init_all_udp();
@@ -532,7 +525,7 @@ public:
 
 void Menu_multi_join::step() {
   Menu::step();
-  if(input->quel_key == 1 || quitting) {
+  if(input->last_key.sym == SDLK_ESCAPE || quitting) {
     ret();
     return;
   }
@@ -597,66 +590,81 @@ void Menu_multi_join::refresh_player() {
   Listgame *lg = (Listgame *) list_game->get_selected();
   Packet_gameinfo *p = lg->p;
 
-  for(int i=0; i<p->players.size(); i++) {
+	vector<Net_player*>::const_iterator it;
+  for (it = p->players.begin(); it != p->players.end(); ++it) {
     char name[256];
-    strcpy(name, p->players[i]->name);
-    if(p->players[i]->idle==3)
+    strcpy(name, (*it)->name);
+    if((*it)->idle==3)
       strcat(name, " *");
-    list_player->add_item(new Listable(name, fteam[p->players[i]->team]));
+    list_player->add_item(new Listable(name, fteam[(*it)->team]));
   }
 
   if(p->version >= 20) {
-    const char *gtype=ST_GAMETYPE1;
+    const char *gtype = "Free for all";
     if(p->survivor)
-      gtype=ST_GAMETYPE2;
-    if(p->normal_attack.type==ATTACK_NONE && p->clean_attack.type==ATTACK_NONE)
-      gtype=ST_GAMETYPE4;
-    if(p->normal_attack.type==ATTACK_BLIND || p->normal_attack.type==ATTACK_FULLBLIND)
-      gtype=ST_GAMETYPE5;
+      gtype = "Survivor";
+    if(p->normal_attack.type == ATTACK_NONE
+       && p->clean_attack.type == ATTACK_NONE)
+      gtype = "Peace";
+    if(p->normal_attack.type == ATTACK_BLIND
+       || p->normal_attack.type == ATTACK_FULLBLIND)
+      gtype = "Blind";
     if(p->hot_potato)
-      gtype=ST_GAMETYPE3;
+      gtype = "Hot potato";
     z_game_type->set_val(gtype);
     if(!p->nolevel_up)
-      z_game_speed->set_val(ST_GAMELEVELUP1);
+      z_game_speed->set_val("At 15 lines");
     else
-      z_game_speed->set_val(ST_GAMELEVELUP2);
+      z_game_speed->set_val("Disabled");
     game_level_start = (int) p->level_start;
     z_game_level->set_val(&game_level_start);
-    z_game_minimum->set_val(ST_BASE(110 + p->combo_min));
+    if(p->combo_min == 1)
+      z_game_minimum->set_val("Single");
+    else if(p->combo_min == 2)
+      z_game_minimum->set_val("Double");
+    else if(p->combo_min == 3)
+      z_game_minimum->set_val("Triple");
+    else if(p->combo_min == 4)
+      z_game_minimum->set_val("Quad");
+    else {
+      char stbuf[16];
+      snprintf(stbuf, sizeof(stbuf), "%i-lines", p->combo_min);
+      z_game_minimum->set_val(stbuf);
+    }
     switch(p->game_end) {
-      case 0: z_game_end->set_val(ST_GAMEEND1); break;
+      case 0: z_game_end->set_val("Never"); break;
       case 1:
-        sprintf(game_end_text, "%i %s", p->game_end_value, ST_GAMEENDFRAG);
+        sprintf(game_end_text, "%i %s", p->game_end_value, "frags.");
         z_game_end->set_val(game_end_text);
         break;
       case 2:
-        sprintf(game_end_text, "%i %s", p->game_end_value / 6000, ST_GAMEENDMINUTE);
+        sprintf(game_end_text, "%i %s", p->game_end_value / 6000, "minutes.");
         z_game_end->set_val(game_end_text);
         break;
       case 3:
-        sprintf(game_end_text, "%i %s", p->game_end_value, ST_GAMEENDSCORE);
+        sprintf(game_end_text, "%i %s", p->game_end_value, "points.");
         z_game_end->set_val(game_end_text);
         break;
       case 4:
-        sprintf(game_end_text, "%i %s", p->game_end_value, ST_GAMEENDLINES);
+        sprintf(game_end_text, "%i %s", p->game_end_value, "lines.");
         z_game_end->set_val(game_end_text);
         break;
     }
     if(p->terminated) {
-      z_game_status->set_val(ST_GAMESTATUSTERM);
+      z_game_status->set_val("Terminated");
     } else {
       if(p->delay_start)
-        z_game_status->set_val(ST_GAMESTATUSNOT);
+        z_game_status->set_val("Not yet started");
       else
-        z_game_status->set_val(ST_GAMESTATUSPLAY);
+        z_game_status->set_val("Playing");
     }
   }
 
   if(p->version < 20/*Config::net_version*/) {
-    z_game_type->set_val(ST_OLDERVERSION);
+    z_game_type->set_val("* older version *");
   }
   if(p->version > Config::net_version) {
-    z_game_type->set_val(ST_NEWERVERSION);
+    z_game_type->set_val("* newer version *");
   }
 }
 
@@ -668,7 +676,7 @@ void Menu_multi_join::net_call(Packet *p2) {
   if(p->name[0])
     sprintf(st, "%s", p->name);
   else
-    sprintf(st, "%s", ST_GAMENONAME);
+    sprintf(st, "[No name]");
   Listgame *lg = new Listgame(st, p); // the packet 'p' will be deleted by ~Listgame
 
   int deja = list_game->search(lg);
@@ -716,7 +724,9 @@ void Menu_multi_refresh::find_local_games() {
   net->sendudp(to, &p);
   const char *error = net->failed();
   if(error) {
-    call(new Menu_net_problem(error, ST_SENDUDPFAILED, parent->bit_, inter->font));
+    call(new Menu_net_problem(error, "You can enter the TCP/IP address of "
+                              "the server instead.", parent->bit_,
+                              inter->font));
   }
   ret();
 }
@@ -740,14 +750,16 @@ void Menu_multi_refresh::step() {
   Menu::step();
   if(!cancel) {
     (void)new Zone_bitmap(inter, parent->bit_, 0, 0);
-    (void)new Zone_text(fteam[7], inter, ST_LOOKINGFORHOST, 130);
-    cancel = new Zone_text_button2(inter, parent->bit_, parent->font2_, ST_CLICKTOCANCEL, 190);
+    (void)new Zone_text(fteam[7], inter, "Looking for server name on "
+                        "Internet. This can take several minutes...", 130);
+    cancel = new Zone_text_button2(inter, parent->bit_, parent->font2_,
+                                   "·2 Cancel", 190);
   }
   if(net->name_resolve != (unsigned int)-1) {
     Dword name_temp = net->name_resolve;
     net->name_resolve = (Dword)-1;
     if(name_temp == 0) {
-      (void)new Zone_text(fteam[7], inter, ST_ERRORLOOKING, 220);
+      (void)new Zone_text(fteam[7], inter, "Unable to locate host. Please verify and try again.", 220);
     } else {
       int port = net->port_resolve;
       if(!port)
@@ -757,9 +769,9 @@ void Menu_multi_refresh::step() {
       return;
     }
   }
-  if(result == cancel || input->quel_key == 1) {
+  if(result == cancel || input->last_key.sym == SDLK_ESCAPE) {
     net->gethostbyname_cancel();
-    input->quel_key = 0;
+    input->last_key.sym = SDLK_UNKNOWN;
     ret();
   }
 }
@@ -767,8 +779,10 @@ void Menu_multi_refresh::step() {
 Menu_multi_internet::Menu_multi_internet(Menu_multi_join *p): Menu(p->inter) {
   parent = p;
   new Zone_bitmap(inter, parent->bit_, 0, 0);
-  new Zone_text(fteam[7], inter, ST_RECEIVINGINTERNET, 130);
-  cancel = new Zone_text_button2(inter, parent->bit_, parent->font2_, ST_CLICKTOCANCEL, 190);
+  new Zone_text(fteam[7], inter, "Searching for public Internet games...",
+                130);
+  cancel = new Zone_text_button2(inter, parent->bit_, parent->font2_,
+                                 "·2 Cancel", 190);
   request = NULL;
 }
 
@@ -786,7 +800,9 @@ void Menu_multi_internet::init() {
   request->send();
   msg = net->failed();
   if(msg) {
-    exec(new Menu_net_problem(msg, ST_NOSERVERFOUND2, parent->bit_, inter->font));
+    exec(new Menu_net_problem(msg, "Either the server is down, or this "
+                              "address isn't a Quadra game server.",
+                              parent->bit_, inter->font));
     delete request;
     request = NULL;
   }
@@ -798,13 +814,16 @@ void Menu_multi_internet::step() {
     return;
   bool done = request->done();
   if(net->failed()) {
-    exec(new Menu_net_problem(ST_NOSERVERFOUND, ST_NOSERVERFOUND2, parent->bit_, inter->font));
+    exec(new Menu_net_problem("No Quadra server found at specified address.",
+                              "Either the server is down, or this address "
+                              "isn't a Quadra game server.", parent->bit_,
+                              inter->font));
     return;
   }
   if(done)
     parsegames();
-  if(result == cancel || input->quel_key == 1) {
-    input->quel_key = 0;
+  if(result == cancel || input->last_key.sym == SDLK_ESCAPE) {
+    input->last_key.sym = SDLK_UNKNOWN;
     ret();
   }
 }
@@ -908,13 +927,13 @@ void Menu_multi_internet::parsegames() {
         p->combo_min = atoi(temp);
       temp = rules->find("allowhandicap");
       if(temp)
-        p->allow_handicap = atoi(temp)? true:false;
+        p->allow_handicap = atoi(temp) ? true : false;
       temp = rules->find("survivor");
       if(temp)
-        p->survivor = atoi(temp)? true:false;
+        p->survivor = atoi(temp) ? true : false;
       temp = rules->find("hot_potato");
       if(temp)
-        p->hot_potato = atoi(temp)? true:false;
+        p->hot_potato = atoi(temp) ? true : false;
       const Dict *attacks = rules->find_sub("attacks");
       if(attacks) {
         temp = attacks->find("normal");
@@ -956,10 +975,10 @@ Menu_single::Menu_single() {
   inter->set_font(new Font(*fonts.normal, pal, 255,255,255));
   font2 = new Font(*fonts.normal, pal, 255,255,0);
   (void)new Zone_bitmap(inter, bit, 0, 0, true);
-  (void)new Zone_text(inter, ST_SELECTSINGLEGAMETYPE, 20);
-  normal = new Zone_text_button2(inter, bit, font2, ST_SINGLENORMAL, 180);
-  sprint = new Zone_text_button2(inter, bit, font2, ST_SINGLESPRINT, 220);
-  cancel = new Zone_text_button2(inter, bit, font2, ST_BACK, 560, 450);
+  (void)new Zone_text(inter, "Select game type:", 20);
+  normal = new Zone_text_button2(inter, bit, font2, "Normal", 180);
+  sprint = new Zone_text_button2(inter, bit, font2, "Sprint (5 minutes)", 220);
+  cancel = new Zone_text_button2(inter, bit, font2, "Back ·0", 560, 450);
 }
 
 void Menu_single::step() {
@@ -996,11 +1015,14 @@ Menu_multi::Menu_multi() {
   inter->set_font(new Font(*fonts.normal, pal, 255,255,255));
   font2 = new Font(*fonts.normal, pal, 255,255,0);
   (void)new Zone_bitmap(inter, bit, 0, 0, true);
-  (void)new Zone_text(inter, ST_SELECTCONNECTION, 20);
-  local = new Zone_text_button2(inter, bit, font2, ST_LOCALGAME, 180);
-  net_lan = new Zone_text_button2(inter, bit, font2, ST_LOCALNETWORK, 220);
-  net_internet = new Zone_text_button2(inter, bit, font2, ST_INTERNET, 260);
-  cancel = new Zone_text_button2(inter, bit, font2, ST_BACK, 560, 450);
+  (void)new Zone_text(inter, "Please select a connection type:", 20);
+  local = new Zone_text_button2(inter, bit, font2, "Local game (no network)",
+                                180);
+  net_lan = new Zone_text_button2(inter, bit, font2, "TCP/IP Local "
+                                  "network (LAN)", 220);
+  net_internet = new Zone_text_button2(inter, bit, font2, "TCP/IP Internet",
+                                       260);
+  cancel = new Zone_text_button2(inter, bit, font2, "Back ·0", 560, 450);
 }
 
 void Menu_multi::step() {
@@ -1024,13 +1046,7 @@ Menu_multi::~Menu_multi() {
 
 Menu_setup::Menu_setup() {
   {
-    const char *tpic;
-    if(config.info.language == 0) {
-      tpic = "setup.png";
-    } else {
-      tpic = "setupf.png";
-    }
-    Res_doze res(tpic);
+    Res_doze res("setup.png");
     Png img(res);
     bit = new Bitmap(img);
     pal.load(img);
@@ -1049,28 +1065,28 @@ Menu_setup::Menu_setup() {
   z_passwdinput = new Zone_text_input(inter, pal, config.player2[config.info.setup_player].ngPasswd, 64, 333, 132, 200);
 
   z_shadow = new Zone_state_text2(inter, &config.player[config.info.setup_player].shadow, 333, 161);
-  z_shadow->add_string(ST_NO);
-  z_shadow->add_string(ST_YES);
+  z_shadow->add_string("No");
+  z_shadow->add_string("Yes");
 
   z_smooth = new Zone_state_text2(inter, &config.player[config.info.setup_player].smooth, 333, 192);
-  z_smooth->add_string(ST_NO);
-  z_smooth->add_string(ST_YES);
+  z_smooth->add_string("No");
+  z_smooth->add_string("Yes");
 
   z_h_repeat = new Zone_state_text(inter, &config.player2[config.info.setup_player].h_repeat, 333, 220);
-  z_h_repeat->add_string(ST_SLOW);
-  z_h_repeat->add_string(ST_NORMAL);
-  z_h_repeat->add_string(ST_FAST);
-  z_h_repeat->add_string(ST_FASTER);
+  z_h_repeat->add_string("Slow");
+  z_h_repeat->add_string("Normal");
+  z_h_repeat->add_string("Fast");
+  z_h_repeat->add_string("Faster");
 
   z_v_repeat = new Zone_state_text(inter, &config.player2[config.info.setup_player].v_repeat, 333, 252);
-  z_v_repeat->add_string(ST_SLOW);
-  z_v_repeat->add_string(ST_NORMAL);
-  z_v_repeat->add_string(ST_FAST);
-  z_v_repeat->add_string(ST_FASTER);
+  z_v_repeat->add_string("Slow");
+  z_v_repeat->add_string("Normal");
+  z_v_repeat->add_string("Fast");
+  z_v_repeat->add_string("Faster");
 
   z_continuousdown = new Zone_state_text(inter, &config.player2[config.info.setup_player].continuous, 333, 281);
-  z_continuousdown->add_string(ST_NO);
-  z_continuousdown->add_string(ST_YES);
+  z_continuousdown->add_string("No");
+  z_continuousdown->add_string("Yes");
 
   z_key[0] = new Zone_set_key(inter, &config.player[config.info.setup_player].key[0], 148, 347);
   z_key[1] = new Zone_set_key(inter, &config.player[config.info.setup_player].key[1], 148, 378);
@@ -1080,48 +1096,28 @@ Menu_setup::Menu_setup() {
   z_key[2] = new Zone_set_key(inter, &config.player[config.info.setup_player].key[2], 513, 380);
   z_key[5] = new Zone_set_key(inter, &config.player2[config.info.setup_player].key[0], 513, 411);
 
-  if(config.info.language == 0) {
-    b_player = new Zone_menu(inter, bit, "setup0.png", 195, 11);
-    b_player->set_child(z_setup_player);
-    (new Zone_menu(inter, bit, "setup1.png", 255, 101))->set_child(z_nameinput);
-    (new Zone_menu(inter, bit, "setup2.png", 222, 132))->set_child(z_passwdinput);
-    (new Zone_menu(inter, bit, "setup3.png", 237, 161))->set_child(z_shadow);
-    (new Zone_menu(inter, bit, "setup4.png", 240, 192))->set_child(z_smooth);
-    (new Zone_menu(inter, bit, "setup5.png", 157, 220))->set_child(z_h_repeat);
-    (new Zone_menu(inter, bit, "setup6.png", 184, 252))->set_child(z_v_repeat);
-    (new Zone_menu(inter, bit, "setup7.png", 153, 281))->set_child(z_continuousdown);
-    b_key[0] = new Zone_menu(inter, bit, "setup8.png", 45, 347);
-    b_key[1] = new Zone_menu(inter, bit, "setup9.png", 32, 378);
-    b_key[3] = new Zone_menu(inter, bit, "setup10.png", 26, 408);
-    b_key[6] = new Zone_menu(inter, bit, "setup11.png", 19, 439);
-    b_key[4] = new Zone_menu(inter, bit, "setup12.png", 344, 350);
-    b_key[2] = new Zone_menu(inter, bit, "setup13.png", 275, 380);
-    b_key[5] = new Zone_menu(inter, bit, "setup14.png", 382, 411);
-    b_all_key = new Zone_menu(inter, bit, "setup15.png", 390, 439);
-  } else {
-    b_player = new Zone_menu(inter, bit, "setupf0.png", 137, 11);
-    b_player->set_child(z_setup_player);
-    (new Zone_menu(inter, bit, "setupf1.png", 266, 101))->set_child(z_nameinput);
-    (new Zone_menu(inter, bit, "setupf2.png", 193, 132))->set_child(z_passwdinput);
-    (new Zone_menu(inter, bit, "setupf3.png", 244, 162))->set_child(z_shadow);
-    (new Zone_menu(inter, bit, "setupf4.png", 265, 192))->set_child(z_smooth);
-    (new Zone_menu(inter, bit, "setupf5.png", 140, 221))->set_child(z_h_repeat);
-    (new Zone_menu(inter, bit, "setupf6.png", 166, 252))->set_child(z_v_repeat);
-    (new Zone_menu(inter, bit, "setupf7.png", 127, 281))->set_child(z_continuousdown);
-    b_key[0] = new Zone_menu(inter, bit, "setupf8.png", 60, 349);
-    b_key[1] = new Zone_menu(inter, bit, "setupf9.png", 71, 380);
-    b_key[3] = new Zone_menu(inter, bit, "setupf10.png", 95, 409);
-    b_key[6] = new Zone_menu(inter, bit, "setupf11.png", 64, 438);
-    b_key[4] = new Zone_menu(inter, bit, "setupf12.png", 354, 350);
-    b_key[2] = new Zone_menu(inter, bit, "setupf13.png", 316, 381);
-    b_key[5] = new Zone_menu(inter, bit, "setupf14.png", 358, 410);
-    b_all_key = new Zone_menu(inter, bit, "setupf15.png", 359, 440);
-  }
+  b_player = new Zone_menu(inter, bit, "setup0.png", 195, 11);
+  b_player->set_child(z_setup_player);
+  (new Zone_menu(inter, bit, "setup1.png", 255, 101))->set_child(z_nameinput);
+  (new Zone_menu(inter, bit, "setup2.png", 222, 132))->set_child(z_passwdinput);
+  (new Zone_menu(inter, bit, "setup3.png", 237, 161))->set_child(z_shadow);
+  (new Zone_menu(inter, bit, "setup4.png", 240, 192))->set_child(z_smooth);
+  (new Zone_menu(inter, bit, "setup5.png", 157, 220))->set_child(z_h_repeat);
+  (new Zone_menu(inter, bit, "setup6.png", 184, 252))->set_child(z_v_repeat);
+  (new Zone_menu(inter, bit, "setup7.png", 153, 281))->set_child(z_continuousdown);
+  b_key[0] = new Zone_menu(inter, bit, "setup8.png", 45, 347);
+  b_key[1] = new Zone_menu(inter, bit, "setup9.png", 32, 378);
+  b_key[3] = new Zone_menu(inter, bit, "setup10.png", 26, 408);
+  b_key[6] = new Zone_menu(inter, bit, "setup11.png", 19, 439);
+  b_key[4] = new Zone_menu(inter, bit, "setup12.png", 344, 350);
+  b_key[2] = new Zone_menu(inter, bit, "setup13.png", 275, 380);
+  b_key[5] = new Zone_menu(inter, bit, "setup14.png", 382, 411);
+  b_all_key = new Zone_menu(inter, bit, "setup15.png", 390, 439);
 
   for(int i=0; i<7; i++)
     b_key[i]->set_child(z_key[i]);
 
-  b_quit = new Zone_text_button2(inter, bit, fteam[4], ST_BACK, 560, 450);
+  b_quit = new Zone_text_button2(inter, bit, fteam[4], "Back ·0", 560, 450);
 }
 
 Menu_setup::~Menu_setup() {
@@ -1163,7 +1159,8 @@ void Menu_setup::step() {
   }
   for(int i=0; i<7; i++) {
     if(result==b_key[i]) {
-      call(new Menu_setup_key(inter, (Zone_set_key *) z_key[i], ST_PRESSAKEY));
+      call(new Menu_setup_key(inter, (Zone_set_key *) z_key[i],
+                              "Press a key..."));
     }
   }
 }
@@ -1176,19 +1173,19 @@ Menu_setup_all_key::Menu_setup_all_key(Inter *in, Zone_set_key *k[]): Menu(in) {
 void Menu_setup_all_key::step() {
   static char touche[7] = {0, 1, 3, 4, 2, 5, 6};
   Menu::step();
-  if(quel > 6 || input->keys[1] & PRESSED) {
+  if(quel > 6 || input->keys[SDLK_ESCAPE] & PRESSED) {
     ret();
     return;
   }
   const char *te = NULL;
   switch(touche[quel]) {
-    case 0: te = ST_PRESSLEFT; break;
-    case 1: te = ST_PRESSRIGHT; break;
-    case 2: te = ST_PRESSROTCCW; break;
-    case 3: te = ST_PRESSDOWN; break;
-    case 4: te = ST_PRESSROTCW; break;
-    case 5: te = ST_PRESS2ROT; break;
-    case 6: te = ST_PRESSDROP; break;
+    case 0: te = "Press a key for left..."; break;
+    case 1: te = "Right..."; break;
+    case 2: te = "Rotate counter clock-wise..."; break;
+    case 3: te = "Down..."; break;
+    case 4: te = "Rotate clock-wise..."; break;
+    case 5: te = "Rotate twice..."; break;
+    case 6: te = "Instant drop..."; break;
   }
   call(new Menu_setup_key(inter, key[touche[quel]], te));
   quel++;
@@ -1209,24 +1206,24 @@ void Menu_setup_key::init() {
 
 void Menu_setup_key::step() {
   Menu::step();
-  int i,loop=0;
-  for(i=1; i<256; i++) {
-    // denies the Enter key (it is dedicated to chat)
-    if(i == KEY_ENTER)
-      continue;
+  int loop = 0;
+  for(int i = SDLK_FIRST; i < SDLK_LAST; ++i) {   
     if(input->keys[i] & PRESSED) {
-      loop=i;
+      loop = i;
       break;
     }
   }
-  if(loop > 0) {
-    if(loop > 1) {
-      *(key->val) = loop;
-      key->process();
-    }
-    input->quel_key = -1;
-    ret();
-  }
+  if(loop == 0) return;
+  
+	input->last_key.sym = SDLK_UNKNOWN;
+  // denies Enter (reserved for multiplayer chat)
+	if(loop == SDLK_RETURN) return;
+	if(loop != SDLK_ESCAPE)
+	{
+		*(key->val) = loop;
+		key->process();
+	}
+	ret();
 }
 
 Menu_quitgame::Menu_quitgame() {
@@ -1247,41 +1244,37 @@ Menu_quitgame::~Menu_quitgame() {
 void Menu_quitgame::init() {
   Menu_standard::init();
   (void)new Zone_clear(inter);
-  (void)new Zone_text(inter, ST_QUADRA, 0);
-  (void)new Zone_text(inter, ST_DEMOQUIT1, 10, 40);
+  (void)new Zone_text(inter, "Quadra", 0);
+  (void)new Zone_text(inter, "You have been playing an unregistered "
+                      "version of Quadra.", 10, 40);
   int t,h,m,s;
-  t = overmind.framecount/100;
-  h = t/60/60; t=t%3600;
-  m = t/60;
-  s = t%60;
+  t = overmind.framecount / 100;
+  h = t / 60 / 60;
+  t = t % 3600;
+  m = t / 60;
+  s = t % 60;
   if(h > 0) {
-    sprintf(st,ST_DEMOQUIT2_1,h,m);
+    sprintf(st, "In fact, you played for %i hours and %i minutes!", h, m);
   } else if(m > 0) {
-    sprintf(st,ST_DEMOQUIT2_2,m,s);
+    sprintf(st, "In fact, you played for %i minutes %i seconds.", m, s);
   } else {
-    sprintf(st,ST_DEMOQUIT2_3,s);
+    sprintf(st, "You spent about %i seconds checking it.", s);
   }
   (void)new Zone_text(inter, st, 10, 60);
-  (void)new Zone_text(inter, ST_DEMOQUIT3, 10,80);
-  (void)new Zone_text(inter, ST_DEMOQUIT4, 10,100);
-  (void)new Zone_text(inter, ST_DEMOQUIT5, 10,120);
-  (void)new Zone_text(font2, inter, ST_DEMOQUIT6, 10, 150);
-  //new Zone_text(inter, ST_DEMOQUIT7, 10, 180);
-  //new Zone_text(inter, ST_DEMOQUIT8, 10, 200);
-  //new Zone_text(inter, ST_DEMOQUIT9, 10, 220);
-  //new Zone_text(inter, ST_DEMOQUIT10, 10, 240);
-  (void)new Zone_text(inter, ST_DEMOQUIT11, 10, 260);
-  (void)new Zone_text(inter, ST_DEMOQUIT12, 10, 280);
-  (void)new Zone_text(inter, ST_DEMOQUIT13, 10, 300);
-  (void)new Zone_text(inter, ST_DEMOQUIT14, 10, 320);
-  #ifdef UGS_DIRECTX
-    sprintf(st,ST_DEMOQUIT15,"Linux");
-  #else
-    sprintf(st,ST_DEMOQUIT15,"Windows");
-  #endif
-  (void)new Zone_text(inter, st, 10, 360);
-  (void)new Zone_text(inter, ST_DEMOQUIT16, 10, 380);
-  (void)new Zone_text(font2, inter, ST_DEMOQUIT17, 20, 410);
+  (void)new Zone_text(inter, "Was it enjoyable?  Was it incredibly fun?",
+                      10, 80);
+  (void)new Zone_text(inter, "Feel free to distribute Quadra to everyone "
+                      "you want!", 10, 300);
+#ifdef UGS_DIRECTX
+  (void)new Zone_text(inter, "We even got a Linux version, networkable "
+                      "with yours!", 10, 360);
+#else
+  (void)new Zone_text(inter, "We even got a Windows version, networkable "
+                      "with yours!", 10, 360);
+#endif
+  (void)new Zone_text(inter, "So watch out for Ludus Design products, "
+                      "and remember:", 10, 380);
+  (void)new Zone_text(font2, inter, "We do great stuff for you!", 20, 410);
 }
 
 void Menu_quitgame::step() {
@@ -1305,38 +1298,29 @@ Menu_help::Menu_help() {
   inter->set_font(new Font(*fonts.normal, pal, 255,255,255));
   font2 = fteam[4];
   (void)new Zone_bitmap(inter, bit, 0, 0, true);
-//  new Zone_clear(inter);
-  b_quit = new Zone_text_button2(inter, NULL, font2, ST_BACK, 560, 450);
+  b_quit = new Zone_text_button2(inter, NULL, font2, "Back ·0", 560, 450);
   int y;
-  (void)new Zone_text(inter, ST_HELP1, 20);
-  (void)new Zone_text(fteam[5], inter, ST_HELP2, 60);
-  (void)new Zone_text(fteam[5], inter, ST_HELP3, 100);
-  (void)new Zone_text(inter, ST_HELP4, 20, 140);
-  //(void)new Zone_text_field(inter, Config::user_name, 320, 140, 310, fteam[1]);
+  (void)new Zone_text(inter, "Thanks for downloading Quadra!", 20);
   y = 220;
   b_online=NULL;
 
-  (void)new Zone_text(inter, ST_HELP10, 10, y); y+=20;
-  (void)new Zone_text(inter, ST_HELP11, 10, y);
   Zone_text *temp;
-/*
-  b_email = temp = new Zone_text_select(inter, fteam[4], ST_HELP12, 160, y); // email ludus
-  temp->set_font(fteam[6]); y+=40;
-*/
-  (void)new Zone_text(fteam[3], inter, ST_HELP15, y); y+=20;
-  (void)new Zone_text(inter, ST_HELP16, 10, y); y+=20;
-  (void)new Zone_text(inter, ST_HELP17, 10, y); y+=20;
-  (void)new Zone_text(inter, ST_HELP18, 10, y); y+=20;
-  (void)new Zone_text(inter, ST_CREDIT1, 10, y); y+=20;
-  (void)new Zone_text(inter, ST_CREDIT2, 10, y); y+=20;
-  (void)new Zone_text(inter, ST_HELP19, 10, y);
-  b_www = temp = new Zone_text_select(inter, fteam[4], ST_HELP20, 160, y); // www address
+  (void)new Zone_text(fteam[3], inter, "The Quadra team:", y); y+=20;
+  (void)new Zone_text(inter, "Rémi Veilleux: Programming, design, graphics", 10, y); y+=20;
+  (void)new Zone_text(inter, "Stéphane Lajoie: Programming", 10, y); y+=20;
+  (void)new Zone_text(inter, "Pierre Phaneuf: Linux port", 10, y); y+=20;
+  (void)new Zone_text(inter, "Sylvain Fortin: Glue", 10, y); y+=20;
+  (void)new Zone_text(inter, "Véronique Bruneau: Graphics", 10, y); y+=20;
+  (void)new Zone_text(inter, "Our web site:", 10, y);
+  b_www = temp = new Zone_text_select(inter, fteam[4],
+                                      "http://quadra.sourceforge.net/",
+                                      160, y);
   temp->set_font(fteam[6]);
 }
 
 void Menu_help::init() {
   Menu_standard::init();
-  Sfx stmp(sons.levelup, 0, 0, 0, 11000);
+  sons.levelup->play(0, 0, 11000);
 }
 
 void Menu_help::step() {
@@ -1347,9 +1331,9 @@ void Menu_help::step() {
     quit = true;
 #ifdef UGS_DIRECTX
   if(result == b_www)
-    call_internet(ST_HELP20);
+    call_internet("http://quadra.sourceforge.net/");
   if(result == b_online)
-    call_internet(ST_REGISTER9);
+    call_internet("http://www.ludusdesign.com/quadra/register.html");
 #endif
 }
 
@@ -1380,79 +1364,48 @@ Menu_option::Menu_option() {
   inter->set_font(new Font(*fonts.normal, pal, 255,255,255));
   set_fteam_color(pal);
   font2 = fteam[4];
-//  font2 = new Font(*fonts.normal, pal, 255,255,0);
   (void)new Zone_bitmap(inter, bit, 0, 0, true);
-  (void)new Zone_text(inter, ST_GAMEOPTION, 20);
-  b_quit = new Zone_text_button2(inter, bit, font2, ST_BACK, 560, 450);
+  (void)new Zone_text(inter, "Game options", 20);
+  b_quit = new Zone_text_button2(inter, bit, font2, "Back ·0", 560, 450);
 
-  (void)new Zone_text(fteam[7], inter, ST_SELECTLANGUAGE, 40, 100);
+  // FIXME: Configuration for the removed CD music player. Should be taken out.
+  (void)new Zone_text(fteam[7], inter, "Select CD playing mode:", 40, 130);
   {
-    Zone_state_text2 *temp = new Zone_state_text2(inter, &config.info.language, 380, 100);
-    temp->add_string(ST_ENGLISH);
-    temp->add_string(ST_FRENCH);
+    Zone_state_text2 *temp =  new Zone_state_text2(inter,
+                                                   &config.info.cdmusic,
+                                                   380, 130);
+    temp->add_string("No music");
+    temp->add_string("Auto-change track");
+    temp->add_string("Loop all tracks");
   }
-  old_language = config.info.language;
 
-  (void)new Zone_text(fteam[7], inter, ST_SELECTCDMUSIC, 40, 130);
-  {
-    Zone_state_text2 *temp =  new Zone_state_text2(inter, &config.info.cdmusic, 380, 130);
-    temp->add_string(ST_CDMUSIC1);
-    temp->add_string(ST_CDMUSIC2);
-    temp->add_string(ST_CDMUSIC3);
-  }
-  old_music = config.info.cdmusic;
-
-  (void)new Zone_text(fteam[7], inter, ST_SETMOUSESPEED, 40, 160);
+  (void)new Zone_text(fteam[7], inter, "Mouse cursor speed (1-255):", 40, 160);
   (void)new Zone_input_numeric(inter, &config.info.mouse_speed, 4, 1, 255, pal, 380, 160, 60);
-  old_mouse_speed = config.info.mouse_speed;
   old_port = config.info.port_number;
 
-  (void)new Zone_text(inter, ST_ADVANCEDOPTION, 40, 220);
+  (void)new Zone_text(inter, "Advanced options:", 40, 220);
 
-  (void)new Zone_text(fteam[7], inter, ST_ENTERINTERNETPORT, 40, 250);
+  (void)new Zone_text(fteam[7], inter, "TCP/IP port number (1024-65535):",
+                      40, 250);
   (void)new Zone_input_numeric(inter, &config.info.port_number, 6, 1024, 65535, pal, 380, 250, 60);
-  (void)new Zone_text(fteam[3], inter, ST_NOTEPORTNUMBER, 40, 274);
+  (void)new Zone_text(fteam[3], inter, "(Note: you must have the same port "
+                      "number to connect to another computer)", 40, 274);
 
-  (void)new Zone_text(fteam[7], inter, ST_SETGAMESERVER, 40, 310);
+  (void)new Zone_text(fteam[7], inter, "Public game server address:", 40, 310);
   (void)new Zone_text_input(inter, pal, config.info.game_server_address, 255, 380, 310, 240);
-  snprintf(st, sizeof(st), ST_DEFAULTGAMESERVER, config.info3.default_game_server_address);
-  (void)new Zone_text(fteam[3], inter, st, 40, 334);
+  char stbuf[512];
+  snprintf(stbuf, sizeof(stbuf), "Default server: %s",
+           config.info3.default_game_server_address);
+  (void)new Zone_text(fteam[3], inter, stbuf, 40, 334);
   strcpy(old_server, config.info.game_server_address);
 
-	(void)new Zone_text(fteam[7], inter, ST_OPTIONS_PROXY, 40, 370);
+	(void)new Zone_text(fteam[7], inter, "HTTP proxy server:", 40, 370);
 	(void)new Zone_text_input(inter, pal, config.info2.proxy_address, 127, 380, 370, 240);
 	strcpy(old_proxy, config.info2.proxy_address);
 }
 
 Menu_option::~Menu_option() {
   config.write();
-  if(old_music != config.info.cdmusic) {
-    if(config.info.cdmusic == 2) {
-      music->play(1, true);
-      return;
-    }
-    if(old_music == 0) {
-      music->play(1);
-    }
-    if(config.info.cdmusic == 0) {
-      music->stop();
-    }
-  }
-  if(old_language != config.info.language) {
-    delete stringtable;
-    const char *language;
-    switch(config.info.language) {
-      default:
-      case 0:
-        language="anglais.txt"; break;
-      case 1:
-        language="francais.txt"; break;
-    }
-    stringtable=new Stringtable(language);
-    int i;
-    for(i=0; i<MAXTEAMS; i++)
-      set_team_name(i, NULL);
-  }
   if(strcmp(old_server, config.info.game_server_address) || strcmp(old_proxy, config.info2.proxy_address)) {
     Qserv::http_addr=0;
     Qserv::http_port=0;
@@ -1463,10 +1416,6 @@ void Menu_option::step() {
   Menu_standard::step();
   if(result == b_quit)
     quit = true;
-  if(old_mouse_speed != config.info.mouse_speed) {
-    cursor->set_speed(config.info.mouse_speed);
-    old_mouse_speed = config.info.mouse_speed;
-  }
 }
 
 Menu_intro::Menu_intro() {
@@ -1479,27 +1428,30 @@ Menu_intro::Menu_intro() {
   inter->set_font(new Font(*fonts.normal, pal, 255,255,255));
   font2 = new Font(*fonts.normal, pal, 0,255,255);
   (void)new Zone_clear(inter);
-  (void)new Zone_text(inter, ST_INTRO1, 10);
-  (void)new Zone_text(inter, ST_INTRO2, 10, 40);
-  (void)new Zone_text(font2, inter, ST_INTRO4, 10, 80);
+  (void)new Zone_text(inter, "Quadra(tm) by Ludus Design", 10);
+  (void)new Zone_text(inter, "Using Universal Game Skelton(tm)", 10, 40);
+  (void)new Zone_text(font2, inter, "Free version released under the "
+                      "GNU Lesser General Public License", 10, 80);
 
   y=130;
   warning=0;
   if(!sound) {
-    (void)new Zone_text(inter, ST_INTRO6, 10, y);
+    (void)new Zone_text(inter, "Warning: Failed to initialise sound system",
+                        10, y);
     warning++;
     y += 20;
   }
   if(config.warning == 1) {
-    (void)new Zone_text(inter, ST_INTRO7, 10, y);
+    (void)new Zone_text(inter, "No configuration file found. Using defaults.", 10, y);
     y += 20;
   }
   if(config.warning == 2) {
-    (void)new Zone_text(inter, ST_INTRO8, 10, y);
+    (void)new Zone_text(inter, "Warning: Wrong version in configuration "
+                        "file. Using defaults.", 10, y);
     warning++;
     y += 20;
   }
-  (void)new Zone_text(inter, ST_INTRO9, 10, y);
+  (void)new Zone_text(inter, "Hit something to continue...", 10, y);
 #ifdef ENABLE_VERSION_CHECK
   if(strcmp(VERSION_STRING, config.info3.latest_version) != 0)
   {
@@ -1509,8 +1461,10 @@ Menu_intro::Menu_intro() {
                         10, y + 60);
   }
 #endif
-  (void)new Zone_text(inter, ST_INTRO10, 10, 430);
-  (void)new Zone_text(inter, ST_INTRO11, 10, 450);
+  (void)new Zone_text(inter, "Quadra, Universal Game Skelton and the "
+                      "Ludus Design logo are trademarks", 10, 430);
+  (void)new Zone_text(inter, "of Ludus Design, Copyright (C) 1998-2000. "
+                      "All rights reserved.", 10, 450);
   once = false;
 }
 
@@ -1529,84 +1483,6 @@ void Menu_intro::step() {
 
 Menu_intro::~Menu_intro() {
   delete font2;
-}
-
-Menu_guy::Menu_guy() {
-#if 0
-  /* FIXME: we should remove this */
-  Bitmap *bit;
-  {
-    Res_doze res("xlogo.png");
-    Png pcx(res);
-    bit = new Bitmap(pcx);
-    pal.load(pcx);
-  }
-  (void)new Zone_bitmap(inter, bit, 0, 0, true);
-  /*{
-    Res_doze res("Raglamp.wav");
-    son = new Sample(res, 2);
-  }*/
-#endif
-}
-
-Menu_guy::~Menu_guy() {
-  //delete son;
-}
-
-void Menu_guy::init() {
-  Menu::init();
-  call(new Fade_to(pal, noir, 64));
-}
-
-void Menu_guy::step() {
-  Menu::step();
-  exec(new Menu_intro());
-  call(new Fade_to(noir, pal, 64));
-  call(new Wait_time(300));
-  //Sfx stmp(son, 0, 0, 0, 22050);
-}
-
-Menu_ugs::Menu_ugs() {
-#if 0
-  /* FIXME: this should be removed */
-  Bitmap *bit;
-  {
-    Res_doze res("Ugs.pcx");
-    Pcx pcx(res);
-    bit = new Bitmap(pcx);
-    pal.load(pcx);
-  }
-  new Zone_bitmap(inter, bit, 0, 0, true);
-  {
-    Res_doze res("Flamenco.wav");
-    son = new Sample(res, 2);
-  }
-#endif
-}
-
-Menu_ugs::~Menu_ugs() {
-  delete son;
-}
-
-void Menu_ugs::init() {
-  Menu::init();
-  call(new Fade_to(pal, noir, 64));
-}
-
-void Menu_ugs::step() {
-  Menu::step();
-  exec(new Menu_main());
-  call(new Fade_to(noir, pal, 64));
-  call(new Wait_time(300));
-  Sfx stmp(son, 0, 0, 0, 22050);
-}
-
-void Menu_main_startmusic::init() {
-  if(config.info.cdmusic == 1)
-    music->play(1);
-  if(config.info.cdmusic == 2)
-    music->play(1, true);
-  ret();
 }
 
 Menu_main::Menu_main():
@@ -1632,52 +1508,26 @@ void Menu_main::redraw() {
   z_back = new Zone_bitmap(inter, background, 0, 0, true);
 
   b_help = NULL;
-  if(config.info.language == 0) {
-    b_single = new Zone_menu(inter, background, "debut0.png", 160, 99);
-    b_multi = new Zone_menu(inter, background, "debut1.png", 166, 139);
-    b_demo = new Zone_menu(inter, background, "debut2.png", 214, 183);
-    b_tut = new Zone_menu(inter, background, "debut3.png", 235, 225);
-    b_setup = new Zone_menu(inter, background, "debut4.png", 221, 267);
-    b_option = new Zone_menu(inter, background, "debut5.png", 264, 310);
-    if(!Config::xtreme)
-      b_help = new Zone_menu(inter, background, "debut6.png", 261, 351);
-    b_quit = new Zone_menu(inter, background, "debut7.png", 295, 392);
-  } else {
-    {
-      Res_doze res("debutof.png");
-      Png raw(res);
-      Bitmap bit(raw);
-      bit.draw(*background, 155, 93);
-    }
-    b_single = new Zone_menu(inter, background, "debut0f.png", 223, 94);
-    b_multi = new Zone_menu(inter, background, "debut1f.png", 145, 136);
-    b_demo = new Zone_menu(inter, background, "debut2f.png", 174, 175);
-    b_tut = new Zone_menu(inter, background, "debut3f.png", 240, 219);
-    b_setup = new Zone_menu(inter, background, "debut4f.png", 160, 261);
-    b_option = new Zone_menu(inter, background, "debut5f.png", 257, 303);
-    if(!Config::xtreme)
-      b_help = new Zone_menu(inter, background, "debut6f.png", 223, 344);
-    b_quit = new Zone_menu(inter, background, "debut7f.png", 261, 386);
-  }
+  b_single = new Zone_menu(inter, background, "debut0.png", 160, 99);
+  b_multi = new Zone_menu(inter, background, "debut1.png", 166, 139);
+  b_demo = new Zone_menu(inter, background, "debut2.png", 214, 183);
+  b_tut = new Zone_menu(inter, background, "debut3.png", 235, 225);
+  b_setup = new Zone_menu(inter, background, "debut4.png", 221, 267);
+  b_option = new Zone_menu(inter, background, "debut5.png", 264, 310);
+  b_help = new Zone_menu(inter, background, "debut6.png", 261, 351);
+  b_quit = new Zone_menu(inter, background, "debut7.png", 295, 392);
 
-  if(Config::xtreme) {
-    Res_doze res("debutnr.png");
-    Png raw(res);
-    Bitmap bit(raw);
-    bit.draw(*background, 227, 345);
-  }
-
-  sprintf(st, ST_QUADRAVERSION, VERSION_STRING);
+  sprintf(st, "Quadra version %s", VERSION_STRING);
   new Zone_text(inter, st, 450, 430);
-  old_language = config.info.language;
   
   b_logo = new Zone_menu(inter, background, "debut8.png", 0, 390);
 }
 
 void Menu_main::init() {
   Menu::init();
-  call(new Menu_main_startmusic());
-  call(new Wait_time(6)); // to force the palette being set BEFORE the music starts
+  // FIXME: The following line might not be necessary without the music.
+  call(new Wait_time(6)); // to force the palette being set BEFORE the
+                          // music starts
   call(new Setpalette(pal));
   reset_delay();
 }
@@ -1712,8 +1562,8 @@ void Menu_main::step() {
     call(new Fade_out(pal));
     reset_delay();
   }
-  if(result == b_quit || input->quel_key == 1 || quitting) {
-    input->quel_key = -1;
+  if(result == b_quit || input->last_key.sym == SDLK_ESCAPE || quitting) {
+    input->last_key.sym = SDLK_UNKNOWN;
     exec(new Fade_out(pal));
   }
   if(result == b_tut) {
@@ -1724,7 +1574,7 @@ void Menu_main::step() {
 #ifdef UGS_DIRECTX
   if(result == b_logo) {
     call(new Fade_in(pal));
-    call(new Menu_internet(ST_HELP20)); // web site URL
+    call(new Menu_internet("http://quadra.sourceforge.net/"));
     call(new Fade_to(Palette(), pal));
   }
 #endif
@@ -1766,8 +1616,6 @@ void Menu_main::step() {
 //  }
   if(result)
     reset_delay();
-  if(old_language != config.info.language)
-    redraw();
 }
 
 Menu_stat::Colonne::Colonne() {
@@ -1786,12 +1634,6 @@ c_start(105), c_gap(4) {
     Png raw(res);
     bit = new Bitmap(raw);
     pal.load(raw);
-  }
-  if(config.info.language == 1) {
-    Res_doze res("resultf.png");
-    Png raw(res);
-    Bitmap btemp(raw);
-    btemp.draw(*bit, 0, 0);
   }
   pal.set_size(256);
   Palette temp;
@@ -1815,20 +1657,20 @@ c_start(105), c_gap(4) {
   fcourrier[7] = new Font(*fonts.courrier, pal, 170,170,170);
   font2 = fteam[4];
   (void)new Zone_bitmap(inter, bit, 0, 0);
-  b_quit = new Zone_text_button2(inter, bit, font2, ST_QUIT, 340, 455);
+  b_quit = new Zone_text_button2(inter, bit, font2, "Quit ·0", 340, 455);
   Zone_text_button *z;
-  int x=8, wid=105;
-  z=new Zone_text_button2(inter, bit, font2, ST_RANK, x, 80, wid-8);
-  b_page.add(z);
+  int x(8), wid(105);
+  z=new Zone_text_button2(inter, bit, font2, "Rank", x, 80, wid-8);
+  b_page.push_back(z);
   x+=wid;
-  z=new Zone_text_button2(inter, bit, font2, ST_SPEED, x, 80, wid-8);
-  b_page.add(z);
+  z=new Zone_text_button2(inter, bit, font2, "Speed", x, 80, wid-8);
+  b_page.push_back(z);
   x+=wid;
-  z=new Zone_text_button2(inter, bit, font2, ST_LINES, x, 80, wid-8);
-  b_page.add(z);
+  z=new Zone_text_button2(inter, bit, font2, "Lines", x, 80, wid-8);
+  b_page.push_back(z);
   x+=wid;
-  z=new Zone_text_button2(inter, bit, font2, ST_COMBO, x, 80, wid-8);
-  b_page.add(z);
+  z=new Zone_text_button2(inter, bit, font2, "Combos", x, 80, wid-8);
+  b_page.push_back(z);
   x+=wid;
 
   b_restart = b_stop = NULL;
@@ -1840,13 +1682,16 @@ c_start(105), c_gap(4) {
   change_page(0);
 
   notify();
-  (void)new Chat_interface(inter, pal, bit, 427, 47, 212, 410);
+  (void)new Chat_interface(inter, pal, bit->surface, 427, 47, 212, 410);
   if(game)
     game->net_list.add_watch(this);
 }
 
 Menu_stat::~Menu_stat() {
-  col.deleteall();
+  while (!col.empty()) {
+    delete col.back();
+    col.pop_back();
+  }
   if(game)
     game->net_list.remove_watch(this);
   for(int i=0; i<MAXTEAMS; i++)
@@ -1861,26 +1706,26 @@ void Menu_stat::init_columns(Bitmap *bit) {
   n=new Colonne();
   n->quel_stat = CS::FRAG;
   n->width = 70;
-  n->set_titre(ST_RESULTFRAG);
-  col.add(n);
+  n->set_titre("Frags");
+  col.push_back(n);
 
   n=new Colonne();
   n->quel_stat = CS::DEATH;
   n->width = 70;
-  n->set_titre(ST_RESULTDEATH);
-  col.add(n);
+  n->set_titre("Deaths");
+  col.push_back(n);
 
   n=new Colonne();
   n->quel_stat = CS::SCORE;
   n->width = 90;
-  n->set_titre(ST_SHOWSCORE);
-  col.add(n);
+  n->set_titre("Score");
+  col.push_back(n);
 
   n=new Colonne();
   n->quel_stat = CS::LINESTOT;
   n->width = 90;
-  n->set_titre(ST_SHOWLINE);
-  col.add(n);
+  n->set_titre("Lines");
+  col.push_back(n);
 
   int px;
   px = c_start;
@@ -1894,39 +1739,19 @@ void Menu_stat::init_columns(Bitmap *bit) {
   n=new Colonne();
   n->quel_stat = CS::PPM;
   n->width = 150;
-  n->set_titre(ST_SHOWPPM);
+  n->set_titre("Points per min.");
   n->page = page;
   add_title(*n, &px, bit);
-  col.add(n);
+  col.push_back(n);
 
   n=new Colonne();
   n->quel_stat = CS::BPM;
   n->width = 150;
-  n->set_titre(ST_SHOWBPM);
+  n->set_titre("Blocks per min.");
   n->page = page;
   add_title(*n, &px, bit);
-  col.add(n);
+  col.push_back(n);
 
-/*  int sta1=0, sta2=0;
-  {
-    for(int p=0; p<MAXPLAYERS; p++) {
-      Canvas* c=game->net_list.get(p);
-      if(c) {
-        for(int i=sta1; i<=20; i++)
-          if(c->stats[CS::clear_trans(i)].get_value())
-            sta1=i;
-        for(int j=sta2; j<=20; j++)
-          if(c->stats[(CS::Stat_type)(CS::COMBO00+j)].get_value())
-            sta2=j;
-      }
-    }
-    sta1 -= 7;
-    if(sta1<0)
-      sta1=0;
-    sta2 -= 7;
-    if(sta2<0)
-      sta2=0;
-  }*/
   page++;
   px = c_start;
   for(i=0; i<8; i++) {
@@ -1937,7 +1762,7 @@ void Menu_stat::init_columns(Bitmap *bit) {
     n->set_titre(st);
     n->page = page;
     add_title(*n, &px, bit);
-    col.add(n);
+    col.push_back(n);
   }
 
   page++;
@@ -1950,7 +1775,7 @@ void Menu_stat::init_columns(Bitmap *bit) {
     n->set_titre(st);
     n->page = page;
     add_title(*n, &px, bit);
-    col.add(n);
+    col.push_back(n);
   }
 
   page++;
@@ -1963,7 +1788,7 @@ void Menu_stat::init_columns(Bitmap *bit) {
     n->set_titre(st);
     n->page = page;
     add_title(*n, &px, bit);
-    col.add(n);
+    col.push_back(n);
   }
 
   page++;
@@ -1976,7 +1801,7 @@ void Menu_stat::init_columns(Bitmap *bit) {
     n->set_titre(st);
     n->page = page;
     add_title(*n, &px, bit);
-    col.add(n);
+    col.push_back(n);
   }
 }
 
@@ -2001,12 +1826,12 @@ void Menu_stat::set_sort(int quel) {
 
 void Menu_stat::change_page(int p) {
   int i, last_page=0;
-  for(i=0; i<col.size(); i++) {
+  for (i=0; i< static_cast<int>(col.size()); ++i) {
     if(col[i]->page == active_page) {
       col[i]->z_titre->disable();
     }
     if(col[i]->page>last_page)
-      last_page=col[i]->page;
+      last_page = col[i]->page;
   }
   switch(active_page) {
     case 0:
@@ -2046,12 +1871,11 @@ void Menu_stat::change_page(int p) {
       b_page[3]->set_font(fteam[4]);
       break;
   }
-  if(active_page > last_page)
+  if (active_page > last_page)
     active_page = 0;
-  for(i=0; i<col.size(); i++)
-    if(col[i]->page == active_page) {
+  for (i = 0; i < static_cast<int>(col.size()); ++i)
+    if (col[i]->page == active_page)
       col[i]->z_titre->enable();
-    }
   notify();
 }
 
@@ -2071,7 +1895,7 @@ void Menu_stat::calculate_total(bool force_blit) {
 }
 
 void Menu_stat::display() {
-  zone.deleteall();
+  list.deleteall();
   int y = 145;
   for(int loo=0; loo<MAXTEAMS; loo++) {
     int team = score.team_order[loo];
@@ -2080,31 +1904,29 @@ void Menu_stat::display() {
       if(score.player_team[i]==team) {
         Canvas *c = game->net_list.get(i);
         if(c && c->color == team) {
-          zone.add(new Zone_text(fteam[team], inter, c->long_name(), 2, y));
+          list.zones.push_back(new Zone_text(fteam[team], inter, c->long_name(), 2, y));
 
           Font *color = fcourrier[team];
 
           int px = c_start;
-          for(int j=0; j<col.size(); j++) {
+          for(int j = 0; j < static_cast<int>(col.size()); ++j)
             if(col[j]->page == active_page) {
-              zone.add(new Zone_text_numeric(color, inter, score.stats[i].stats[col[j]->quel_stat].get_address(), px, y, col[j]->width-c_gap));
+              list.zones.push_back(new Zone_text_numeric(color, inter, score.stats[i].stats[col[j]->quel_stat].get_address(), px, y, col[j]->width-c_gap));
               px += col[j]->width;
             }
-          }
           y += 22;
         }
       }
     }
     if(score.player_count[team] > 1) {
-      zone.add(new Zone_text(fteam[team], inter, ST_TOTAL, 15, y));
+      list.zones.push_back(new Zone_text(fteam[team], inter, "Total:", 15, y));
       int px = c_start;
       Font *color = fcourrier[team];
-      for(int j=0; j<col.size(); j++) {
-        if(col[j]->page == active_page) {
-          zone.add(new Zone_text_numeric(color, inter, score.team_stats[team].stats[col[j]->quel_stat].get_address(), px, y, col[j]->width-c_gap));
+      for (int j = 0; j < static_cast<int>(col.size()); ++j)
+        if (col[j]->page == active_page) {
+          list.zones.push_back(new Zone_text_numeric(color, inter, score.team_stats[team].stats[col[j]->quel_stat].get_address(), px, y, col[j]->width-c_gap));
           px += col[j]->width;
         }
-      }
       y += 34;
     } else if(score.player_count[team] == 1) {
       y += 12; // leave space between the players/totals of each team
@@ -2128,7 +1950,7 @@ void Menu_stat::step() {
   bool force_blit=false;
   //Add appropriate button(s)
   if(game->server && game->network && !game->terminated && !b_stop)
-    b_stop = new Zone_text_button2(inter, bit, font2, ST_STOPGAME, 8, 455);
+    b_stop = new Zone_text_button2(inter, bit, font2, "·2 End game", 8, 455);
   //Remove end-of-game button if already terminated
   if(b_stop && game->terminated) {
     delete b_stop;
@@ -2147,12 +1969,16 @@ void Menu_stat::step() {
   if(!playback && !b_restart)
     if(game->server)
 			if(game->terminated)
-				b_restart = new Zone_text_button2(inter, bit, font2, ST_RESTARTGAME, 8, 455);
+				b_restart = new Zone_text_button2(inter, bit, font2,
+                                          "·2 Restart game", 8, 455);
 			else
-				b_restart = new Zone_text_button2(inter, bit, font2, ST_REJOINGAME, 8+(b_stop? b_stop->w+4:0), 455);
+				b_restart = new Zone_text_button2(inter, bit, font2,
+                                          "·2 Rejoin game",
+                                          8+(b_stop? b_stop->w+4:0), 455);
     else
       if(net->active && net->connected())
-        b_restart = new Zone_text_button2(inter, bit, font2, ST_REJOINGAME, 8, 455);
+        b_restart = new Zone_text_button2(inter, bit, font2, 
+                                          "·2 Rejoin game", 8, 455);
   if(result) {
     if(result == b_quit)
       quit = true;
@@ -2186,16 +2012,15 @@ void Menu_stat::step() {
         exec(new Join_game(bit, inter->font, font2, pal, NULL, 0, 0, true));
       }
     }
-    int i;
-    for(i=0; i<col.size(); i++) {
-      if(result == col[i]->z_titre) {
+    for (int i = 0; i < static_cast<int>(col.size()); ++i) {
+      if (result == col[i]->z_titre) {
         set_sort(i);
-        force_blit=true;
+        force_blit = true;
         break;
       }
     }
-    for(i=0; i<b_page.size(); i++)
-      if(result == b_page[i])
+    for (unsigned int i = 0; i < b_page.size(); ++i)
+      if (result == b_page[i])
         change_page(i);
   }
   calculate_total(force_blit);
@@ -2206,23 +2031,24 @@ Menu_multi_checkip::Menu_multi_checkip(Bitmap *bit, Font *font, Font *font2, con
   bit_ = bit;
   inter->set_font(font, false);
   new Zone_bitmap(inter, bit, 0, 0);
-  new Zone_text(inter, ST_CHECKIPTITLE, 20);
-  cancel = new Zone_text_button2(inter, bit, font2, ST_BACK, 560, 450);
-  new Zone_text(inter, ST_HOSTNAME, 170, 110);
+  new Zone_text(inter, "IP configuration of this computer", 20);
+  cancel = new Zone_text_button2(inter, bit, font2, "Back ·0", 560, 450);
+  new Zone_text(inter, "Host name:", 170, 110);
   new Zone_text_field(inter, net->host_name, 310, 110, inter->font->width(net->host_name)+8);
-  new Zone_text(inter, ST_HOSTLIST, 170, 140);
+  new Zone_text(inter, "IP address:", 170, 140);
   Zone_listbox *list;
   list = new Zone_listbox2(inter, bit, font2, NULL, 310, 140, 160, 200);
-  for(int i=0; i<net->host_adr.size(); i++) {
-    Net::stringaddress(st, net->host_adr[i]);
+	vector<Dword>::const_iterator it;
+  for (it = net->host_adr.begin(); it != net->host_adr.end(); ++it) {
+    Net::stringaddress(st, *it);
     list->add_item(st);
   }
 }
 
 void Menu_multi_checkip::step() {
   Menu::step();
-  if(input->quel_key == 1 || result==cancel) {
-    input->quel_key = 0;
+  if(input->last_key.sym == SDLK_ESCAPE || result == cancel) {
+    input->last_key.sym = SDLK_UNKNOWN;
     ret();
   }
 }
@@ -2234,15 +2060,15 @@ Menu_multi_book::Menu_multi_book(Bitmap *bit, Font *font, Font *font2, const Pal
   inter->set_font(font, false);
   address = adr;
   new Zone_bitmap(inter, bit, 0, 0);
-  cancel = new Zone_text_button2(inter, bit, font2, ST_BACK, 560, 450);
+  cancel = new Zone_text_button2(inter, bit, font2, "Back ·0", 560, 450);
   if(address) { // if connecting address already provided
-    new Zone_text(inter, ST_CONNECT, 20);
+    new Zone_text(inter, "Connect", 20);
   } else {
-    new Zone_text(inter, ST_ADDRESSBOOKTITLE, 20);
+    new Zone_text(inter, "Address book", 20);
     for(int i=0; i<10; i++) {
       int y = 60 + i*36;
       new Zone_text_input(inter, pal, config.info.book[i], 255, 40, y, 460);
-      b_connect[i] = new Zone_text_button2(inter, bit, font2, ST_CONNECT, 520, y);
+      b_connect[i] = new Zone_text_button2(inter, bit, font2, "Connect", 520, y);
     }
   }
   status = new Zone_text_field(inter, "", 6, 450, 540);
@@ -2258,8 +2084,8 @@ void Menu_multi_book::init() {
 
 void Menu_multi_book::step() {
   Menu::step();
-  if(input->quel_key == KEY_ESCAPE || result==cancel) {
-    input->quel_key = 0;
+  if(input->last_key.sym == SDLK_ESCAPE || result == cancel) {
+    input->last_key.sym = SDLK_UNKNOWN;
     if(looking)
       net->gethostbyname_cancel();
     config.write();
@@ -2288,7 +2114,7 @@ void Menu_multi_book::step() {
       if(address)
         ret();
     } else {
-      sprintf(st, ST_LOOKINGFORBOB, connect_adr);
+      sprintf(st, "Looking for %s...", connect_adr);
       status->set_val(st);
       looking = true;
     }
@@ -2296,7 +2122,7 @@ void Menu_multi_book::step() {
   if(looking) {
     if(net->name_resolve != (unsigned int)-1) {
       if(net->name_resolve == 0) {
-        status->set_val(ST_ERRORLOOKING);
+        status->set_val("Unable to locate host. Please verify and try again.");
         looking = false;
         connect_failed = true;
       } else {

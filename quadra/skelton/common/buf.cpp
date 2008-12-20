@@ -18,14 +18,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "buf.h"
+
 #include <stdlib.h>
 #include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
 #include "error.h"
-#include "buf.h"
-
-RCSID("$Id$")
 
 Buf::Buf(const Buf &buf) {
 	data=NULL;
@@ -86,7 +85,7 @@ void Buf::reserve(Dword s) {
 	if(s>capacity) {
 		data = (Byte*)realloc(data, s);
 		if(!data)
-			(void)new Error("Out of memory!");
+			fatal_msgbox("Out of memory!");
 		capacity=s;
 	}
 }
@@ -122,7 +121,7 @@ void Textbuf::append(const char* s, ...) {
 	va_list marker;
 	va_start(marker, s);
 	if (vsnprintf(st, sizeof(st), s, marker) >= static_cast<int>(sizeof(st)))
-		(void)new Error("Textbuf::append overflow");
+		fatal_msgbox("Textbuf::append overflow");
 	va_end(marker);
 	appendraw(st);
 }
@@ -144,7 +143,7 @@ void Textbuf::reserve(Dword size) {
 	bool init=data? false:true;
 	data=(char*)realloc(data, wanted);
 	if(!data)
-		(void)new Error("Out of memory!");
+		fatal_msgbox("Out of memory!");
 	capacity=wanted;
 	if(init)
 		data[0]=0;

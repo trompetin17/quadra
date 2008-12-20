@@ -18,14 +18,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "resfile.h"
+
 #include <stdio.h>
 #include <string.h>
 #include "error.h"
 #include "res.h"
-#include "resfile.h"
-#include "byteorder.h"
-
-RCSID("$Id$")
+#include "SDL_endian.h"
 
 Resdata::Resdata(char *resname, int ressize, Byte *resdata, Resdata *list) {
 	name = resname;
@@ -79,13 +78,13 @@ void Resfile::thaw() {
 
 	do {
 		res->read(&resnamelen, sizeof(resnamelen));
-		resnamelen = INTELDWORD(resnamelen);
+		resnamelen = SDL_SwapLE32(resnamelen);
 		if(resnamelen == 0)
 			break;
 		resname = new char[resnamelen];
 		res->read(resname, resnamelen);
 		res->read(&ressize, sizeof(ressize));
-		ressize = INTELDWORD(ressize);
+		ressize = SDL_SwapLE32(ressize);
 		resdata = new Byte[ressize];
 		res->read(resdata, ressize);
 
@@ -142,6 +141,6 @@ void Resfile::remove(const char* resname) {
 		ptr->next = NULL;
 		delete ptr;
 	}
-	// Can somebody tell me why Resfile::list isn't an Array<Resdata>?
-	// We all know linked lists suck, don't we? Whatever...
+	// Can somebody tell me why Resfile::list isn't an std::list<Resdata>?
+	// We all know hand-coded linked lists suck, don't we? Whatever...
 }

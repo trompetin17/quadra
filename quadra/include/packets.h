@@ -17,16 +17,16 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 #ifndef _HEADER_PACKETS
 #define _HEADER_PACKETS
 
 #include <string.h>
+#include <vector>
 
+#include "config.h"
 #include "packet.h"
-#include "array.h"
-#include "net_stuff.h"
 #include "game.h"
+#include "net_stuff.h"
 #include "cfgfile.h"
 #include "config.h"
 
@@ -98,7 +98,9 @@ public:
 	Packet_wantjoin() {
 		packet_id = P_WANTJOIN;
 		net_version=Config::net_version;
-		language=config.info.language;
+    // FIXME: Integers aren't the best way to communicate these
+    // information.
+		language = 0;
 		os=
 		#if defined(UGS_DIRECTX)
 			1
@@ -139,7 +141,7 @@ public:
 
 class Packet_gameinfo: public Packet_udp {
 public:
-	Array <Net_player *> players;
+	std::vector<Net_player*> players;
 	char name[32];
 	Byte version;
 	int port, game_end_value;
@@ -151,7 +153,7 @@ public:
 	Packet_gameinfo();
 	virtual ~Packet_gameinfo();
 	void add_player(Byte q, Byte t, const char *s, int status, int handicap) {
-		players.add(new Net_player(q, t, s, 0, status, handicap));
+		players.push_back(new Net_player(q, t, s, 0, status, handicap));
 	}
 	virtual void write(Net_buf *p);
 	virtual bool read(Net_buf *p);
@@ -160,7 +162,7 @@ public:
 class Packet_gameserver: public Packet_ping {
 public:
 	Byte version;
-	Array <Net_player *> players;
+	std::vector<Net_player*> players;
 	char name[32];
 	bool accepted;
 	int game_seed, game_end_value;
@@ -183,7 +185,7 @@ public:
 	}
 	virtual ~Packet_gameserver();
 	void add_player(Byte q, Byte t, const char *s, Dword pid, int handicap) {
-		players.add(new Net_player(q, t, s, pid, -1, handicap));
+		players.push_back(new Net_player(q, t, s, pid, -1, handicap));
 	}
 	virtual void write(Net_buf *p);
 	virtual bool read(Net_buf *p);
@@ -300,7 +302,7 @@ public:
 
 class Packet_stat: public Packet_playerbase {
 public:
-	Array<Net_stat *> net_stats;
+	std::vector<Net_stat*> net_stats;
 	Byte num_stat;
 	Packet_stat() {
 		packet_id = P_STAT;
@@ -313,7 +315,7 @@ public:
 
 class Packet_gamestat: public Packet_tcp {
 public:
-	Array<Net_stat *> net_stats;
+	std::vector<Net_stat*> net_stats;
 	Byte num_stat;
 	Packet_gamestat() {
 		packet_id = P_GAMESTAT;
@@ -686,7 +688,7 @@ public:
 
 private:
 	char event_type[64];
-	Array<Var> vars;
+	std::vector<Var> vars;
 };
 
 #endif

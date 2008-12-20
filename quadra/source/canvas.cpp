@@ -18,8 +18,9 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "canvas.h"
+
 #include <stdio.h>
-#include "music.h"
 #include "input.h"
 #include "random.h"
 #include "bloc.h"
@@ -32,18 +33,19 @@
 #include "global.h"
 #include "sons.h"
 #include "recording.h"
-#include "texte.h"
 #include "chat_text.h"
 #include "nglog.h"
 #include "net_server.h"
-#include "canvas.h"
-
-RCSID("$Id$")
+#include "packets.h"
 
 using std::max;
 using std::min;
+using std::vector;
 
-Canvas::Canvas(int qplayer, int game_seed, Palette *p): rnd(game_seed) {
+Canvas::Canvas(int qplayer, int game_seed, Palette *p):
+  bit(NULL), //Somebody somewhere will set that. Sucks.
+  rnd(game_seed),
+  sprlevel_up(NULL) {
 // constructs a local Canvas
 	snapshot[0]=0;
 	best_move=best_clean=best_recurse=0;
@@ -64,7 +66,6 @@ Canvas::Canvas(int qplayer, int game_seed, Palette *p): rnd(game_seed) {
 	smooth = shadow = false;
 	moves=NULL;
   pal = p;
-	bit=NULL; //Somebody somewhere will set that. Sucks.
   player = qplayer;
 	if(playback) {
 		color = playback->player[player].color;
@@ -83,7 +84,12 @@ Canvas::Canvas(int qplayer, int game_seed, Palette *p): rnd(game_seed) {
   init();
 }
 
-Canvas::Canvas(int game_seed, Byte team, const char *nam, int ph_repeat, int pv_repeat, bool psmooth, bool pshadow, int phandicap, Net_connection *adr, int qplayer, bool wait_down): rnd(game_seed) {
+Canvas::Canvas(int game_seed, Byte team, const char *nam, int ph_repeat,
+               int pv_repeat, bool psmooth, bool pshadow, int phandicap,
+               Net_connection *adr, int qplayer, bool wait_down):
+  bit(NULL),
+  rnd(game_seed),
+  sprlevel_up(NULL) {
 // constructs a remote Canvas
 	snapshot[0]=0;
 	best_move=best_clean=best_recurse=0;
@@ -108,7 +114,6 @@ Canvas::Canvas(int game_seed, Byte team, const char *nam, int ph_repeat, int pv_
 	shadow = pshadow;
 	moves=NULL;
   pal = NULL;
-	bit = NULL;
   player = qplayer;
   color = team;
 	strncpy(name, nam, sizeof(name));
@@ -125,9 +130,12 @@ Canvas::~Canvas() {
 	if(moves)
 		delete moves;
   delete_bloc();
-  if(sprlevel_up)
-    delete sprlevel_up;
-	watchers.deleteall();
+  if (sprlevel_up)
+    SDL_FreeSurface(sprlevel_up);
+	while (!watchers.empty()) {
+		delete watchers.back();
+		watchers.pop_back();
+	}
 }
 
 char *Canvas::long_name(bool handi, bool gone) {
@@ -168,8 +176,8 @@ void Canvas::init() {
   {
     Res_doze res("gamelvup.png");
     Png raw(res);
-    Bitmap bitmap(raw);
-    sprlevel_up = new Sprite(bitmap, 0, 0);
+    sprlevel_up = raw.new_surface();
+    SDL_SetColorKey(sprlevel_up, SDL_SRCCOLORKEY, 0);
   }
   over = new Overmind();
   bloc = next = next2 = next3 = bloc_shadow = NULL;
@@ -347,7 +355,7 @@ void Canvas::draw_block(int j, int i) const {
   to[1] = block[j-1][i];
   to[2] = block[j][i+1];
   to[3] = block[j+1][i];
-  raw_draw_bloc_corner(screen, (i-4)*18, (j-12)*18, side, ::color[col],to);
+  raw_draw_bloc_corner(*screen, (i-4)*18, (j-12)*18, side, ::color[col],to);
 }
 
 void Canvas::calc_speed() {
@@ -587,18 +595,18 @@ void Canvas::give_line() {
 			if(normal_att.type==ATTACK_NONE) {
 				num=depth;
 				if(num>1)
-					sprintf(st, ST_CLEANBOBCLEARSBOBLINES, name, num);
+					sprintf(st, "Clean canvas: %s clears %i lines!", name, num);
 				else
-					sprintf(st, ST_CLEANBOBCLEARS1LINE, name);
+					sprintf(st, "Clean canvas: %s clears 1 line!", name);
 			}
 			else {
 				num=clean_bonus;
 				if(enough)
 					num+=i;
 				if(num>1)
-					sprintf(st, ST_BOBCLEANBOBLINES, name, num);
+					sprintf(st, "Clean canvas: %s sends %i lines!", name, num);
 				else
-					sprintf(st, ST_BOBCLEAN1LINE, name);
+					sprintf(st, "Clean canvas: %s sends 1 line!", name);
 			}
 			message(color, st);
 		}
@@ -607,23 +615,23 @@ void Canvas::give_line() {
 		if(i>=3 && chat_text && !send_for_clean) {
 			// if does a 'quad' minimally and not clean
 			char st[256];
-			if(normal_att.type==ATTACK_NONE)
-				sprintf(st, ST_BOBCLEARSBOBLINEBOB, name, depth, depth!=1? "s":"");
+			if(normal_att.type == ATTACK_NONE)
+				sprintf(st, "%s clears %i line%s.", name, depth, depth!=1? "s":"");
 			else
-				sprintf(st, ST_SENDLINES, name, i, i!=1? "s":"");
+				sprintf(st, "%s sends %i line%s.", name, i, i != 1 ? "s" : "");
 			message(color, st);
 		}
     game->net_list.send(this, i, complexity, last_x, normal_att, false);
     if(inter && !small_watch) { // if the canvas is currently visible
 			char st[256];
 			if(depth == 2)
-				sprintf(st, ST_CLEARDOUBLE, score_add);
+				sprintf(st, "Double! %i pts", score_add);
 			if(depth == 3)
-				sprintf(st, ST_CLEARTRIPLE, score_add);
+				sprintf(st, "Triple! %i pts", score_add);
 			if(depth == 4)
-				sprintf(st, ST_CLEARQUAD, score_add);
+				sprintf(st, "Quad! %i pts", score_add);
 			if(depth > 4)
-				sprintf(st, ST_CLEARMORE, depth, score_add);
+				sprintf(st, "%i-lines! %i pts", depth, score_add);
 			add_text_scroller(st, 20);
     }
   }
@@ -652,8 +660,6 @@ void Canvas::give_line() {
 void Canvas::change_level_single() {
   change_level(level, pal, bit);
   //video->setpal(*pal);
-  if(config.info.cdmusic == 1)
-    music->play(level+1);
   if(level <= 10 && (level-1) > config.info.unlock_theme && !playback) {
     config.info.unlock_theme = level-1;
     config.write();
@@ -682,16 +688,11 @@ void Canvas::change_level(const int level, Palette *pal, Bitmap *bit) {
   video->need_paint = 2;
   delete res;
 
-  if(sons.flash && (--sons.flash->refcount == 0))
-    delete sons.flash;
-  if(sons.depose3 && (--sons.depose3->refcount == 0))
-    delete sons.depose3;
-  if(sons.depose2 && (--sons.depose2->refcount == 0))
-    delete sons.depose2;
-  if(sons.depose && (--sons.depose->refcount == 0))
-    delete sons.depose;
-  if(sons.drip && (--sons.drip->refcount == 0))
-    delete sons.drip;
+  delete sons.flash;
+  delete sons.depose3;
+  delete sons.depose2;
+  delete sons.depose;
+  delete sons.drip;
 
   sons.flash = sons.depose3 = sons.depose2 = sons.depose = sons.drip = NULL;
   const char *foo0, *foo1, *foo2, *foo3, *foo4;
@@ -765,26 +766,11 @@ void Canvas::change_level(const int level, Palette *pal, Bitmap *bit) {
       foo4="Tapdrip.wav";
       break;
   }
-  {
-    Res_doze res(foo0);
-    sons.flash = new Sample(res, 2); // when we do a ligne (flash)
-  }
-  {
-    Res_doze res(foo1);
-    sons.depose3 = new Sample(res, 2); // drop
-  }
-  {
-    Res_doze res(foo2);
-    sons.depose2 = new Sample(res, 2); // drop
-  }
-  {
-    Res_doze res(foo3);
-    sons.depose = new Sample(res, 2); // drop
-  }
-  {
-    Res_doze res(foo4);
-    sons.drip = new Sample(res, 2); // rotate
-  }
+  sons.flash = new Sample(Res_doze(foo0)); // when we do a ligne (flash)
+  sons.depose3 = new Sample(Res_doze(foo1)); // drop
+  sons.depose2 = new Sample(Res_doze(foo2)); // drop
+  sons.depose = new Sample(Res_doze(foo3)); // drop
+  sons.drip = new Sample(Res_doze(foo4)); // rotate
 }
 
 void Canvas::clear_tmp() {
@@ -823,22 +809,27 @@ void Canvas::hide() {
 }
 
 Byte Canvas::check_key(int i) {
-  if(ecran && ecran->focus) {  // prevents controlling while inputting into a zone_text_input that has the focus
-    clear_key(i); // prevents rotating from happening after an input (because bit 'was released!')
+  if(ecran && ecran->focus) {  // prevents controlling while inputting
+                               // into a zone_text_input that has the
+                               // focus
+    clear_key(i); // prevents rotating from happening after an input
+                  // (because bit 'was released!')
+    input->allow_key_repeat(true);
     return 0;
-  }
-	else
-		if(i<5)
+  } else {
+		input->allow_key_repeat(false);
+		if(i < 5)
 			return input->keys[config.player[player].key[i]];
 		else
-			return input->keys[config.player2[player].key[i-5]];
+			return input->keys[config.player2[player].key[i - 5]];
+  }
 }
 
 void Canvas::clear_key(int i) {
-	if(i<5)
+	if(i < 5)
 		input->keys[config.player[player].key[i]] = 0;
 	else
-		input->keys[config.player2[player].key[i-5]] = 0;
+		input->keys[config.player2[player].key[i - 5]] = 0;
 }
 
 void Canvas::unrelease_key(int i) {
@@ -849,8 +840,8 @@ void Canvas::unrelease_key(int i) {
 }
 
 void Canvas::blit_level_up() {
-  sprlevel_up->draw(screen, 10, level_up-30);
-  dirt_rect(10, level_up-30, sprlevel_up->width, sprlevel_up->height);
+  screen->put_surface(sprlevel_up, 10, level_up - 30);
+  dirt_rect(10, level_up - 30, sprlevel_up->w, sprlevel_up->h);
 }
 
 void Canvas::blit_flash() {
@@ -922,6 +913,7 @@ void Canvas::step_bflash() {
 
 void Canvas::blit_back() {
 	step_bflash();
+	video->clone_palette(fond->surface);
   int j, i, x2, y2;
   for(j = 12; j < 32; j++)
     for(i = 4; i < 14; i++) {
@@ -939,8 +931,11 @@ void Canvas::blit_back() {
         } else {
           x2=(i-4)*18;
           y2=(j-12)*18;
-          Bitmap tmp((*fond)[y2]+x2, 18, 18, fond->realwidth);
-          tmp.draw(screen, x2, y2);
+          SDL_Rect rect;
+          rect.x = x2;
+          rect.y = y2;
+          rect.w = rect.h = 18;
+          screen->put_surface(fond->surface, rect, x2, y2);
         }
         dirted[j][i]--;
       }
@@ -956,9 +951,9 @@ void Canvas::blit_bloc(Bloc *blo) {
   if(!blo)
     return;
   if(smooth) {
-    blo->draw(screen);
+    blo->draw(*screen);
   } else {
-    blo->draw(screen, (blo->bx-4)*18, (blo->by-12)*18);
+    blo->draw(*screen, (blo->bx-4)*18, (blo->by-12)*18);
   }
   for(j=0; j<4; j++)
     for(i=0; i<4; i++) {
@@ -993,11 +988,12 @@ void Canvas::small_draw_block(int j, int i) const {
   Byte side, col;
   side = block[j][i]&15;
   col = block[j][i]>>4;
-  raw_small_draw_bloc(screen, (i-4)*6, (j-12)*6, side, ::color[col]);
+  raw_small_draw_bloc(*screen, (i-4)*6, (j-12)*6, side, ::color[col]);
 }
 
 void Canvas::small_blit_back() {
 	step_bflash();
+	video->clone_palette(fond->surface);
   int j, i, x2, y2;
   for(j = 12; j < 32; j++)
     for(i = 4; i < 14; i++)
@@ -1015,8 +1011,11 @@ void Canvas::small_blit_back() {
         } else {
           x2=(i-4)*6;
           y2=(j-12)*6;
-          Bitmap tmp((*fond)[y2]+x2, 6, 6, fond->realwidth);
-          tmp.draw(screen, x2, y2);
+          SDL_Rect rect;
+          rect.x = x2;
+          rect.y = y2;
+          rect.w = rect.h = 6;
+          screen->put_surface(fond->surface, rect, x2, y2);
         }
         dirted[j][i]--;
       }
@@ -1026,7 +1025,7 @@ void Canvas::small_blit_bloc(Bloc *blo) {
   int j,i,bx,by,tx,ty;
   if(!blo)
     return;
-  blo->small_draw(screen, (blo->bx-4)*6, (blo->by-12)*6);
+  blo->small_draw(*screen, (blo->bx-4)*6, (blo->by-12)*6);
   for(j=0; j<4; j++)
     for(i=0; i<4; i++) {
       if(blo->bloc[blo->quel][blo->rot][j][i]) {
@@ -1064,16 +1063,20 @@ void Canvas::small_blit_flash() {
 }
 
 void Canvas::add_watcher(Watcher *w) {
-  watchers.add(w);
+  watchers.push_back(w);
 }
 
 void Canvas::remove_watcher(Net_connection *nc) {
-  for(int i=0; i<watchers.size(); i++)
-    if(watchers[i]->nc == nc) {
-      delete watchers[i];
-      watchers.remove(i);
-			i--;
-    }
+	vector<Watcher*>::iterator it = watchers.begin();
+	
+	while (it != watchers.end()) {
+		if ((*it)->nc == nc) {
+			delete *it;
+			watchers.erase(it);
+			it = watchers.begin();
+		} else
+			++it;
+	}
 }
 
 bool Canvas::islocal() const {

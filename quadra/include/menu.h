@@ -21,6 +21,8 @@
 #ifndef _HEADER_MENU
 #define _HEADER_MENU
 
+#include <vector>
+
 #include "sound.h"
 #include "sprite.h"
 #include "inter.h"
@@ -52,29 +54,6 @@ public:
 	virtual ~Menu_intro();
 	virtual void init();
 	virtual void step();
-};
-
-class Menu_guy: public Menu {
-	Sample *son;
-public:
-	Menu_guy();
-	virtual ~Menu_guy();
-	virtual void init();
-	virtual void step();
-};
-
-class Menu_ugs: public Menu {
-	Sample *son;
-public:
-	Menu_ugs();
-	virtual ~Menu_ugs();
-	virtual void init();
-	virtual void step();
-};
-
-class Menu_main_startmusic: public Module {
-public:
-	virtual void init();
 };
 
 class Menu_main: public Menu {
@@ -116,7 +95,7 @@ class Menu_option: public Menu_standard {
 	Bitmap *bit;
 	Font *font2;
 	Zone *b_quit;
-	int old_language,old_music,old_mouse_speed,old_port;
+	int old_language,old_music,old_port;
 	char old_server[256];
 	char old_proxy[128];
 public:
@@ -253,7 +232,8 @@ public:
 	virtual void step();
 };
 
-class Menu_highscore: public Menu_standard, public Zone_list {
+class Menu_highscore: public Menu_standard {
+	Zone_list list;
 	Bitmap *bit;
 	Font *font2, *courrier, *courrier2;
 	Zone *b_quit, *b_again, *playdemo[MAX_SCORE], *playdemog[MAX_SCORE], *playlast;
@@ -275,7 +255,8 @@ public:
 	virtual void step();
 };
 
-class Menu_stat: public Menu_standard, public Notifyable, Zone_list {
+class Menu_stat: public Menu_standard, public Notifyable {
+	Zone_list list;
 	class Colonne {
 	public:
 		int width, page;
@@ -286,11 +267,11 @@ class Menu_stat: public Menu_standard, public Notifyable, Zone_list {
 		Colonne();
 		void set_titre(const char *s);
 	};
-	Array<Colonne*> col;
+	std::vector<Colonne*> col;
 	Bitmap *bit;
 	Font *font2;
 	Zone *b_quit, *b_restart, *b_stop;
-	Array<Zone_text_button *> b_page;
+	std::vector<Zone_text_button*> b_page;
 	Score score;
 	Font *fcourrier[MAXTEAMS];
 	int active_sort, active_page;

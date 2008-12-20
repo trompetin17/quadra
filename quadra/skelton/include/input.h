@@ -21,39 +21,35 @@
 #ifndef _HEADER_INPUT
 #define _HEADER_INPUT
 
-#include "types.h"
-#include "input_keys.h"
+#include "SDL.h"
 
-#define SHIFT 1
-#define ALT 2
-#define CONTROL 4
+#include "types.h"
+
+#define PRESSED 1
+#define RELEASED 2
 
 #define MAXKEY 32
-
-extern const char *keynames[256];
 
 class Input {
 public:
   struct {
-    int dx,dy,dz;
     Byte button[4];
     int quel;
+    int wheel;
   } mouse;
-  struct {
-    bool special;
-    char c;
-  } key_buf[MAXKEY];
-  Byte keys[256];
+  SDLKey key_sym_buf[MAXKEY];
+  char key_buf[MAXKEY];
+  unsigned int key_pending;
+  Byte keys[SDLK_LAST];
   bool pause;
-  int quel_key;
-  int shift_key;
-  int key_pending;
-  static Input* New(bool dumb=false);
+  bool allow_repeat;
+  SDL_keysym last_key;
+  static Input* New(bool dumb = false);
+  Input();
   virtual ~Input() { };
-  virtual void clear_key() = 0;
+  void clear_key();
   virtual void check() = 0;
-  virtual void deraw() = 0;
-  virtual void reraw() = 0;
+  void allow_key_repeat(bool _allow);
 };
 
 extern Input* input;

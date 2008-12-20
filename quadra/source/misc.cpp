@@ -18,14 +18,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "misc.h"
+
 #include "input.h"
 #include "random.h"
 #include "sons.h"
 #include "main.h"
 #include "global.h"
-#include "misc.h"
-
-RCSID("$Id$")
 
 Wait_time::Wait_time(int del, bool force) {
 	force_wait = force;
@@ -43,8 +42,8 @@ void Wait_time::step() {
 void Wait_event::step() {
 	if(ecran)
 		ecran->do_frame();
-	if(input->quel_key != -1 || (ecran && ecran->clicked)) {
-		input->quel_key = -1;
+	if(input->last_key.sym != SDLK_UNKNOWN || (ecran && ecran->clicked)) {
+		input->last_key.sym = SDLK_UNKNOWN;
 		ret();
 	}
 }
@@ -70,12 +69,12 @@ void Fade_to::step() {
 
 void Fade_in::init() {
 	Fade_to::init();
-	Sfx stmp(sons.fadein, 0, -400, 0, 11000+ugs_random.rnd(511));
+  sons.fadein->play(-400, 0, 11000 + ugs_random.rnd(511));
 }
 
 void Fade_out::init() {
 	Fade_to::init();
-	Sfx stmp(sons.fadeout, 0, -400, 0, 22000+ugs_random.rnd(511));
+  sons.fadeout->play(-400, 0, 22000 + ugs_random.rnd(511));
 }
 
 Setpalette::Setpalette(const Palette& p): pal(p) {

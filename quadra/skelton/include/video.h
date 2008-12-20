@@ -21,91 +21,91 @@
 #ifndef _HEADER_VIDEO
 #define _HEADER_VIDEO
 
+#include "SDL.h"
 #include "clipable.h"
 #include "palette.h"
+#include "bitmap.h"
 
 class Bitmap;
-class Sprite;
 
 class Video_bitmap: public Clipable {
-protected:
-  Video_bitmap(): Clipable(0, 0) { };
 public:
-  int pos_x, pos_y;
-  static Video_bitmap* New(const int px, const int py,
-			   const int w, const int h, const int rw);
-  static Video_bitmap* New(const int px, const int py,
-			   const int w, const int h);
-  virtual ~Video_bitmap() { };
+  Video_bitmap(int px, int py, int w, int h);
+  ~Video_bitmap();
 
   /* fills a rectangle at position 'x','y' of width 'w', height 'h'
      and color 'color'. */
-  virtual void rect(const int x,const int y,const int w,const int h,
-		    const int color) const = 0;
+  void rect(const int x,const int y,const int w,const int h,
+		    const int color) const;
 
   /* empty rectangle at position 'x','y' of width 'w', height 'h' and
      color 'color'. */
-  virtual void box(const int x,const int y,const int w,const int h,
-		   const int color) const = 0;
-
-  /* gets a part of bitmap from Video_bitmap */
-  virtual void get_bitmap(const Bitmap* bit, const int x, const int y,
-			  const int w, const int h) const = 0;
+  void box(const int x,const int y,const int w,const int h,
+		   const int color) const;
 
   /* puts a pixel at position 'x','y' with color 'c' */
-  virtual void put_pel(const int x, const int y, const Byte c) const = 0;
+  void put_pel(const int x, const int y, const Byte c) const;
 
   /* horizontal line starting from 'x','y', width 'w' and color 'c' */
-  virtual void hline(const int y, const int x,
-		     const int w, const Byte c) const = 0;
+  void hline(const int y, const int x,
+		     const int w, const Byte c) const;
 
   /* vertical line starting from 'x','y', height 'h' and color 'c' */
-  virtual void vline(const int x, const int y,
-		     const int h, const Byte c) const = 0;
+  void vline(const int x, const int y,
+		     const int h, const Byte c) const;
 
-  /* line going from 'x1','y1' to 'x2','y2' of color 'c' */
-  virtual void line(const int x1, const int y1, const int x2, const int y2,
-		    const Byte c) const = 0;
+  void put_surface(SDL_Surface* surface, int dx, int dy) const;
+  void put_surface(SDL_Surface* surface, const SDL_Rect& _srcrect, int dx, int dy) const;
 
   /* blits a Bitmap to position 'dx','dy' */
-  virtual void put_bitmap(const Bitmap& d,
-			  const int dx, const int dy) const = 0;
+  void put_bitmap(const Bitmap& d, int dx, int dy) const;
 
-  /* blits a Sprite (mask) 'd' to position 'dx','dy' */
-  virtual void put_sprite(const Sprite& d,
-			  const int dx, const int dy) const = 0;
+private:
+  friend class Video;
 
-  /* adjust the video memory pointed by this video_bitmap in the
-     background video page */
-  virtual void setmem() = 0;
+  void clip_dirty(int x, int y, int w, int h) const;
+
+  const int pos_x;
+  const int pos_y;
 };
 
 class Video {
+	friend class Video_bitmap;
+
 public:
-  bool xwindow;
-  Video_bitmap *vb;
-  Byte newpal;
-  Palette pal;
-  int width, height, bit;
+	Video();
+  ~Video();
+
+  void end_frame();
+  void setpal(const Palette& p);
+  void snap_shot(int x, int y, int w, int h);
+  void toggle_fullscreen();
+  SDL_Surface* surface() const {
+    return display;
+  }
+  void clone_palette(SDL_Surface* surface);
+
+  Video_bitmap vb;
   int need_paint;
-  int pitch;
   Dword framecount;
-  static Video* New(int w, int h, int b, const char *wname, bool dumb=false);
-  virtual ~Video() { };
-  virtual void lock() = 0;
-  virtual void unlock() = 0;
-  virtual void flip() = 0;
-  virtual void start_frame() = 0;
-  virtual void end_frame() = 0;
-  virtual void setpal(const Palette& p) = 0;
-  virtual void dosetpal(PALETTEENTRY pal[256], int size) = 0;
-  virtual void restore() = 0;
-  virtual void clean_up() = 0;
-  virtual void snap_shot(int x, int y, int w, int h) = 0;
-  virtual void toggle_fullscreen() = 0;
+
+private:
+  void SetVideoMode();
+  void set_dirty(int x1, int y1, int x2, int y2);
+
+  bool newpal;
+  Palette pal;
+  int needsleep;
+  int lastticks;
+  bool fullscreen;
+	bool mDirtyEmpty;
+	int mDirtyX1;
+	int mDirtyY1;
+	int mDirtyX2;
+	int mDirtyY2;
+  SDL_Surface* display;
 };
 
 extern Video* video;
-extern bool video_is_dumb;
 
 #endif

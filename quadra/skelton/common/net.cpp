@@ -17,16 +17,17 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
+#include "net.h"
+
+#include "SDL_syswm.h"
 
 #include <stdio.h>
 
 #include "config.h"
 
+#include "SDL.h"
+#include "SDL_endian.h"
 #ifdef UGS_LINUX
-#ifdef SOCKS
-#include <socks.h>
-#undef read
-#endif
 #include <unistd.h>
 #ifndef __STRICT_ANSI__
 #define I_SET_STRICT_ANSI
@@ -50,18 +51,14 @@ inline int closesocket(int fd) {
 
 #include <stdlib.h>
 #include "types.h"
-#include "utils.h"
 #include "main.h"
 #include "error.h"
 #include "buf.h"
 #include "net_buf.h"
 #include "http_request.h"
-#include "net.h"
-#include "byteorder.h"
-
-RCSID("$Id$")
 
 using std::min;
+using std::vector;
 
 IP_addr::IP_addr(const IP_addr& o) {
 	set(o.ip, o.mask);
@@ -151,10 +148,10 @@ void IP_addr::set(Dword pip, Dword pmask) {
 }
 
 bool Net_param::accept_connection(Net_connection *nc) {
-	return net->connections.size()<64;
+	return net->connections.size() < 64;
 }
 
-int Net_connection::next_port=65536;
+int Net_connection::next_port = 65536;
 
 Net_connection::Net_connection() {
 	_state=invalid;
@@ -213,7 +210,7 @@ bool Net_connection::checktcp() {
 	if(_state!=connected)
 		return false;
 	if(buf->size()>=sizeof(Word)) {
-		Word s = INTELWORD(*(Word *) buf->get());
+		Word s = SDL_SwapLE16(*(Word *) buf->get());
 		if(buf->size()>=sizeof(Word)+s)
 			return true;
 	}
@@ -225,7 +222,7 @@ void Net_connection::receivetcp(Net_buf *p) {
 		return;
 	p->from = this;
 	p->from_addr = INADDR_LOOPBACK;
-	Word size = INTELWORD(*(Word *) buf->get());
+	Word size = SDL_SwapLE16(*(Word *) buf->get());
 	memcpy(p->buf, buf->get()+sizeof(Word), size);
 	buf->remove_from_start(size+sizeof(Word));
 	incoming_inactive=0;
@@ -253,7 +250,7 @@ void Net_connection::sendtcp(Packet *p2) {
 	p2->write(&p);
 	Word size=p.len();
 	static Byte outbuf[1026];
-	*(Word *) outbuf=INTELWORD(size);
+	*(Word *) outbuf=SDL_SwapLE16(size);
 	memcpy(&outbuf[2], p.buf, size);
 	sendtcp(outbuf, size+2);
 }
@@ -394,13 +391,20 @@ Net_connection_tcp::~Net_connection_tcp() {
 		char buf[1024];
 		skelton_msgbox("Shutting down...");
 		if(shutdown(tcpsock, 1) != SOCKET_ERROR) {
-			while(net->checkreceive(tcpsock) > 0)	{
-				int i = recv(tcpsock, buf, 1024, 0);
-				if(i <= 0)
-					break;
-				skelton_msgbox("%i bytes,", i);
+			if(!net)
+			{
+				skelton_msgbox("oops, net is already gone!\n");
 			}
-			skelton_msgbox("Done!\n");
+			else
+			{
+				while(net->checkreceive(tcpsock) > 0)	{
+					int i = recv(tcpsock, buf, 1024, 0);
+					if(i <= 0)
+						break;
+					skelton_msgbox("%i bytes,", i);
+				}
+				skelton_msgbox("Done!\n");
+			}
 		} else {
 			skelton_msgbox("Ignoring shutdown error.\n");
 		}
@@ -482,7 +486,7 @@ bool Net_connection_tcp::checktcp() {
 		incoming_size+=temp;
 	}
 	if(tcpbufsize>=sizeof(Word)) {
-		Word pacsize=INTELWORD(*(Word *)tcpbuf);
+		Word pacsize=SDL_SwapLE16(*(Word *)tcpbuf);
 		if(!pacsize || (pacsize >= NETBUF_SIZE && pacsize != (('/'*256) +'/'))) {
 			skelton_msgbox("Garbage received on connection #%i (%04X). Shutting it.\n", tcpsock, pacsize);
 			_state=disconnected; // forcing a graceful shutdown
@@ -558,7 +562,7 @@ void Net_connection_tcp::sendtcp(Packet *p2) {
 	p2->write(&p);
 	Word size=p.len();
 	static Byte outbuf[1026];
-	*(Word *) outbuf=INTELWORD(size);
+	*(Word *) outbuf=SDL_SwapLE16(size);
 	memcpy(&outbuf[2], p.buf, size);
 	sendtcp(outbuf, size+2);
 }
@@ -711,7 +715,7 @@ Net::~Net() {
 	stop_server();
 	if(net_param)
 		delete net_param;
-	if(callbacks.size() != 0)
+	if (!callbacks.empty())
 		skelton_msgbox("Net::~Net: callback size should be 0, but it's %i\n", callbacks.size());
 }
 
@@ -730,40 +734,40 @@ void Net::init_local_addresses() {
 		host = gethostbyname(host_name);
 		if(host) {
 			for (Dword** curptr = reinterpret_cast<Dword**>(host->h_addr_list); *curptr; ++curptr)
-				host_adr.add(ntohl(**curptr));
+				host_adr.push_back(ntohl(**curptr));
 			Dword fallback = INADDR_LOOPBACK;
-			//Even better than what the NetGames guys do! :)
-			for(int i=0; i<host_adr.size(); i++) {
-				Dword a=host_adr[i];
+			// Even better than what the NetGames guys do! :)
+			vector<Dword>::const_iterator it;
+			for (it = host_adr.begin(); it != host_adr.end(); ++it) {
 				bool pub = true;
-				//192.168/16 is not public
-				if(a>>16==192*256+168)
+				// 192.168/16 is not public
+				if (*it >> 16 == 192 * 256 + 168)
 					pub = false;
-				//Same thing for 172.16/12
-				if(a>>20==172*16+1)
+				// Same thing for 172.16/12
+				if (*it >> 20 == 172 * 16 + 1)
 					pub = false;
-				//And again for 10/8
-				if(a>>24==10)
+				// And again for 10/8
+				if (*it >> 24 == 10)
 					pub = false;
-				//Oh, and 127/8 while we're at it...
-				if(a>>24==127)
+				// Oh, and 127/8 while we're at it...
+				if (*it >> 24 == 127)
 					pub = false;
-				if(fallback == INADDR_LOOPBACK) {
-					//Got something that looks better than whatever we got up to that point
-					fallback=a;
+				if (fallback == INADDR_LOOPBACK) {
+					// Got something that looks better than whatever we got up to that point
+					fallback = *it;
 				}
-				if(pub) {
-					//Remember it as an internet address
-					host_adr_pub.add(a);
+				if (pub) {
+					// Remember it as an internet address
+					host_adr_pub.push_back(*it);
 				}
 			}
-			if(!host_adr.size()) {
-				//No IP interfaces at all?! We'll assume loopback at least is there...
-				host_adr.add(fallback);
+			if(host_adr.empty()) {
+				// No IP interfaces at all?! We'll assume loopback at least is there...
+				host_adr.push_back(fallback);
 			}
-			if(!host_adr_pub.size()) {
-				//Didn't find a public address, at least put in something
-				host_adr_pub.add(fallback);
+			if(host_adr_pub.empty()) {
+				// Didn't find a public address, at least put in something
+				host_adr_pub.push_back(fallback);
 			}
 		}
 		else {
@@ -776,9 +780,10 @@ void Net::init_all_udp() {
 	if(!active)
 		return;
 	udpport = net_param->udpport();
-	for(int i=0; i<host_adr.size() && udpnum < 32; i++)
-		open_udpsock(host_adr[i]);
-	if(udpnum == 0) {
+	vector<Dword>::const_iterator it;
+	for (it = host_adr.begin(); it != host_adr.end() && udpnum < 32; ++it)
+		open_udpsock(*it);
+	if (udpnum == 0) {
 		skelton_msgbox("Net::Net: Opening default INADDR_ANY udp...\n");
 		open_udpsock(0);
 	}
@@ -824,11 +829,11 @@ int Net::open_udpsock(Dword adr) {
 }
 
 void Net::step(bool loop_only) {
-	int i;
-	for(i=0; i<connections.size(); i++)
-		if(connections[i]) {
-			connections[i]->incoming_inactive++;
-			connections[i]->outgoing_inactive++;
+	vector<Net_connection*>::const_iterator it;
+	for (it = connections.begin(); it != connections.end(); ++it)
+		if(*it) {
+			(*it)->incoming_inactive++;
+			(*it)->outgoing_inactive++;
 		}
 	if(!loop_only) {
 		//Accept pending connections
@@ -846,15 +851,15 @@ void Net::step(bool loop_only) {
 				maxsock=sock; \
 		}
 
-		for(i=0; i<connections.size(); i++)
-			if(connections[i]->state()==Net_connection::connected) {
-				int tcpsock=connections[i]->getFD();
-				if(tcpsock==-1) {
-					if(connections[i]->checktcp())
-						done=false;
-				}
-				else
-					if(!loop_only)
+		vector<Net_connection*>::const_iterator it;
+		for (it = connections.begin(); it != connections.end(); ++it)
+			if((*it)->state() == Net_connection::connected) {
+				int tcpsock = (*it)->getFD();
+				if (tcpsock == -1) {
+					if ((*it)->checktcp())
+						done = false;
+				} else
+					if (!loop_only)
 						ADD_SOCK(tcpsock);
 			}
 		if(client_connection && client_connection->state()==Net_connection::connected) {
@@ -868,7 +873,7 @@ void Net::step(bool loop_only) {
 					ADD_SOCK(tcpsock);
 		}
 		if(!loop_only)
-			for(i=0; i<udpnum; i++)
+			for(int i=0; i<udpnum; i++)
 				ADD_SOCK(udpsock[i]);
 
 		#undef ADD_SOCK
@@ -891,7 +896,7 @@ void Net::step(bool loop_only) {
 				break;
 		}
 
-		for(i=0; i<udpnum; i++)
+		for(int i=0; i<udpnum; i++)
 			if(FD_ISSET(udpsock[i], &fdsoc)) {
 				Net_buf nb;
 				receiveudp(udpsock[i], &nb);
@@ -909,23 +914,21 @@ void Net::step(bool loop_only) {
 				verify_server_connection(); // verify if server has been disconnected
 			}
 		}
-		int co;
-		for(co=0; co<connections.size(); co++) {
-			Net_connection *nc=connections[co];
-			bool isset=false;
-			int tcpsock=nc->getFD();
-			if(tcpsock==-1 || FD_ISSET(tcpsock, &fdsoc))
-				isset=true;
-			if(nc->state()==Net_connection::connected && isset) {
-				//There's stuff to read from connections[co]->tcpsock
-				if(nc->packet_based) {
-					while(nc->checktcp()) {
+		for (it = connections.begin(); it != connections.end(); ++it) {
+			Net_connection* nc = *it;
+			bool isset = false;
+			int tcpsock = nc->getFD();
+			if (tcpsock == -1 || FD_ISSET(tcpsock, &fdsoc))
+				isset = true;
+			if (nc->state() == Net_connection::connected && isset) {
+				// There's stuff to read from connections[co]->tcpsock
+				if (nc->packet_based) {
+					while (nc->checktcp()) {
 						Net_buf nb;
 						nc->receivetcp(&nb);
 						packetreceived(&nb, true);
 					}
-				}
-				else {
+				} else {
 					//Not packet based, read everything into incoming
 					Byte buf[1024];
 					int num;
@@ -957,26 +960,25 @@ void Net::step(bool loop_only) {
 		verify_connections(); //Verify all client connections and notify if something changed
 	}
 	verify_connections(); //One last time, just to be sure :)
-	for(i=0; i<connections.size(); i++)
-		connections[i]->commit();
-	if(client_connection)
+	for (it = connections.begin(); it != connections.end(); ++it)
+		(*it)->commit();
+	if (client_connection)
 		client_connection->commit();
 }
 
 void Net::verify_connections() {
-	bool change=false;
-	int i;
-	for(i=0; i<connections.size(); i++) {
-		Net_connection *nc=connections[i];
-		if(nc->state()==Net_connection::disconnected) {
-			net_param->client_deconnect(nc);
-			delete nc;
-			connections.remove(i);
-			i--;
-			change=true;
-		}
+	bool change = false;
+	vector<Net_connection*>::iterator it = connections.begin();
+	while (it != connections.end()) {
+		if ((*it)->state() == Net_connection::disconnected) {
+			net_param->client_deconnect(*it);
+			delete *it;
+			it = connections.erase(it);
+			change = true;
+		} else
+			++it;
 	}
-	if(change)
+	if (change)
 		notify_all();
 }
 
@@ -989,20 +991,22 @@ void Net::verify_server_connection() {
 }
 
 void Net::addwatch(Word id, Net_callable *nc) {
-	for(int i=0; i<callbacks.size(); i++)
-		if(callbacks[i]->id == id && callbacks[i]->net_callable == nc)
+	vector<Net_receive_cb*>::const_iterator it;
+	for (it = callbacks.begin(); it != callbacks.end(); ++it)
+		if ((*it)->id == id && (*it)->net_callable == nc)
 			return;
-	Net_receive_cb *cb = new Net_receive_cb(id, nc);
-	callbacks.add(cb);
+	callbacks.push_back(new Net_receive_cb(id, nc));
 }
 
 void Net::removewatch(Word id, Net_callable *nc) {
-	for(int i=0; i<callbacks.size(); i++)
-		if(callbacks[i]->id == id && callbacks[i]->net_callable == nc) {
-			delete callbacks[i];
-			callbacks.remove(i);
-			break;
-		}
+	vector<Net_receive_cb*>::iterator it = callbacks.begin();
+
+	while (it != callbacks.end())
+		if ((*it)->id == id && (*it)->net_callable == nc) {
+			delete *it;
+			it = callbacks.erase(it);
+		} else
+			++it;
 }
 
 void Net::sendudp(Dword to, Packet *p) {
@@ -1061,7 +1065,10 @@ void Net::start_server(bool sock) {
 }
 
 void Net::stop_server() {
-	connections.deleteall();
+	while (!connections.empty()) {
+		delete connections.back();
+		connections.pop_back();
+	}
 	suspend_server();
 	notify_all();
 }
@@ -1081,15 +1088,13 @@ void Net::sendtcp(Net_connection *nc, Packet *p) {
 }
 
 void Net::dispatch(Packet *p, Dword pt, Net_connection *nc) {
-	if(!p)
+	if (!p)
 		return;
-	p->packet_id=pt;
-	for(int i=0; i<connections.size(); i++) {
-		Net_connection *nc2=connections[i];
-		if(nc2!=nc && nc2->packet_based && net_param->is_dispatchable(nc2, p)) {
-			connections[i]->sendtcp(p);
-		}
-	}
+	p->packet_id = pt;
+	vector<Net_connection*>::const_iterator it;
+	for (it = connections.begin(); it != connections.end(); ++it)
+		if (*it != nc && (*it)->packet_based && net_param->is_dispatchable(*it, p))
+			(*it)->sendtcp(p);
 }
 
 Net_connection *Net::start_loopback_client() {
@@ -1097,7 +1102,7 @@ Net_connection *Net::start_loopback_client() {
 		return NULL;
 	client_connection=new Net_connection();
 	Net_connection *accepted_connection=new Net_connection();
-	connections.add(accepted_connection);
+	connections.push_back(accepted_connection);
 	client_connection->connect(accepted_connection);
 	return accepted_connection;
 }
@@ -1231,9 +1236,21 @@ Dword Net::getaddress(const char *host) {
 			// should be replaced by this (async)
 			#ifdef UGS_DIRECTX
 				gethostbyname_cancel();
-				name_handle = WSAAsyncGetHostByName(hwnd, WM_USER, tube, name_buf, MAXGETHOSTSTRUCT);
-				if(name_handle == 0) {// if error return 0 
-					name_resolve = 0; // impossible to resolve DNS because of Winsock and/or Windows
+				// RV: Obtain 'hwnd' information from SDL
+				SDL_SysWMinfo info;
+				SDL_VERSION(&info.version);
+				if(SDL_GetWMInfo(&info) == 1)
+				{
+					HWND hwnd = info.window;
+					name_handle = WSAAsyncGetHostByName(hwnd, WM_USER, tube, name_buf, MAXGETHOSTSTRUCT);
+					if(name_handle == 0) {// if error return 0 
+						name_resolve = 0; // impossible to resolve DNS because of Winsock and/or Windows
+					}
+				}
+				else // If SDL failed to get HWND, return DNS failure
+				{
+					name_handle = 0;
+					name_resolve = 0;
 				}
 			#endif
     }
@@ -1283,14 +1300,14 @@ void Net::packetreceived(Net_buf *nb, bool tcp) {
 		return;
 	}
 	in.s_addr = htonl(pac.from_addr);
-	for(int i=0; i<callbacks.size(); i++)
-		if(callbacks[i]->id == pac.packet_id) {
-			Packet *packet=net_buf2packet(nb, tcp);
-			if(packet) {
-				callbacks[i]->net_callable->net_call(packet);
-			} else {
+	vector<Net_receive_cb*>::const_iterator it;
+	for (it = callbacks.begin(); it != callbacks.end(); ++it)
+		if ((*it)->id == pac.packet_id) {
+			Packet* packet = net_buf2packet(nb, tcp);
+			if (packet)
+				(*it)->net_callable->net_call(packet);
+			else
 				skelton_msgbox("Packet_id %i not allocated by net_buf2packet()!\n", pac.packet_id);
-			}
 		}
 }
 
@@ -1329,9 +1346,8 @@ bool Net::accept() {
 		Word port=ntohs(bob.sin_port);
 		skelton_msgbox("Net::accept adding connection from %s:%i\n", inet_ntoa(bob.sin_addr), port);
 		Net_connection_tcp *nc=new Net_connection_tcp(sock, adr, port);
-		if(net_param->accept_connection(nc)) {
-			connections.add(nc);
-		}
+		if (net_param->accept_connection(nc))
+			connections.push_back(nc);
 		else {
 			skelton_msgbox("...fail because too many connections or connection refused\n");
 			delete nc;
@@ -1432,7 +1448,7 @@ bool Net::getlasterror(int quel) {
 
 void Net::callwsa(int quel) {
 	if(getlasterror(quel))
-		new Error(last_error);
+		fatal_msgbox(last_error);
 }
 
 const char *Net::failed() {

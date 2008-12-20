@@ -18,18 +18,18 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "net_server.h"
+
 #include "game.h"
 #include "canvas.h"
 #include "chat_text.h"
-#include "texte.h"
 #include "global.h"
 #include "cfgfile.h"
 #include "sons.h"
 #include "recording.h"
 #include "nglog.h"
-#include "net_server.h"
-
-RCSID("$Id$")
+#include "packets.h"
+#include "bloc.h"
 
 Net_client::Net_client() {
 	msgbox("Net_client::Net_client\n");
@@ -80,7 +80,7 @@ Net_client::~Net_client() {
 	net->removewatch(P_MOVES, this);
 	net->removewatch(P_SERVERNAMETEAM, this);
 	net->removewatch(P_GAMESTAT, this);
-	//Intricate, isn't it? :)
+	// Intricate, isn't it? :)
 	if(game->single)
 		net->stop_client();
 }
@@ -124,7 +124,7 @@ void Net_client::pause(Packet *p2) {
 	msgbox("Net_client::pause\n");
 	if(game->paused) {
 		if(game->delay_start==500) {
-			message(-1, ST_GAMEWILLSTART);
+			message(-1, "·2 Game will start in 5 seconds...");
 			game->delay_start = 499; // starts the countdown
 			msgbox("Net_client::pause: starting countdown...\n");
 			Packet_serverlog log("game_start");
@@ -148,15 +148,15 @@ void Net_client::pause(Packet *p2) {
 		Packet_pause *p=(Packet_pause *) p2;
 		const char *pn;
 		if(p->player == -1)
-			pn = ST_SERVER;
+			pn = "server";
 		else {
 			Canvas *c=game->net_list.get(p->player);
 			if(c)
 				pn = c->name;
 			else
-				pn = ST_SERVER;
+				pn = "server";
 		}
-		sprintf(st, ST_PAUSEDBYBOB, pn);
+		sprintf(st, "Game paused by %s.", pn);
 		message(-1, st);
 		if(p2 && p2->from) {
 			Packet_serverlog log("pause");
@@ -487,7 +487,7 @@ void Net_server::findgame(Packet *p2) {
 void Net_server::wantjoin(Packet *p2) {
 	Packet_wantjoin *p=(Packet_wantjoin *) p2;
 	Executor *exec = new Executor(true);
-	pendings.add(exec);
+	pendings.push_back(exec);
 	exec->add(new Net_pendingjoin(p));
 	overmind.start(exec);
 }
@@ -571,11 +571,10 @@ void Net_server::clientmoves(Packet *p2) {
 	Canvas *c=game->net_list.get(p->player);
 	if(!c)
 		return;
-	int i;
-	for(i=0; i<net->connections.size(); i++) {
+	for (int i = 0; i < static_cast<int>(net->connections.size()); ++i) {
 		Net_connection *nc=net->connections[i];
 		if(nc)
-			for(int j=0; j<c->watchers.size(); j++) {
+			for (int j = 0; j < static_cast<int>(c->watchers.size()); ++j) {
 				Canvas::Watcher *w=c->watchers[j];
 				if(w && w->nc==nc)
 					net->sendtcp(nc, p);
@@ -765,10 +764,9 @@ void Net_pendingjoin::step() {
 }
 
 void Net_pendingjoin::notify() {
-	//Check whether the connection got closed and cancel if applicable
-	int co;
-	for(co=0; co<net->connections.size(); co++)
-		if(net->connections[co]==pac->from)
+	// Check whether the connection got closed and cancel if applicable
+	for (int co = 0; co < static_cast<int>(net->connections.size()); ++co)
+		if (net->connections[co] == pac->from)
 			return;
-	cancel=true; //Will cancel on next step()
+	cancel = true; // Will cancel on next step()
 }

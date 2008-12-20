@@ -24,6 +24,7 @@
 #include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
+#include "config.h"
 #include "resfile.h"
 #include "resmanager.h"
 #include "config.h"
@@ -32,17 +33,8 @@
 	#include <unistd.h>
 #endif
 
-#ifdef UGS_DIRECTX
-	#define WIN32_LEAN_AND_MEAN
-	#include <windows.h>
-	#include <windowsx.h>
-	#include <mmsystem.h>
-	#include <io.h>
-#endif
-
 #include "error.h"
 #include "types.h"
-#include "utils.h"
 
 class Res {
 public:
@@ -63,10 +55,10 @@ public:
 	Res_mem();
 	virtual int read(void *b, int nb) {
 		if(pos+nb>size()) {
-			mset(b, 0, nb);
+			memset(b, 0, nb);
 			nb=size()-pos;
 		}
-		cpy((Byte *) b, _buf + pos, nb);
+		memcpy(b, _buf + pos, nb);
 		pos += nb;
 		return nb;
 	}
@@ -84,27 +76,13 @@ public:
 	}
 };
 
-#ifdef ONVEUTDESRESDOZEPOCHES
-class Res_doze: public Res_mem {
-	HRSRC hResInfo;
-public:
-	Res_doze(LPCTSTR lpName);
-	virtual ~Res_doze() {
-		FreeResource(hResInfo);
-	}
-	virtual Dword size() {
-		return SizeofResource(NULL, hResInfo);
-	}
-};
-#endif
-
 class Res_doze: public Res_mem {
 	unsigned int ressize;
 public:
 	Res_doze(const char *resname) {
 		ressize = resmanager->get(resname, &_buf);
 		if(!_buf)
-			(void) new Error("Unable to find resource: %s", resname);
+			fatal_msgbox("Unable to find resource: %s", resname);
 	}
 	virtual ~Res_doze() {
 	}

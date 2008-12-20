@@ -18,16 +18,15 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "global.h"
+
 #include "types.h"
 #include "sound.h"
 #include "cfgfile.h"
 #include "nglog.h"
 #include "net_server.h"
 #include "game.h"
-#include "global.h"
 #include "packets.h"
-
-RCSID("$Id$")
 
 char st[4096] = {""};
 
@@ -79,10 +78,7 @@ bool named_team[MAXTEAMS] = {
 
 void set_team_name(Byte team, const char *name) {
 	if(!name || !name[0]) {
-		if(config.info.language==1)
-			strcpy(team_name[team], french_teams[team]);
-		else
-			strcpy(team_name[team], english_teams[team]);
+    strcpy(team_name[team], english_teams[team]);
 		named_team[team]=false;
 	}
 	else {
@@ -102,13 +98,7 @@ void set_team_name(Byte team, const char *name) {
       game->net_server->record_packet(&log);
 }
 
-bool quitting=false;
-
-void quit_fast() {
-	quitting=true;
-	if(sound)
-		sound->active=false;
-}
+bool quitting = false;
 
 const char built[]=
 "Built on " \

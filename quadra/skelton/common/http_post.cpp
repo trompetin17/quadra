@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "http_post.h"
+
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -25,9 +27,6 @@
 #include "error.h"
 #include "version.h"
 #include "net.h"
-#include "http_post.h"
-
-RCSID("$Id$")
 
 Http_post::Http_post(const char* aHost, int port, const char *path): Http_request(aHost, port), data(0, 1024) {
 	init(path);
@@ -75,8 +74,8 @@ void Http_post::send() {
 		url.append("\r\n");
 	}
 	sprintf(st, "User-Agent: Quadra/%s\r\n", VERSION_STRING);
-  	url.append(st);
-	//Try to make those idiot proxies behave. Long life e2e!!! :)
+  url.append(st);
+	// Try to make those idiot proxies behave. Long life e2e!!! :)
 	url.append("Pragma: no-cache\r\n");
 	url.append("Cache-Control: no-cache\r\n");
 	url.append("Content-type: application/x-www-form-urlencoded\r\nContent-length: ");
@@ -85,9 +84,9 @@ void Http_post::send() {
 	url.append(data.get(), data.size());
 	request = (Byte*)url.get();
 	size = url.size();
-	/*
+#if 0
 	st[0]=0;
-	url.append((Byte*)st, 1); //So the following msgbox won't crash
+	url.append((Byte*)st, 1); // So the following msgbox won't crash
 	msgbox("Http_post::send: data: \n{\n%s\n} size=%i\n", request, size);
-	*/
+#endif
 }

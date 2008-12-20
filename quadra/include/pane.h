@@ -21,6 +21,8 @@
 #ifndef _HEADER_PANE
 #define _HEADER_PANE
 
+#include <vector>
+
 #include "inter.h"
 #include "listbox.h"
 #include "overmind.h"
@@ -32,22 +34,24 @@
 
 class Multi_player;
 class Pane_option;
+class Canvas;
 
 class Pane_info {
 public:
 	Font *font2;
 	Inter *inter;
-	int x, y, w, h;
+	const int x, y, w, h;
 	Multi_player *mp;
-	Bitmap *back, *fond, *back_bottom;
+	Bitmap* fond;
 	Byte quel_pane;
-	Pane_info(Bitmap *bit, Font *f2, Inter *in, int j, Multi_player *pmp);
+	Pane_info(Bitmap* bit, Font* f2, Inter* in, int j, Multi_player* pmp);
 	virtual ~Pane_info();
 };
 
-class Pane: public Zone, public Module, public Zone_list {
+class Pane: public Zone, public Module {
 	friend class Multi_player;
 protected:
+	Zone_list list;
 	Video_bitmap *screen;
 	bool hiden;
 	Zone *clicked;
@@ -213,7 +217,7 @@ public:
 	Pane_server_ip(const Pane_info &p);
 };
 
-class Chat_interface: public Zone, Zone_list, public Notifyable {
+class Chat_interface: public Zone, public Notifyable {
 	class Zone_chat_input: public Zone_text_input {
 		Chat_interface *parent;
 	public:
@@ -228,15 +232,17 @@ class Chat_interface: public Zone, Zone_list, public Notifyable {
 		virtual void clicked(int quel);
 	};
 
+	Zone_list list;
 	Zone_chat_input *zinput;
 	char buf[256];
 	bool delete_screen;
 	int y_offset;
 	Video_bitmap *screen;
-	Bitmap *back;
+	SDL_Surface* const back;
+	SDL_Rect back_clip;
 	Zone_state_text *z_from;
 public:
-	Chat_interface(Inter *in, const Palette &pal, Bitmap *bit, int px, int py, int pw, int ph, Video_bitmap *scr=NULL);
+	Chat_interface(Inter *in, const Palette &pal, SDL_Surface* bit, int px, int py, int pw, int ph, Video_bitmap *scr=NULL);
 	virtual ~Chat_interface();
 	virtual void draw();
 	virtual void process();
@@ -246,7 +252,7 @@ public:
 
 class Pane_scoreboard: public Pane_close, public Notifyable {
 	Zone_text_button *b_show_frag;
-	Array<Zone *> zlist_frag;
+	std::vector<Zone*> zlist_frag;
 	bool show_frag;
 	Score score;
 	Byte potato_team;
@@ -352,7 +358,8 @@ public:
 	virtual void init();
 };
 
-class Watch_canvas: public Zone_list {
+class Watch_canvas {
+	Zone_list list;
 	bool small_watch;
 public:
 	Canvas *c;

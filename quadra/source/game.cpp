@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "game.h"
+
 #include <string.h>
 #include "input.h"
 #include "net.h"
@@ -30,7 +32,6 @@
 #include "cfgfile.h"
 #include "canvas.h"
 #include "chat_text.h"
-#include "texte.h"
 #include "recording.h"
 #include "dict.h"
 #include "global.h"
@@ -38,10 +39,9 @@
 #include "nglog.h"
 #include "clock.h"
 #include "http_request.h"
-#include "game.h"
 #include "config.h"
 
-RCSID("$Id$")
+using std::vector;
 
 Game *game=NULL;
 
@@ -140,10 +140,11 @@ Game::Game(Packet_gameserver *p) {
 	game_end = (End_type) p->game_end;
 	game_end_value = p->game_end_value;
 	game_public = false; // inutile pour les clients (info pour serveur seulement)
-	for(int i=0; i<p->players.size(); i++) {
-		Canvas *canvas=new Canvas(seed, p->players[i]->team, p->players[i]->name, 2, 2, true, true, p->players[i]->handicap, net->server_addr(), 0, true); //On connait pas repeat, smooth, shadow mais on s'en tappe parce qu'on est pas en playback
-		canvas->set_id(p->players[i]->player_id);
-		net_list.set_player(canvas, p->players[i]->quel, false);
+	vector<Net_player*>::const_iterator it;
+	for (it = p->players.begin(); it != p->players.end(); ++it) {
+		Canvas* canvas = new Canvas(seed, (*it)->team, (*it)->name, 2, 2, true, true, (*it)->handicap, net->server_addr(), 0, true); //On connait pas repeat, smooth, shadow mais on s'en tappe parce qu'on est pas en playback
+		canvas->set_id((*it)->player_id);
+		net_list.set_player(canvas, (*it)->quel, false);
 	}
 	wants_moves=p->wants_moves;
 	net_list.syncpoint=p->syncpoint;
@@ -242,9 +243,12 @@ Game::~Game() {
 		delete net_client;
 	if(net_server)
 		delete net_server;
-	if(stack.size())
-		msgbox("Game::~Game: stack.size should be 0\n");
-	stack.deleteall();
+	if(!stack.empty())
+		msgbox("Game::~Game: stack should be empty\n");
+	while (!stack.empty()) {
+		delete stack.back();
+		stack.pop_back();
+	}
 	//Oh well...
 	game = NULL;
 }
@@ -271,27 +275,24 @@ void Game::restart() {
 		return;
 
 	msgbox("Game::restart: restarting game now.\n");
-	//Make all currently joined connections not joined
-	int i;
-	if(net->active) {
-		for(i=0; i<net->connections.size(); i++) {
-			Net_connection *nc = net->connections[i];
-			if(nc->joined && nc!=loopback_connection)
-				nc->joined=false;
-		}
+	// Make all currently joined connections not joined
+	if (net->active) {
+		vector<Net_connection*>::const_iterator it;
+		for (it = net->connections.begin(); it != net->connections.end(); ++it)
+			if((*it)->joined && *it != loopback_connection)
+				(*it)->joined = false;
 	}
-	//Drop all players
-	for(i=0; i<MAXPLAYERS; i++) {
-		if(net_list.get(i)) {
+	// Drop all players
+	for (int i = 0; i < MAXPLAYERS; ++i)
+		if (net_list.get(i)) {
 			Packet_dropplayer p;
-			p.player=i;
-			p.reason=DROP_AUTO;
+			p.player = i;
+			p.reason = DROP_AUTO;
 			net_list.drop_player(&p, false);
 		}
-	}
-	//Fix everything up
-	abort=false;
-	if(!single)
+	// Fix everything up
+	abort = false;
+	if (!single)
 		delay_start = 500;
 	frame_start = overmind.framecount;
 	paused = !single;
@@ -311,16 +312,16 @@ void Game::restart() {
 		prepare_recording(NULL);
 		prepare_logging();
 	}
-	//Add connect events to the log(s) for all active connections
-	for(i=0; i<net->connections.size(); i++) {
-		Net_connection *nc=net->connections[i];
-		if(nc && nc!=loopback_connection) {
+	// Add connect events to the log(s) for all active connections
+	vector<Net_connection*>::const_iterator it;
+	for (it = net->connections.begin(); it != net->connections.end(); ++it) {
+		if(*it && *it != loopback_connection) {
 			char st[64];
-			Net::stringaddress(st, nc->address(), nc->getdestport());
+			Net::stringaddress(st, (*it)->address(), (*it)->getdestport());
 			Packet_serverlog log("connect");
-			log.add(Packet_serverlog::Var("id", nc->id()));
+			log.add(Packet_serverlog::Var("id", (*it)->id()));
 			log.add(Packet_serverlog::Var("address", st));
-			if(game->net_server)
+			if (game->net_server)
 				game->net_server->record_packet(&log);
 		}
 	}
@@ -398,9 +399,9 @@ void Game::got_potato(Byte team, int lines) {
 		Canvas *c=net_list.get(i);
 		if(c && c->color==team) {
 			if(c->islocal()) {
-				c->add_text_scroller(ST_YOUGOTPOTATO1, 4, -20);
-				c->add_text_scroller(ST_YOUGOTPOTATO2, 4);
-				Sfx stmp(sons.potato_get, 0, -1200, 0, 44100);
+				c->add_text_scroller("You get the", 4, -20);
+				c->add_text_scroller("      hot potato!", 4);
+        sons.potato_get->play(-1200, 0, 44100);
 			}
 			c->potato_lines=0;
 			c->team_potato_lines=0;
@@ -416,9 +417,9 @@ void Game::got_potato(Byte team, int lines) {
 	char st[1024];
 	if(chat_text) {
 		net_list.team2name(team, st);
-		strcat(st, ST_GETSPOTATO);
+		strcat(st, " gets the hot potato!");
 		message(-1, st);
-		sprintf(st, ST_CLEARBOBLINES, lines);
+		sprintf(st, "Clear %i lines.", lines);
 		message(-1, st);
 	}
 }
@@ -429,9 +430,9 @@ void Game::done_potato(Byte team) {
 		Canvas *c=net_list.get(i);
 		if(c && c->color==team) {
 			if(c->islocal() && !(c->dying || c->idle>=2)) {
-				c->add_text_scroller(ST_YOUGOTRIDOFPOTATO1, 4, -40);
-				c->add_text_scroller(ST_YOUGOTRIDOFPOTATO2, 4, -20);
-				Sfx stmp(sons.potato_rid, 0, -300, 0, 11025);
+				c->add_text_scroller("You got rid of", 4, -40);
+				c->add_text_scroller("    the hot potato!", 4, -20);
+        sons.potato_rid->play(-300, 0, 11025);
 			}
 			int x, y;
 			for(y = 0; y < 36; y++)
@@ -563,13 +564,13 @@ void Game::clientpause() {
 }
 
 void Game::stackpacket(Packet *p) {
-	stack.add(p);
+	stack.push_back(p);
 }
 
 Packet *Game::peekpacket(Byte type) {
-	if(stack.size()) {
-		if(stack[0]->packet_id == type || type==255)
-			return stack[0];
+	if(!stack.empty()) {
+		if(stack.front()->packet_id == type || type==255)
+			return stack.front();
 		else
 			return NULL;
 	} else {
@@ -578,9 +579,9 @@ Packet *Game::peekpacket(Byte type) {
 }
 
 void Game::removepacket() {
-	if(stack.size()) {
-		delete stack[0];
-		stack.remove(0);
+	if(!stack.empty()) {
+		delete stack.front();
+		stack.erase(stack.begin());
 	}
 }
 
@@ -608,10 +609,9 @@ void Game::addgameinfo(Textbuf *tb) {
 	tb->append("name %s\n", name);
 	tb->append("version %i\n", net_version());
 	tb->append("address");
-	for(int a=0; a<net->host_adr_pub.size(); ++a) {
-		Dword ip = net->host_adr_pub[a];
-		tb->append(" %i.%i.%i.%i", ip>>24, (ip>>16)&255, (ip>>8)&255, ip&255);
-	}
+	vector<Dword>::const_iterator it;
+	for (it = net->host_adr_pub.begin(); it != net->host_adr_pub.end(); ++it)
+		tb->append(" %i.%i.%i.%i", *it >> 24, (*it >> 16) & 255, (*it >> 8) & 255, *it & 255);
 	tb->append("\n");
 	tb->append("port %i\n", config.info.port_number);
 	tb->append("status/started %i\n", !delay_start? 1:0);
@@ -767,9 +767,9 @@ void Game::sendgameinfo(bool quit) {
 	gameinfo=new Qserv();
 	const char *msg = net->failed();
 	if(msg) {
-		sprintf(st, ST_NETWORKERRORLOOKINGBOB, msg);
+		sprintf(st, "·2 Network error while looking for game server: %s.", msg);
 		message(-1, st, true, false, true);
-		message(-1, ST_GAMENOTPUBLIC, true, false, true);
+		message(-1, "·2 Aborting: Game won't be public.", true, false, true);
 		http_failed = true;
 		delete gameinfo;
 		gameinfo = NULL;
@@ -786,12 +786,8 @@ void Game::stepgameinfo() {
 	if(gameinfo) {
 		if(gameinfo->done()) {
 			const char *status=gameinfo->get_status();
-			if(status==NULL || (strcmp(status, "Game added") && strcmp(status, "Game updated"))) {
-				message(-1, ST_INVALIDSERVERRESPONSE, true, false, true);
-				/*message(-1, ST_GAMENOTPUBLIC, true, false, true);
-				http_failed = true;
-				game_public = false;*/
-			}
+			if(status==NULL || (strcmp(status, "Game added") && strcmp(status, "Game updated")))
+				message(-1, "·2 Invalid game server response.", true, false, true);
 			delete gameinfo;
 			gameinfo=NULL;
 		}
@@ -829,14 +825,14 @@ void Game::prepare_recording(const char *fn) {
 	}
 	strcat(nom, ".qrec"); // ajoute .qrec
 	if(!recording->create(nom)) {
-		sprintf(st, ST_GAMENOTRECORDEDAS, nom);
+		sprintf(st, "·2 Unable to record game '%s'", nom);
 		message(-1, st, true, false, true);
 		msgbox("Game::prepare_recording: Warning: could not create demo file\n");
 		delete recording; // si la creation du fichier a pas marcher
 		recording=NULL;
 	}
 	else {
-		sprintf(st, ST_GAMERECORDINGAS, nom);
+		sprintf(st, "·2 Recording game as '%s'", nom);
 		message(-1, st, true, false, true);
 		Packet_gameserver p;
 		Net_pendingjoin::load_packet_gameserver(&p);
@@ -862,7 +858,7 @@ void Game::prepare_logging() {
 	log.add(Packet_serverlog::Var("os", os));
 
 	Dword addr = INADDR_LOOPBACK;
-	if (net->host_adr_pub.size())
+	if (!net->host_adr_pub.empty())
 		addr = net->host_adr_pub[0];
 	char st[64];
 	Net::stringaddress(st, addr, config.info.port_number);

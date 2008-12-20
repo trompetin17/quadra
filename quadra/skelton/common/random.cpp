@@ -18,11 +18,10 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include <time.h>
-#include "types.h"
 #include "random.h"
 
-RCSID("$Id$")
+#include <time.h>
+#include "types.h"
 
 Random ugs_random;
 

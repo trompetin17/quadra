@@ -21,32 +21,18 @@
 #ifndef _HEADER_SPRITE
 #define _HEADER_SPRITE
 #include "types.h"
-#include "utils.h"
 #include "error.h"
 #include "bitmap.h"
 #include "res.h"
 #include "palette.h"
 
 #define CENTER (-123456)
-#define CORNER (-123457)
-
-class Sprite: public Bitmap {
-	typedef Byte T;
-public:
-	int hot_x;
-	int hot_y;
-	void set_hotspot(const int hx, const int hy);
-	Sprite(const Bitmap& b, const int hx=CENTER, const int hy=CENTER, const bool dx=false);
-	void draw(const Bitmap& d, const int dx, const int dy) const;
-	void draw(const Video_bitmap* d, const int dx, const int dy) const;
-	//void color_draw(const Remap& remap, const Bitmap& d, int dx, int dy) const;
-};
 
 class Font;
 
 class Fontdata {
 	friend class Font;
-	Sprite* spr[256]; // warning: there is some slack because they are not all used
+	SDL_Surface* spr[256]; // warning: there is some slack because they are not all used
 	int shrink; // indicates how much to overlap this font
 	int pre_width[256]; // pre-computed 'width' of the glyphs
 public:
@@ -56,7 +42,7 @@ public:
 	int width(const char *m) const;
 	int width(const char *m, int num) const;
 	int height() const {
-		return spr[1]->height;
+		return spr[1]->h;
 	}
 	int translate(const char **m) const;
 };
@@ -71,8 +57,7 @@ public:
 	Font(const Fontdata& f, const Palette& dst, int r, int g, int b, int r2=0, int g2=0, int b2=0);
 	void colorize(const Palette& dst, int r, int g, int b, int r2=0, int g2=0, int b2=0);
 	void remap(const Remap *map);
-	void draw(const char *m, const Bitmap& b, int x, int y) const;
-	void draw(const char *m, const Video_bitmap* b, int x, int y) const;
+	void draw(const char *m, const Video_bitmap& b, int x, int y) const;
 	int width(const char *m) const {
 		return fdata_original.width(m);
 	}
