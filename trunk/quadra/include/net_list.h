@@ -21,16 +21,19 @@
 #ifndef _HEADER_NET_LIST
 #define _HEADER_NET_LIST
 
-#include "array.h"
+#include <string.h>
+#include <vector>
+
 #include "notify.h"
-#include "net.h"
-#include "score.h"
-#include "overmind.h"
-#include "net_stuff.h"
+#include "global.h"
 #include "stats.h"
-#include "game.h"
+#include "score.h"
+#include "attack.h"
+#include "overmind.h"
 
 class Canvas;
+class IP_addr;
+class Net_connection;
 
 class Lastline {
 public:
@@ -71,9 +74,9 @@ class Net_list: public Observable {
 	void check_player();
 	void check_admin();
 	void check_stat();
-	Array<Lastline *> cmd_cache;
-	Array<IP_addr *> deny_list;
-	Array<IP_addr *> allow_list;
+	std::vector<Lastline*> cmd_cache;
+	std::vector<IP_addr*> deny_list;
+	std::vector<IP_addr*> allow_list;
 	Dword lastgameinfo;
 	int *objectives;
 	bool reached[10][MAXTEAMS]; //Max 10 objectives

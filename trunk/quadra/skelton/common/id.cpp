@@ -20,6 +20,5 @@
 
 #include "id.h"
 
-RCSID("$Id$")
-
 Dword Identifyable::next_id=1;
+

@@ -18,19 +18,21 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-#include "config.h"
+#include "quadra.h"
 
+#include "config.h"
+#include "SDL.h"
 #ifdef UGS_LINUX
 #include <pwd.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #endif
-#ifdef UGS_DIRECTX
+#ifdef WIN32
 #include <shlobj.h>
 #endif
 #include <stdlib.h>
 #include <exception>
-#include "packet.h"
+#include "packets.h"
 #include "types.h"
 #include "net.h"
 #include "video.h"
@@ -39,7 +41,6 @@
 #include "palette.h"
 #include "input.h"
 #include "sound.h"
-#include "music.h"
 #include "sprite.h"
 #include "bitmap.h"
 #include "inter.h"
@@ -56,7 +57,6 @@
 #include "net_stuff.h"
 #include "chat_text.h"
 #include "recording.h"
-#include "texte.h"
 #include "canvas.h"
 #include "global.h"
 #include "sons.h"
@@ -69,18 +69,14 @@
 #include "nglog.h"
 #include "clock.h"
 #include "net_server.h"
-#include "quadra.h"
 #include "update.h"
-
-RCSID("$Id$")
 
 using std::max;
 using std::min;
 
-Sprite *cur;
-
 Color *color[9];
 Font *fteam[8];
+bool video_is_dumb = false;
 
 void set_fteam_color(const Palette& pal) {
 	fteam[0]->colorize(pal, 255,125,0);
@@ -93,80 +89,80 @@ void set_fteam_color(const Palette& pal) {
 	fteam[7]->colorize(pal, 170,170,170);
 }
 
-void raw_draw_bloc_corner(const Video_bitmap* bit, int x, int y, Byte side, Color* col, Byte to[4]) {
+void raw_draw_bloc_corner(const Video_bitmap& bit, int x, int y, Byte side, Color* col, Byte to[4]) {
 	raw_draw_bloc(bit, x, y, side, col);
 	if(!(side&1) && !(side&2) && to[0]&2 && to[1]&1) {
-		bit->put_pel(x, y, col->shade(7));
-		bit->put_pel(x+1, y, col->shade(6));
-		bit->put_pel(x, y+1, col->shade(6));
-		bit->put_pel(x+2, y, col->shade(5));
-		bit->put_pel(x+1, y+1, col->shade(5));
-		bit->put_pel(x, y+2, col->shade(5));
+		bit.put_pel(x, y, col->shade(7));
+		bit.put_pel(x+1, y, col->shade(6));
+		bit.put_pel(x, y+1, col->shade(6));
+		bit.put_pel(x+2, y, col->shade(5));
+		bit.put_pel(x+1, y+1, col->shade(5));
+		bit.put_pel(x, y+2, col->shade(5));
 	}
 	if(!(side&4) && !(side&2) && to[2]&2 && to[1]&4) {
-		bit->put_pel(x+17, y, col->shade(1+2));
-		bit->put_pel(x+16, y, col->shade(2+1));
-		bit->put_pel(x+17, y+1, col->shade(2+2));
-		bit->put_pel(x+15, y, col->shade(3));
-		bit->put_pel(x+16, y+1, col->shade(3+1));
-		bit->put_pel(x+17, y+2, col->shade(3+2));
+		bit.put_pel(x+17, y, col->shade(1+2));
+		bit.put_pel(x+16, y, col->shade(2+1));
+		bit.put_pel(x+17, y+1, col->shade(2+2));
+		bit.put_pel(x+15, y, col->shade(3));
+		bit.put_pel(x+16, y+1, col->shade(3+1));
+		bit.put_pel(x+17, y+2, col->shade(3+2));
 	}
 	if(!(side&1) && !(side&8) && to[0]&8 && to[3]&1) {
-		bit->put_pel(x, y+17, col->shade(7));
-		bit->put_pel(x+1, y+17, col->shade(6));
-		bit->put_pel(x, y+16, col->shade(6));
-		bit->put_pel(x+2, y+17, col->shade(5));
-		bit->put_pel(x+1, y+16, col->shade(5));
-		bit->put_pel(x, y+15, col->shade(5));
+		bit.put_pel(x, y+17, col->shade(7));
+		bit.put_pel(x+1, y+17, col->shade(6));
+		bit.put_pel(x, y+16, col->shade(6));
+		bit.put_pel(x+2, y+17, col->shade(5));
+		bit.put_pel(x+1, y+16, col->shade(5));
+		bit.put_pel(x, y+15, col->shade(5));
 	}
 	if(!(side&4) && !(side&8) && to[2]&8 && to[3]&4) {
-		bit->put_pel(x+17, y+17, col->shade(1));
-		bit->put_pel(x+16, y+17, col->shade(2));
-		bit->put_pel(x+17, y+16, col->shade(2));
-		bit->put_pel(x+15, y+17, col->shade(3));
-		bit->put_pel(x+16, y+16, col->shade(3));
-		bit->put_pel(x+17, y+15, col->shade(3));
+		bit.put_pel(x+17, y+17, col->shade(1));
+		bit.put_pel(x+16, y+17, col->shade(2));
+		bit.put_pel(x+17, y+16, col->shade(2));
+		bit.put_pel(x+15, y+17, col->shade(3));
+		bit.put_pel(x+16, y+16, col->shade(3));
+		bit.put_pel(x+17, y+15, col->shade(3));
 	}
 }
 
-void raw_draw_bloc(const Video_bitmap* bit, int x, int y, Byte side, Color* col) {
+void raw_draw_bloc(const Video_bitmap& bit, int x, int y, Byte side, Color* col) {
 	int tx,tl,rx=0,ry=0,rw=18,rh=18;
 	if(side&1) {
-		bit->vline(x, y, 18, col->shade(7));
-		bit->vline(x+1, y, 18, col->shade(6));
-		bit->vline(x+2, y, 18, col->shade(5));
+		bit.vline(x, y, 18, col->shade(7));
+		bit.vline(x+1, y, 18, col->shade(6));
+		bit.vline(x+2, y, 18, col->shade(5));
 		rx=3; rw-=3;
 	}
 	if(side&2) {
-		bit->hline(y, x, 18, col->shade(7));
+		bit.hline(y, x, 18, col->shade(7));
 		if(side&1)
 			tx = x+1;
 		else
 			tx = x;
-		bit->hline(y+1, tx, x-tx+18, col->shade(6));
+		bit.hline(y+1, tx, x-tx+18, col->shade(6));
 		if(side&1)
 			tx = x+2;
 		else
 			tx = x;
-		bit->hline(y+2, tx, x-tx+18, col->shade(5));
+		bit.hline(y+2, tx, x-tx+18, col->shade(5));
 		ry=3; rh-=3;
 	}
 	if(side&4) {
-		bit->vline(x+17, y, 18, col->shade(1));
+		bit.vline(x+17, y, 18, col->shade(1));
 		if(side&2)
 			tx = y+1;
 		else
 			tx = y;
-		bit->vline(x+16, tx, y-tx+18, col->shade(2));
+		bit.vline(x+16, tx, y-tx+18, col->shade(2));
 		if(side&2)
 			tx = y+2;
 		else
 			tx = y;
-		bit->vline(x+15, tx, y-tx+18, col->shade(3));
+		bit.vline(x+15, tx, y-tx+18, col->shade(3));
 		rw-=3;
 	}
 	if(side&8) {
-		bit->hline(y+17, x, 18, col->shade(1));
+		bit.hline(y+17, x, 18, col->shade(1));
 		if(side&1)
 			tx = x+1;
 		else
@@ -174,7 +170,7 @@ void raw_draw_bloc(const Video_bitmap* bit, int x, int y, Byte side, Color* col)
 		tl = x-tx+18;
 		if(side&4)
 			tl--;
-		bit->hline(y+16, tx, tl, col->shade(2));
+		bit.hline(y+16, tx, tl, col->shade(2));
 		if(side&1)
 			tx = x+2;
 		else
@@ -182,34 +178,34 @@ void raw_draw_bloc(const Video_bitmap* bit, int x, int y, Byte side, Color* col)
 		tl = x-tx+18;
 		if(side&4)
 			tl -= 2;
-		bit->hline(y+15, tx, tl, col->shade(3));
+		bit.hline(y+15, tx, tl, col->shade(3));
 		rh-=3;
 	}
 	Byte main_color=col->shade(4);
 	for(int i=0; i<rh; i++)
-		bit->hline(y+ry+i, x+rx, rw, main_color);
+		bit.hline(y+ry+i, x+rx, rw, main_color);
 }
 
-void raw_small_draw_bloc(const Video_bitmap* bit, int x, int y, Byte side, Color* col) {
+void raw_small_draw_bloc(const Video_bitmap& bit, int x, int y, Byte side, Color* col) {
 	int i,rx=0,ry=0,rw=6,rh=6;
 	if(side&1) {
-		bit->vline(x, y, 6, col->shade(7));
+		bit.vline(x, y, 6, col->shade(7));
 		rx++; rw--;
 	}
 	if(side&2) {
-		bit->hline(y, x, 6, col->shade(7));
+		bit.hline(y, x, 6, col->shade(7));
 		ry++; rh--;
 	}
 	if(side&4) {
-		bit->vline(x+5, y, 6, col->shade(1));
+		bit.vline(x+5, y, 6, col->shade(1));
 		rw--;
 	}
 	if(side&8) {
-		bit->hline(y+5, x, 6, col->shade(1));
+		bit.hline(y+5, x, 6, col->shade(1));
 		rh--;
 	}
 	for(i=0; i<rh; i++)
-		bit->hline(y+ry+i, x+rx, rw, col->shade(4));
+		bit.hline(y+ry+i, x+rx, rw, col->shade(4));
 }
 
 Player_check_link::Player_check_link(Canvas *c): Player_base(c) {
@@ -432,7 +428,7 @@ void Player_base::play_sound(Sample *s, int vol, int pan, int freq) {
 		freq = freq*2/3;
 	if(time_control == TIME_FAST)
 		freq = freq*3/2;
-	Sfx stmp(s, 0, vol, pan, freq);
+  s->play(vol, pan, freq);
 }
 
 Player_text_scroll::Player_text_scroll(Canvas *c, const char *texte, int xoffset, int yoffset): Player_base(c) {
@@ -684,7 +680,7 @@ void Player_check_line::check_clean() {
 		for(i = 4; i < 14; i++)
 			if(canvas->occupied[j][i])
 				return;
-	canvas->add_text_scroller(ST_CLEANCANVAS);
+	canvas->add_text_scroller("Clean Canvas!!");
 	if(game->net_version()<23)
 		canvas->stats[CS::SCORE].add(5000);
 	canvas->send_for_clean=true;
@@ -1098,14 +1094,14 @@ Player_dead::Player_dead(Canvas *c, bool tg): Player_base(c), then_gone(tg) {
 	msgbox("\n");
 	if(fragger) {
 		fragger->stats[CS::FRAG].add(1);
-		sprintf(st, ST_BOBFRAGBOB, fragger->name, c->name);
+		sprintf(st, "%s fragged %s!", fragger->name, c->name);
 		message(fragger->color, st);
 
 		couleur = fragger->color<<4; // couleur du 'fragger'
-		sprintf(st, ST_YOUFRAGBOB, c->name);
+		sprintf(st, "Fragged %s!", c->name);
 		fragger->add_text_scroller(st);
 	} else {
-		sprintf(st, ST_BOBDIED, c->name);
+		sprintf(st, "%s died.", c->name);
 		message(-1, st);
 		couleur = 8<<4; // gris pour mort naturelle
 	}
@@ -1223,9 +1219,9 @@ void Player_dead_wait::init() {
 	if(game->single || game->delay_start)
 		return;
 	if(game->survivor)
-		canvas->set_message(ST_WAITINGFORROUND1, ST_WAITINGFORROUND2);
+		canvas->set_message("Waiting for the", "        next round...");
 	else
-		canvas->set_message(ST_WAITINGFORKEY1, ST_WAITINGFORKEY2);
+		canvas->set_message("Press a key to", "        restart.");
 }
 
 void Player_dead_wait::step() {
@@ -1373,7 +1369,7 @@ Player_gone::Player_gone(Canvas *c, bool chat_msg): Player_base(c) {
 	canvas->delete_bloc();
 	canvas->set_next();
 	if(chat_msg) {
-		sprintf(st, ST_BOBHASGONE, canvas->name);
+		sprintf(st, "%s has left the game.", canvas->name);
 		message(-1, st);
 	}
 	Packet_serverlog log("player_gone");
@@ -1412,7 +1408,7 @@ void Player_gone::step() {
 		canvas->smooth = p->smooth? true:false;
 		canvas->shadow = p->shadow? true:false;
 		canvas->handicap = p->handicap;
-		sprintf(st, ST_BOBREJOIN, canvas->long_name(true, false));
+		sprintf(st, "%s has joined back!", canvas->long_name(true, false));
 		message(-1, st);
 		msgbox("Player_gone::step: player %i is no longer a goner! Rejoining.\n", p->player);
 		game->removepacket();
@@ -1575,7 +1571,7 @@ Player_stamp::Player_stamp(Canvas *c, Packet_stampblock *p): Player_base(c) {
 	canvas->bloc->by=p->y;
 	if(canvas->collide(p->x, p->y, p->rotate) || !canvas->collide(p->x, p->y+1, p->rotate)) {
 		char st[256];
-		sprintf(st, ST_BOBINVALIDBLOCK, canvas->name);
+		sprintf(st, "*** %s dropped an invalid block! ***", canvas->name);
 		if(game->server) {
 			message(-1, st, true, false, true);
 			game->net_list.server_drop_player(canvas->num_player, DROP_INVALID_BLOCK);
@@ -1826,7 +1822,7 @@ void Player_init::net_call(Packet *p2) {
 
 void init_directory() {
 	strcpy(quadradir, exe_directory);
-#ifdef UGS_DIRECTX
+#ifdef WIN32
 	if(SHGetFolderPath(0, CSIDL_APPDATA|CSIDL_FLAG_CREATE, 0, SHGFP_TYPE_CURRENT, quadradir) < 0) {
 		msgbox("SHGetFolderPath failed, using exe_directory");
 	}
@@ -1848,144 +1844,69 @@ void init_directory() {
 #endif
 }
 
-void init_stuff(bool need_sound=true, bool need_video=true) {
+static void init_stuff(bool need_sound, bool need_video) {
 	int i;
 
-	video = Video::New(640, 480, 8, "Quadra", !need_video);
+	if (!need_video) {
+		video_is_dumb = true;
+		char value[] = "SDL_VIDEODRIVER=dummy";
+		SDL_putenv(value);
+	}
+
+  if(SDL_Init(SDL_INIT_VIDEO) == -1) {
+    fprintf(stderr, "Could not initialize SDL: %s\n", SDL_GetError());
+    exit(1);
+  }
+
+	video = new Video;
 
 	if(!video)
-		(void)new Error("Could not initialize video subsystem");
+		fatal_msgbox("Could not initialize video subsystem");
 
 	fonts.init();
-	if(!video->xwindow) {
-		Res_doze res("cursor.png");
-		Png png(res);
-		Bitmap bitmap(png);
-		cur = new Sprite(bitmap, 0, 0);
-	}
-	else
-		cur=NULL;
 	//If we init a dumb video, we need a dumb input too
 	input = Input::New(!need_video);
-	if(need_sound && need_video) { // don't need sound if no video
-		sound = new Sound();
-		if(!sound->active) {
-			delete sound;
-			sound = NULL;
-		}
-	}
+  // don't need sound if no video
+	if(need_sound && need_video)
+		sound = Sound::New();
 	else
 		sound = NULL;
 
-	if(need_video)
-		music = Music::alloc();
-	else
-		music = NULL;
-
 	for(i=0; i<256; i++)
-		noir.setcolor(i, 40,40,40);
+		noir.setcolor(i, 40, 40, 40);
 
 	chat_text = new Chat_text(fonts.normal, 212);
 	net_starter = new Net_starter();
-	{
-		Res_doze res("cuckoo.wav");
-		sons.pause = new Sample(res, 2);
-	}
-	{
-		Res_doze res("hooter03.wav");
-		sons.start = new Sample(res,2);
-	}
-	{
-		Res_doze res("Whizz1.wav");
-		sons.bonus1 = new Sample(res, 2);
-	}
-	{
-		Res_doze res("glissup.wav");
-		sons.levelup = new Sample(res, 2);
-	}
-	{
-		Res_doze res("Clang3.wav");
-		sons.depose4 = new Sample(res, 2); // quand le canvas 'coule'
-	}
+  sons.pause = new Sample(Res_doze("cuckoo.wav"));
+  sons.start = new Sample(Res_doze("hooter03.wav"));
+  sons.bonus1 = new Sample(Res_doze("Whizz1.wav"));
+  sons.levelup = new Sample(Res_doze("glissup.wav"));
+  // when the canvas 'flows'
+  sons.depose4 = new Sample(Res_doze("Clang3.wav"));
 	sons.flash = NULL;
 	sons.depose3 = NULL;
 	sons.depose2 = NULL;
 	sons.depose = NULL;
 	sons.drip = NULL;
-	{
-		Res_doze res("Glass01.wav");
-		sons.glass = new Sample(res, 2);
-	}
-	{
-		Res_doze res("Tapdrip.wav");
-		sons.enter = new Sample(res, 2);
-	}
-	{
-		Res_doze res("W_BAYO_0.wav");
-		sons.fadein = new Sample(res, 2);
-	}
-	{
-		Res_doze res("fadeout.wav");
-		sons.fadeout = new Sample(res, 2);
-	}
-	{
-		Res_doze res("click_1.wav");
-		sons.point = new Sample(res, 2);
-	}
-	{
-		Res_doze res("Blip1.wav");
-		sons.click = new Sample(res, 2);
-	}
-	{
-		Res_doze res("handbell.wav");
-		sons.msg = new Sample(res, 2);
-	}
-	{
-		Res_doze res("potato_get.wav");
-		sons.potato_get = new Sample(res, 2);
-	}
-	{
-		Res_doze res("zingle.wav");
-		sons.potato_rid = new Sample(res, 2);
-	}
-	{ //-roncli 4/29/01 Load countdown samples
-		Res_doze res("t1min.wav");
-		sons.minute = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t30sec.wav");
-		sons.thirty = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t20sec.wav");
-		sons.twenty = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t10sec.wav");
-		sons.ten = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t5sec.wav");
-		sons.five = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t4sec.wav");
-		sons.four = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t3sec.wav");
-		sons.three = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t2sec.wav");
-		sons.two = new Sample(res, 2);
-	}
-	{
-		Res_doze res("t1sec.wav");
-		sons.one = new Sample(res, 2);
-	}
-	cursor = Cursor::New(cur);
-	cursor->set_speed(config.info.mouse_speed);
+  sons.glass = new Sample(Res_doze("Glass01.wav"));
+  sons.enter = new Sample(Res_doze("Tapdrip.wav"));
+  sons.fadein = new Sample(Res_doze("W_BAYO_0.wav"));
+  sons.fadeout = new Sample(Res_doze("fadeout.wav"));
+  sons.point = new Sample(Res_doze("click_1.wav"));
+  sons.click = new Sample(Res_doze("Blip1.wav"));
+  sons.msg = new Sample(Res_doze("handbell.wav"));
+  sons.potato_get = new Sample(Res_doze("potato_get.wav"));
+  sons.potato_rid = new Sample(Res_doze("zingle.wav"));
+  sons.minute = new Sample(Res_doze("t1min.wav"));
+  sons.thirty = new Sample(Res_doze("t30sec.wav"));
+  sons.twenty = new Sample(Res_doze("t20sec.wav"));
+  sons.ten = new Sample(Res_doze("t10sec.wav"));
+  sons.five = new Sample(Res_doze("t5sec.wav"));
+  sons.four = new Sample(Res_doze("t4sec.wav"));
+  sons.three = new Sample(Res_doze("t3sec.wav"));
+  sons.two = new Sample(Res_doze("t2sec.wav"));
+  sons.one = new Sample(Res_doze("t1sec.wav"));
+	cursor = new Cursor;
 	for(i=0; i<8; i++)
 		fteam[i] = new Font(*fonts.normal);
 }
@@ -2033,7 +1954,6 @@ void deinit_stuff() {
 	Highscores::freemem();
 
 	delete cursor; cursor = NULL;
-	delete cur; cur = NULL;
 
 	fonts.deinit();
 }
@@ -2042,10 +1962,8 @@ const char *command_get_param(const char *t, const char *def=NULL) {
 	const char *temp = command.get_param();
 	if(!temp)
 		temp=def;
-	if(!temp) {
-		sprintf(st, "Command line parameter not found for '%s'", t);
-		(void) new Error(st);
-	}
+	if(!temp)
+		fatal_msgbox("Command line parameter not found for '%s'", t);
 	return temp;
 }
 
@@ -2085,21 +2003,13 @@ Attack read_attack_param(const char *s) {
 
 void display_command_line_help() {
 	char st[4096];
-	const char *res;
-	switch(config.info.language) {
-		default:
-		case 0:
-			res="help_en.txt"; break;
-		case 1:
-			res="help_fr.txt"; break;
-	}
-	Res_doze cmdline(res);
+	Res_doze cmdline("help_en.txt");
 	Dword size = min(static_cast<Dword>(sizeof(st)-1), cmdline.size());
 	strncpy(st, (char *)cmdline.buf(), size);
 	st[size] = 0;
 	if(video)
 		delete video;
-	user_output(ST_CMDLINE, st);
+	user_output("Quadra - Command line", st);
 }
 
 void read_script(const char *fn, bool second=false) {
@@ -2148,13 +2058,16 @@ void start_game() {
 	init_directory();
 
 	const char *dir=quadradir;
-#ifdef UGS_LINUX
+#ifdef WIN32
+	dir = exe_directory;
+#else
+#ifdef UGS_XCODE
+	dir = ".";
+#else
 	dir = getenv("QUADRADIR");
 	if(!dir)
 		dir = DATAGAMESDIR;
 #endif
-#ifdef UGS_DIRECTX
-	dir = exe_directory;
 #endif
 	resmanager=new Resmanager();
 	snprintf(fn, sizeof(fn) - 1, "%s/quadra.res", dir);
@@ -2180,24 +2093,9 @@ void start_game() {
 		msgbox("Ok\n");
 	}
 	bool dedicated=command.token("dedicated");
-	if(command.token("english") || dedicated)
-		config.info.language=0;
-	if(command.token("french"))
-		config.info.language=1;
-	const char *language;
 	int i;
-	switch(config.info.language) {
-		default:
-		case 0:
-			language="anglais.txt"; break;
-		case 1:
-			language="francais.txt"; break;
-	}
 	for(i=0; i<MAXTEAMS; i++)
 		set_team_name(i, NULL);
-	msgbox("Reading stringtable: ");
-	stringtable=new Stringtable(language);
-	msgbox("Ok\n");
 
 	if(command.token("h help ?")) {
 		display_command_line_help();
@@ -2247,13 +2145,13 @@ void start_game() {
 	if(!demo_play) {
 		if(command.token("server") || dedicated) {
 			if(!net->active)
-				(void) new Error("Network failed to initialize or not present\nCan't start server.\n");
+				fatal_msgbox("Network failed to initialize or not present\nCan't start server.\n");
 			buf[0] = 0;
 			if(command.token("port")) {
 				const char *temp = command_get_param("port <TCP/IP port>");
 				int port = atoi(temp);
 				if(port<=0 || port>=65535)
-					(void) new Error("Illegal port number.\n");
+					fatal_msgbox("Illegal port number.\n");
 				config.info.port_number = port;
 			}
 			Game_params p;
@@ -2371,7 +2269,7 @@ void start_game() {
 			}
 			if(command.token("connect")) {
 				if(!net->active)
-					(void) new Error("Network failed to initialize or not present\nCan't connect.\n");
+					fatal_msgbox("Network failed to initialize or not present\nCan't connect.\n");
 				const char *temp = command_get_param("connect <TCP/IP address>");
 				strncpy(buf, temp, sizeof(buf) - 1);
 				buf[sizeof(buf)-1] = 0;
@@ -2405,9 +2303,6 @@ void start_game() {
 				overmind.step();
 		}
 		else {
-			#ifdef PAINTDETECTOR2000
-			bool sounded=false;
-			#endif
 			while(acc>=10) {
 				if(reset_time) { // remet 'normal' seulement si au moins 1 frame s'est ecoule
 					time_control = TIME_NORMAL;
@@ -2420,12 +2315,6 @@ void start_game() {
 				catch(std::exception *e) {
 					msgbox("Exception caught from overmind.step(): %s\n", e->what());
 				}
-				#ifdef PAINTDETECTOR2000
-				if(video->need_paint==2 && !sounded) {
-					Sfx stmp(sons.msg, 0, 0, 0, 11025);
-					sounded=true;
-				}
-				#endif
 				reset_time=true;
 				if(time_control == TIME_FREEZE)
 					break;
@@ -2440,7 +2329,7 @@ void start_game() {
 				msgbox("Exception caught from ecran->draw_zone(): %s\n", e->what());
 			}
 
-			#ifdef FRAMECOUNTER
+#ifdef FRAMECOUNTER
 			static Dword lastvideoframe=0, lastoverframe=0;
 			if(ecran->font) {
 				if(overmind.framecount-lastoverframe > 500) {
@@ -2455,17 +2344,18 @@ void start_game() {
 				sprintf(st, "%i", up);
 				ecran->font->draw(st, video->vb, 0, 0);
 			}
-			#endif /* FRAMECOUNTER */
+#endif /* FRAMECOUNTER */
 		}
 		end_frame();
 
 #ifndef NDEBUG
-		if(input->keys[KEY_F8] & PRESSED) // F8 = buckage
+    Uint8 *keystate = SDL_GetKeyState(NULL);
+    if(keystate[SDLK_F8]) // F8 = buckage
 			for(int j=0; j<8000000; j++)
 				;
-		if(input->keys[KEY_F9] & PRESSED) // F9 = slow motion mode
+    if(keystate[SDLK_F9]) // F8 = slow motion mode
 			time_control = TIME_SLOW;
-		if(input->keys[KEY_F10] & PRESSED) // F10 = turbo mode
+    if(keystate[SDLK_F10]) // F8 = turbo mode
 			time_control = TIME_FAST;
 #endif
 
@@ -2490,6 +2380,7 @@ void start_game() {
 	deinit_stuff();
 	delete resmanager;
 
+	// FIXME: This is not the smoothest exit ever, a better way?
 	if(demo_verif)
-		quit_game(demo_verified_and_valid? 0 : 1);
+		exit(demo_verified_and_valid? 0 : 1);
 }

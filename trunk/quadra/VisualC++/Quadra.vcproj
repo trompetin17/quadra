@@ -4,6 +4,7 @@
 	Version="8.00"
 	Name="Quadra"
 	ProjectGUID="{AD0452B7-E9CE-4236-BE28-0792F3220DF4}"
+	RootNamespace="Quadra"
 	>
 	<Platforms>
 		<Platform
@@ -41,8 +42,12 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
+				Optimization="3"
 				InlineFunctionExpansion="2"
+				FavorSizeOrSpeed="2"
+				OmitFramePointers="true"
+				EnableFiberSafeOptimizations="true"
+				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="..\include,..\skelton\include"
 				PreprocessorDefinitions="NDEBUG;WIN32"
 				StringPooling="true"
@@ -71,15 +76,17 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib shell32.lib user32.lib winmm.lib ddraw.lib dxguid.lib dinput.lib dsound.lib skelton.lib wsock32.lib zlib.lib libpng.lib shlwapi.lib"
+				AdditionalDependencies="libcmt.lib libcpmt.lib winmm.lib sdl.lib wsock32.lib shlwapi.lib zlib.lib libpng.lib"
 				OutputFile="..\quadra.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="release"
-				IgnoreDefaultLibraryNames="libc.lib, msvcrt.lib, libcd.lib, libcmtd.lib, msvcrtd.lib"
+				AdditionalLibraryDirectories=""
+				IgnoreAllDefaultLibraries="true"
 				ProgramDatabaseFile=".\Release/quadra.pdb"
 				MapFileName=""
 				SubSystem="2"
+				LinkTimeCodeGeneration="1"
+				ImportLibrary=".\Release\quadra.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -162,23 +169,27 @@
 				PreprocessorDefinitions="_DEBUG"
 				Culture="3084"
 				AdditionalIncludeDirectories="..\include"
+				ResourceOutputFileName="$(IntDir)/$(InputName).res"
 			/>
 			<Tool
 				Name="VCPreLinkEventTool"
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="kernel32.lib shell32.lib user32.lib winmm.lib ddraw.lib dxguid.lib dinput.lib dsound.lib skelton.lib wsock32.lib zlib.lib libpng.lib shlwapi.lib"
-				OutputFile="..\quadra.exe"
+				IgnoreImportLibrary="false"
+				AdditionalDependencies="libcmtd.lib libcpmtd.lib winmm.lib sdl.lib wsock32.lib shlwapi.lib zlib.lib libpng.lib"
+				OutputFile="..\quadra_debug.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
-				AdditionalLibraryDirectories="debug"
-				IgnoreDefaultLibraryNames="libc.lib, libcmt.lib, msvcrt.lib, libcd.lib, msvcrtd.lib"
+				AdditionalLibraryDirectories=""
+				IgnoreAllDefaultLibraries="true"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/quadra.pdb"
 				GenerateMapFile="false"
 				MapFileName=""
 				SubSystem="2"
+				ImportLibrary=".\Debug\quadra.lib"
 				TargetMachine="1"
 			/>
 			<Tool
@@ -217,6 +228,10 @@
 			Filter="cpp"
 			>
 			<File
+				RelativePath="..\skelton\common\bitmap.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\source\bloc.cpp"
 				>
 				<FileConfiguration
@@ -237,6 +252,10 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\skelton\common\buf.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\source\canvas.cpp"
@@ -287,6 +306,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\skelton\common\clipable.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\clock.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\source\color.cpp"
 				>
 				<FileConfiguration
@@ -307,6 +334,30 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\skelton\common\command.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\crypt.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\cursor.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\dict.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\win32\error.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\win32\find_file.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\source\fonts.cpp"
@@ -419,6 +470,42 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\skelton\common\http_post.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\http_request.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\id.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\image_png.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\svgalib\input.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\input_dumb.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\inter.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\listbox.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\svgalib\main.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\source\menu.cpp"
 				>
 				<FileConfiguration
@@ -529,6 +616,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\skelton\common\net.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\source\net_list.cpp"
 				>
 				<FileConfiguration
@@ -617,6 +708,18 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\skelton\common\notify.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\overmind.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\packet.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\source\packets.cpp"
 				>
 				<FileConfiguration
@@ -637,6 +740,10 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\skelton\svgalib\palette.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\source\pane.cpp"
@@ -705,6 +812,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\skelton\common\random.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\source\recording.cpp"
 				>
 				<FileConfiguration
@@ -725,6 +836,26 @@
 						PreprocessorDefinitions=""
 					/>
 				</FileConfiguration>
+			</File>
+			<File
+				RelativePath="..\skelton\win32\res.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\res_compress.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\resfile.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\resmanager.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\reswriter.cpp"
+				>
 			</File>
 			<File
 				RelativePath="..\source\score.cpp"
@@ -771,6 +902,14 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\skelton\svgalib\sound.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\sprite.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\source\stats.cpp"
 				>
 				<FileConfiguration
@@ -793,7 +932,23 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath="..\skelton\common\stringtable.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\unicode.cpp"
+				>
+			</File>
+			<File
 				RelativePath="..\source\update.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\common\url.cpp"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\svgalib\video.cpp"
 				>
 			</File>
 			<File
@@ -840,13 +995,33 @@
 					/>
 				</FileConfiguration>
 			</File>
+			<File
+				RelativePath="..\skelton\common\zone_text_clock.cpp"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h"
 			>
 			<File
+				RelativePath="..\include\attack.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\bitmap.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\bloc.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\buf.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\byteorder.h"
 				>
 			</File>
 			<File
@@ -862,11 +1037,51 @@
 				>
 			</File>
 			<File
+				RelativePath="..\skelton\include\clipable.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\clock.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\color.h"
 				>
 			</File>
 			<File
+				RelativePath="..\skelton\include\command.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\config.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\crypt.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\cursor.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\cursor_self.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\dict.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\dynlib.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\error.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\find_file.h"
 				>
 			</File>
 			<File
@@ -890,6 +1105,54 @@
 				>
 			</File>
 			<File
+				RelativePath="..\skelton\include\http_post.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\http_request.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\id.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\image.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\image_png.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\input.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\input_dumb.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\input_dx.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\input_keys.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\inter.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\listbox.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\main.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\menu.h"
 				>
 			</File>
@@ -910,6 +1173,26 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\multi_provider.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\music.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\net.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\net_buf.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\net_call.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\net_list.h"
 				>
 			</File>
@@ -926,11 +1209,31 @@
 				>
 			</File>
 			<File
+				RelativePath="..\skelton\include\notify.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\overmind.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\packet.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\packets.h"
 				>
 			</File>
 			<File
+				RelativePath="..\skelton\include\palette.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\pane.h"
+				>
+			</File>
+			<File
+				RelativePath="..\include\player.h"
 				>
 			</File>
 			<File
@@ -942,7 +1245,27 @@
 				>
 			</File>
 			<File
+				RelativePath="..\skelton\include\random.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\recording.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\res.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\res_compress.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\resfile.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\resmanager.h"
 				>
 			</File>
 			<File
@@ -950,7 +1273,23 @@
 				>
 			</File>
 			<File
+				RelativePath="..\include\score.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\sons.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\sound.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\spawn.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\sprite.h"
 				>
 			</File>
 			<File
@@ -958,7 +1297,31 @@
 				>
 			</File>
 			<File
+				RelativePath="..\skelton\include\stringtable.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\surface.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\svgakeys.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\texte.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\track.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\types.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\unicode.h"
 				>
 			</File>
 			<File
@@ -966,7 +1329,15 @@
 				>
 			</File>
 			<File
+				RelativePath="..\skelton\include\url.h"
+				>
+			</File>
+			<File
 				RelativePath="..\include\version.h"
+				>
+			</File>
+			<File
+				RelativePath="..\skelton\include\video.h"
 				>
 			</File>
 			<File
@@ -977,15 +1348,15 @@
 				RelativePath="..\include\zone_list.h"
 				>
 			</File>
+			<File
+				RelativePath="..\skelton\include\zone_text_clock.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource files"
 			Filter="wav;spr;raw;pcx;pcc;ico;idx;txt;rec"
 			>
-			<File
-				RelativePath="images\window.ico"
-				>
-			</File>
 			<File
 				RelativePath="..\images\window.ico"
 				>

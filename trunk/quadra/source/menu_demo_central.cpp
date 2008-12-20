@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "menu_demo_central.h"
+
 #include "inter.h"
 #include "bitmap.h"
 #include "dict.h"
@@ -25,7 +27,6 @@
 #include "res_compress.h"
 #include "find_file.h"
 #include "fonts.h"
-#include "texte.h"
 #include "zone.h"
 #include "global.h"
 #include "quadra.h"
@@ -33,10 +34,8 @@
 #include "recording.h"
 #include "game.h"
 #include "multi_player.h"
-#include "menu_demo_central.h"
+#include "packets.h"
 #include "config.h"
-
-RCSID("$Id$")
 
 class Zone_change_dir: public Zone_text_input {
 	Menu_demo_central *menu_demo_central;
@@ -72,6 +71,7 @@ Menu_demo_central::Player_infos::Player_infos(int pplayer) {
 }
 
 Menu_demo_central::Menu_demo_central() {
+	quel = -1;
 	{
 		Res_doze res("multi.png");
 		Png img(res);
@@ -92,28 +92,36 @@ Menu_demo_central::Menu_demo_central() {
 
 	inter->set_font(new Font(*fonts.normal, pal, 255,255,255));
 	(void)new Zone_bitmap(inter, bit, 0, 0, true);
-	(void)new Zone_text(inter, ST_DEMOCENTRAL, 20);
-	(void)new Zone_text(fteam[7], inter, ST_CURRENTDIRECTORY, 10, 50);
+	(void)new Zone_text(inter, "The Demo Central", 20);
+	(void)new Zone_text(fteam[7], inter, "Current directory:", 10, 50);
 	Find_file::get_current_directory(find_directory);
 	z_dir = new Zone_change_dir(inter, pal, find_directory, 900, 170, 50, 460, this);
 	z_list = new Zone_listbox2(inter, bit, fteam[4], &quel, 10, 90, 180, 300);
 	z_status = new Zone_text_field(inter, "", 0, 460, 640);
-	z_play = new Zone_text_button2(inter, bit, fteam[4], ST_STARTPLAYBACK, 30, 400);
-	z_delete = new Zone_text_button2(inter, bit, fteam[4], ST_DELETEDEMO, 30, 430);
-	cancel = new Zone_text_button2(inter, bit, fteam[4], ST_BACK, 560, 430);
+	z_play = new Zone_text_button2(inter, bit, fteam[4], "·2 Start playback",
+                                 30, 400);
+	z_delete = new Zone_text_button2(inter, bit, fteam[4], "Delete demo",
+                                   30, 430);
+	cancel = new Zone_text_button2(inter, bit, fteam[4], "Back ·0", 560, 430);
 	int y=90,ys=21;
-	(void)new Zone_text(fteam[7], inter, ST_DEMONAME, 210, y);
-	z_name = new Zone_text_field(inter, (char *) NULL, 335, y, 295, fteam[1]); y+=ys;
-	(void)new Zone_text(fteam[7], inter, ST_DEMODATE, 210, y);
-	z_date = new Zone_text_field(inter, (char *) NULL, 335, y, 295, fteam[1]); y+=ys;
-	(void)new Zone_text(fteam[7], inter, ST_DEMOVERSION, 210, y);
-	z_version = new Zone_text_field(inter, (char *) NULL, 335, y, 70, fteam[1]); y+=ys;
-	(void)new Zone_text(fteam[7], inter, ST_DEMODURATION, 210, y);
-	z_duration = new Zone_text_field(inter, (char *) NULL, 335, y, 295, fteam[1]); y+=ys;
-	(void)new Zone_text(fteam[7], inter, ST_DEMOTYPE, 210, y);
-	z_type = new Zone_text_field(inter, (char *) NULL, 335, y, 295, fteam[1]); y+=ys;
-	(void)new Zone_text(fteam[7], inter, ST_DEMOEND, 210, y);
-	z_end = new Zone_text_field(inter, (char *) NULL, 335, y, 295, fteam[1]); y+=ys;
+	(void)new Zone_text(fteam[7], inter, "Game name:", 210, y);
+	z_name = new Zone_text_field(inter, (char *) NULL, 335, y, 295,
+                               fteam[1]); y+=ys;
+	(void)new Zone_text(fteam[7], inter, "Date & time:", 210, y);
+	z_date = new Zone_text_field(inter, (char *) NULL, 335, y, 295,
+                               fteam[1]); y+=ys;
+	(void)new Zone_text(fteam[7], inter, "Version:", 210, y);
+	z_version = new Zone_text_field(inter, (char *) NULL, 335, y, 70,
+                                  fteam[1]); y+=ys;
+	(void)new Zone_text(fteam[7], inter, "Duration:", 210, y);
+	z_duration = new Zone_text_field(inter, (char *) NULL, 335, y, 295,
+                                   fteam[1]); y+=ys;
+	(void)new Zone_text(fteam[7], inter, "Game type:", 210, y);
+	z_type = new Zone_text_field(inter, (char *) NULL, 335, y, 295,
+                               fteam[1]); y+=ys;
+	(void)new Zone_text(fteam[7], inter, "Game end:", 210, y);
+	z_end = new Zone_text_field(inter, (char *) NULL, 335, y, 295,
+                              fteam[1]); y+=ys;
 
 	play = NULL;
 	reload();
@@ -124,7 +132,10 @@ Menu_demo_central::~Menu_demo_central() {
 		delete fcourrier[i];
 	if(play)
 		delete play;
-	pinfos.deleteall();
+	while (!pinfos.empty()) {
+		delete pinfos.back();
+		pinfos.pop_back();
+	}
 }
 
 void Menu_demo_central::clear_detail() {
@@ -138,8 +149,11 @@ void Menu_demo_central::clear_detail() {
 		delete play;
 		play = NULL;
 	}
-	zone.deleteall();
-	pinfos.deleteall();
+	list.deleteall();
+	while (!pinfos.empty()) {
+		delete pinfos.back();
+		pinfos.pop_back();
+	}
 	video->need_paint = 2;
 }
 
@@ -159,7 +173,7 @@ void Menu_demo_central::drive_playback(const char *n) {
 	if(res->exist) {
 		play = new Playback(res);
 		if(play->completed || !play->valid) {
-			sprintf(st, ST_DEMOBADFILE, temp);
+			sprintf(st, "File '%s' is not a Quadra demo file", temp);
 			z_status->set_val(st);
 			delete play;
 			play = NULL;
@@ -171,47 +185,48 @@ void Menu_demo_central::drive_playback(const char *n) {
 			strcpy(s_duration, "-");
 			strcpy(s_date, "-");
 			if(play->packet_gameserver) {
-				strcpy(s_type, ST_GAMETYPE1);
+				strcpy(s_type, "Free for all");
 				if(play->packet_gameserver->survivor)
-					strcpy(s_type, ST_GAMETYPE2);
+					strcpy(s_type, "Survivor");
 				Attack_type nat=play->packet_gameserver->normal_attack.type;
 				Attack_type cat=play->packet_gameserver->clean_attack.type;
 				if(nat==ATTACK_NONE && cat==ATTACK_NONE)
-					strcpy(s_type, ST_GAMETYPE4);
+					strcpy(s_type, "Peace");
 				if(nat==ATTACK_BLIND || nat==ATTACK_FULLBLIND)
-					strcpy(s_type, ST_GAMETYPE5);
+					strcpy(s_type, "Blind");
 				if(play->packet_gameserver->hot_potato)
-					strcpy(s_type, ST_GAMETYPE3);
+					strcpy(s_type, "Hot potato");
 				switch(play->packet_gameserver->game_end) {
 					case END_NEVER:
-						strcpy(s_end, ST_DEMONEVER);
+						strcpy(s_end, "Never");
 						break;
 					case END_FRAG:
-						sprintf(s_end, ST_DEMOAFTERFRAG, play->packet_gameserver->game_end_value);
+						sprintf(s_end, "After %i frags",
+                    play->packet_gameserver->game_end_value);
 						break;
 					case END_TIME:
-						sprintf(s_end, ST_DEMOAFTERMINUTE, play->packet_gameserver->game_end_value/6000);
+						sprintf(s_end, "After %i minutes", play->packet_gameserver->game_end_value/6000);
 						if(play->single())
-							strcpy(s_type, ST_GAMETYPE6);
+							strcpy(s_type, "Sprint");
 						break;
 					case END_POINTS:
-						sprintf(s_end, ST_DEMOAFTERSCORE, play->packet_gameserver->game_end_value);
+						sprintf(s_end, "After %i points", play->packet_gameserver->game_end_value);
 						break;
 					case END_LINES:
-						sprintf(s_end, ST_DEMOAFTERLINES, play->packet_gameserver->game_end_value);
+						sprintf(s_end, "After %i lines", play->packet_gameserver->game_end_value);
 						break;
 					default:
-						strcpy(s_end, ST_DEMOUNKNOWN);
+						strcpy(s_end, "Unknown");
 						break;
 				}
 			}
 			if(play->single())
-				strcpy(s_type, ST_DEMOSINGLE);
+				strcpy(s_type, "Single player");
 			populate_dict(play->sum);
 		}
 	}
 	else {
-		sprintf(st, ST_DEMOBADFILE, temp);
+		sprintf(st, "File '%s' is not a Quadra demo file", temp);
 		z_status->set_val(st);
 	}
 	delete res;
@@ -233,12 +248,12 @@ void Menu_demo_central::populate_dict(Dict *d) {
 		int min=dur/6000;
 		int sec=(dur%6000)/100;
 		if(min)
-			sprintf(s_duration, ST_BOBMINUTES, min);
+			sprintf(s_duration, "%i minutes", min);
 		else
 			s_duration[0]=0;
 		if(sec) {
 			char st[100];
-			sprintf(st, ST_BOBSECONDS, sec);
+			sprintf(st, "%i seconds", sec);
 			if(min)
 				strcat(s_duration, " ");
 			strcat(s_duration, st);
@@ -263,20 +278,23 @@ void Menu_demo_central::populate_dict(Dict *d) {
 	cx[4] = cx[3] + cw[3] + 5;
 	cw[4] = 80;
 	int y=220, ys=21, i, j;
-	zone.add(new Zone_text(fteam[7], inter, ST_PLAYERS, cx[0], y));
+	list.zones.push_back(new Zone_text(fteam[7], inter, "Players", cx[0], y));
 	if(!play->single()) {
-		zone.add(new Zone_text(fteam[7], inter, ST_RESULTFRAG, cx[1], y));
-		zone.add(new Zone_text(fteam[7], inter, ST_RESULTDEATH, cx[2], y));
+		list.zones.push_back(new Zone_text(fteam[7], inter, "Frags", cx[1], y));
+		list.zones.push_back(new Zone_text(fteam[7], inter, "Deaths", cx[2], y));
 	}
-	zone.add(new Zone_text(fteam[7], inter, ST_SCORE, cx[3], y));
-	zone.add(new Zone_text(fteam[7], inter, ST_LINES, cx[4], y)); y+=ys;
-	pinfos.deleteall();
+	list.zones.push_back(new Zone_text(fteam[7], inter, "Score", cx[3], y));
+	list.zones.push_back(new Zone_text(fteam[7], inter, "Lines", cx[4], y)); y+=ys;
+	while (!pinfos.empty()) {
+		delete pinfos.back();
+		pinfos.pop_back();
+	}
 	Dict *players = d->find_sub("players");
 	if(players && players->size()<=MAXPLAYERS) {
 		for(i = 0; i < (int)players->size(); i++) {
 			const Dict *d2 = players->get_sub(i);
 			Player_infos *pi=new Player_infos(i);
-			pinfos.add(pi);
+			pinfos.push_back(pi);
 			const char *name = d2->find("name");
 			if(name)
 				strcpy(pi->name, name);
@@ -295,23 +313,23 @@ void Menu_demo_central::populate_dict(Dict *d) {
 				for(i=0; i<MAXPLAYERS; i++)
 					if(score.order[j]==i && score.player_team[i]==team)
 						break;
-				if(i<pinfos.size()) {
-					Player_infos *pi=pinfos[i];
+				if (i < static_cast<int>(pinfos.size())) {
+					Player_infos* pi = pinfos[i];
 					Font *f=inter->font;
 					if(pi->team<=6)
 						f=fteam[pi->team];
-					zone.add(new Zone_text(f, inter, pi->name, cx[0], y));
+					list.zones.push_back(new Zone_text(f, inter, pi->name, cx[0], y));
 					int *statp;
 					if(!play->single()) {
 						statp=score.stats[i].stats[CS::FRAG].get_address();
-						zone.add(new Zone_text_field(inter, statp, cx[1], y, cw[1], fcourrier[pi->team], false));
+						list.zones.push_back(new Zone_text_field(inter, statp, cx[1], y, cw[1], fcourrier[pi->team], false));
 						statp=score.stats[i].stats[CS::DEATH].get_address();
-						zone.add(new Zone_text_field(inter, statp, cx[2], y, cw[2], fcourrier[pi->team], false));
+						list.zones.push_back(new Zone_text_field(inter, statp, cx[2], y, cw[2], fcourrier[pi->team], false));
 					}
 					statp=score.stats[i].stats[CS::SCORE].get_address();
-					zone.add(new Zone_text_field(inter, statp, cx[3], y, cw[3], fcourrier[pi->team], false));
+					list.zones.push_back(new Zone_text_field(inter, statp, cx[3], y, cw[3], fcourrier[pi->team], false));
 					statp=score.stats[i].stats[CS::LINESTOT].get_address();
-					zone.add(new Zone_text_field(inter, statp, cx[4], y, cw[4], fcourrier[pi->team], false));
+					list.zones.push_back(new Zone_text_field(inter, statp, cx[4], y, cw[4], fcourrier[pi->team], false));
 					y+=ys;
 				}
 			}
@@ -400,7 +418,7 @@ void Menu_demo_central::reload() {
 	z_status->set_val("");
 
 	//Remove slashes from the end
-	char *temp=find_directory+strlen(find_directory);
+	char *temp=find_directory+strlen(find_directory)-1;
 	while(temp>=find_directory) {
 		if(*temp == '/')
 			*temp=0;
@@ -415,6 +433,12 @@ void Menu_demo_central::reload() {
 	msgbox("Menu_demo_central::find_all: Finding directories in [%s]...\n", temp_search);
 	{
 		Find_file *find_file = Find_file::New(temp_search);
+		if(find_file->has_error())
+		{
+			z_status->set_val("Warning: Invalid path.");
+			delete find_file;
+			return;
+		}
 		z_list->init_sort();
 		while(!find_file->eof()) {
 			Find_file_entry ff = find_file->get_next_entry();

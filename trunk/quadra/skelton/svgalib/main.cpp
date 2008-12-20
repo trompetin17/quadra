@@ -1,35 +1,37 @@
 /* -*- Mode: C++; c-basic-offset: 2; tab-width: 2; indent-tabs-mode: nil -*-
- *
+ * 
  * Quadra, an action puzzle game
  * Copyright (C) 1998-2000  Ludus Design
- *
+ * 
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
  * License as published by the Free Software Foundation; either
  * version 2.1 of the License, or (at your option) any later version.
- *
+ * 
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
  * Lesser General Public License for more details.
- *
+ * 
  * You should have received a copy of the GNU Lesser General Public
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
-/* version Linux */
+#ifdef WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
+#ifdef UGS_XCODE
+#include "SDL_main.h"
+#endif
+
+#include "main.h"
+
+#include "SDL.h"
+
 #include "config.h"
-#ifdef SOCKS
-#include <stdio.h>
-#include <socks.h>
-extern "C" int SOCKSinit(char *);
-#endif
-#ifdef HAVE_MCHECK_H
-#ifndef NDEBUG
-#include <mcheck.h>
-#endif
-#endif
 #include <stdlib.h>
 #include <signal.h>
 
@@ -40,27 +42,29 @@ extern "C" int SOCKSinit(char *);
 #include "input.h"
 #include "sound.h"
 #include "cursor.h"
-#include "music.h"
 #include "stringtable.h"
 #include "overmind.h"
 #include "resfile.h"
 #include "command.h"
-#include "main.h"
-
-RCSID("$Id$")
 
 int ux_argc;
 char** ux_argv;
-bool alt_tab = false;
 Time_mode time_control = TIME_NORMAL;
 char cmd_line[1024];
-void quit_game(int status);
 
 void start_frame() {
-  if(sound)
-    sound->process();
-  input->check();
-  video->start_frame();
+	// RV: Peek for async winsock message 'WM_USER' (host name resolving)
+#ifdef UGS_DIRECTX
+	MSG msg;
+	while(PeekMessage(&msg, NULL, WM_USER, WM_USER, PM_REMOVE))
+	{
+		if(net) {
+			int err = WSAGETASYNCERROR(msg.lParam);
+			net->gethostbyname_completed(err == 0);
+		}
+	}
+#endif
+	input->check();
 }
 
 void end_frame() {
@@ -71,16 +75,40 @@ char exe_directory[1024];
 
 static bool ignore_sigpipe=false;
 
-int main(int ARGC, char **ARGV, char **ENV) {
-#ifdef HAVE_MCHECK_H
-#ifndef NDEBUG
-  mcheck(NULL);
+#ifdef WIN32
+
+void set_path() {
+	char tmp[_MAX_PATH];
+	if(!GetModuleFileName(NULL, tmp, sizeof(tmp))) {
+		skelton_msgbox("Error getting module filename, using current directory as exe_directory\n");
+		strcpy(exe_directory, ".");
+		return;
+	}
+	char* p = strrchr(tmp, '\\');
+	if(!p)
+		p = strrchr(tmp, '/');
+	if(!p) {
+		skelton_msgbox("Strange module filename, using current directory as exe_directory\n");
+		strcpy(exe_directory, ".");
+		return;
+	}
+	*p = 0;
+	strcpy(exe_directory, tmp);
+}
+
+int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, int nShowCmd) {
+ 	command.add(lpCmdLine);
+	set_path();
+
+	start_game();
+	delete_obj();
+	return 0;
+}
 #endif
-#endif
-#ifdef SOCKS
-  SOCKSinit(ARGV[0]);
-#endif
-  atexit(delete_obj);
+
+extern "C"
+int main(int ARGC, char *ARGV[]) {
+#ifndef WIN32
 	struct sigaction signals;
 	if(sigaction(SIGPIPE, NULL, &signals) < 0)
 		skelton_msgbox("Can't get SIGPIPE signal handler, ignoring.\n");
@@ -94,7 +122,7 @@ int main(int ARGC, char **ARGV, char **ENV) {
 		}
 		else
 			skelton_msgbox("SIGPIPE handler isn't default, ignoring.\n");
-
+#endif
   ux_argc = ARGC;
   ux_argv = ARGV;
 
@@ -111,7 +139,7 @@ int main(int ARGC, char **ARGV, char **ENV) {
   }
 
   start_game();
-  quit_game(0);
+  delete_obj();
   return 0;
 }
 
@@ -124,9 +152,8 @@ void delete_obj() {
     net=NULL;
   }
   if(sound) {
-    msgbox("deleting sound...");
+    msgbox("deleting sound...\n");
     delete sound;
-    msgbox(" done\n");
     sound=NULL;
   }
   if(input) {
@@ -139,23 +166,12 @@ void delete_obj() {
     delete video;
     video=NULL;
   }
-  if(music) {
-    skelton_msgbox("stopping and deleting music...\n");
-    music->stop();
-    music->close();
-    delete music;
-    music=NULL;
-  }
-  if(stringtable) {
-    msgbox("deleting stringtable...\n");
-    delete stringtable;
-    stringtable=NULL;
-  }
   if(cursor) {
     msgbox("deleting cursor..\n");
     delete cursor;
     cursor=NULL;
   }
+#ifndef WIN32
 	if(ignore_sigpipe) {
 		msgbox("restoring default SIGPIPE handler...\n");
 		struct sigaction sigs;
@@ -168,19 +184,12 @@ void delete_obj() {
 			ignore_sigpipe=false;
 		}
 	}
+#endif
+  SDL_Quit();
+
   msgbox("ending delete_obj...\n");
 }
 
-void quit_game(int status) {
-  if(video)
-    video->clean_up();
-  exit(status);
-}
-
 Dword getmsec() {
-  struct timeval thetime;
-
-  gettimeofday(&thetime, NULL);
-
-  return (thetime.tv_sec*1000)+(thetime.tv_usec/1000);
+  return SDL_GetTicks();
 }

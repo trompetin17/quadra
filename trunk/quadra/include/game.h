@@ -21,44 +21,9 @@
 #ifndef _HEADER_GAME
 #define _HEADER_GAME
 
-enum Attack_type {
-	ATTACK_LINES,
-	ATTACK_NONE,
-	ATTACK_BLIND,
-	ATTACK_FULLBLIND,
-	ATTACK_LAST
-};
+#include <vector>
 
-class Attack {
-public:
-	Attack_type type;
-	int param;
-	Attack() {
-		type=ATTACK_LINES;
-		param=0;
-	}
-	const char *log_type() {
-		switch(type) {
-			case ATTACK_LINES: return "lines";
-			case ATTACK_NONE: return "none";
-			case ATTACK_BLIND: return "blind";
-			case ATTACK_FULLBLIND: return "fullblind";
-			default: return "unknown";
-		}
-		return "unknown";
-	}
-};
-
-enum End_type {
-	END_NEVER,
-	END_FRAG,
-	END_TIME,
-	END_POINTS,
-	END_LINES,
-	END_LAST
-};
-
-#include "array.h"
+#include "attack.h"
 #include "types.h"
 #include "buf.h"
 #include "net_list.h"
@@ -79,7 +44,7 @@ class Dict;
 //Destroying a Game sets ::game to NULL
 class Game: public GS {
 	friend class Net_list;
-	Array<Packet *> stack;
+	std::vector<Packet*> stack;
 	Qserv *gameinfo;
 	bool http_failed;
 	void buildgameinfo();

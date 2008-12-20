@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "net_stuff.h"
+
 #include <stdarg.h>
 #include "error.h"
 #include "packets.h"
@@ -25,13 +27,10 @@
 #include "game.h"
 #include "net_server.h"
 #include "canvas.h"
-#include "net_stuff.h"
 #include "chat_text.h"
-#include "texte.h"
 #include "video.h"
 #include "nglog.h"
-
-RCSID("$Id$")
+#include "quadra.h"
 
 Net_starter::Net_module::Net_module() {
 	last_video_frame=video->framecount;
@@ -224,7 +223,7 @@ void Quadra_param::server_deconnect() {
 	if(game) {
 		game->abort=true;
 		if(!game->server)
-			message(-1, ST_SERVERDECONNECT);
+			message(-1, "·2 The server has been disconnected.");
 	}
 }
 
@@ -252,7 +251,7 @@ void Quadra_param::client_connect(Net_connection *adr) {
 	log.add(Packet_serverlog::Var("address", st));
 	if(game && game->net_server)
 		game->net_server->record_packet(&log);
-	sprintf(st1, ST_CONNECTFROMBOB, st);
+	sprintf(st1, "Connection accepted from [%s]", st);
 	message(-1, st1, true, false, true);
 }
 
@@ -270,7 +269,7 @@ void Quadra_param::client_deconnect(Net_connection *adr) {
 	if(game && game->net_server)
 		game->net_server->record_packet(&log);
 
-	sprintf(st1, ST_DISCONNECTFROMBOB, st);
+	sprintf(st1, "Connection closed from [%s]", st);
 	message(-1, st1, true, false, true);
 	if(!game)
 		return;

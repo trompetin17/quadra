@@ -17,10 +17,14 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
 #include "overmind.h"
 
-RCSID("$Id$")
+#include <algorithm>
+
+#include "input.h"
+
+using std::find;
+using std::list;
 
 Overmind overmind;
 Inter* ecran = NULL;
@@ -36,11 +40,11 @@ Overmind::~Overmind() {
 }
 
 void Overmind::clean_up() {
-	while(execs.size()) {
-		Executor *e = execs.last();
-		if(e && e->self_destruct)
+	while (!execs.empty()) {
+		Executor *e = execs.back();
+		if (e && e->self_destruct)
 			delete e;
-		execs.removelast();
+		execs.pop_back();
 	}
 }
 
@@ -53,41 +57,46 @@ void Overmind::unpause() {
 }
 
 void Overmind::step() {
-	if(paused)
+	if (paused)
 		return;
-	framecount++;
-	for(int i=0; i<execs.size(); i++) {
-		Executor *e = execs[i];
-		if(!e) {
-			execs.remove(i);
-			i--;
+	++framecount;
+	
+	list<Executor*>::iterator it = execs.begin();
+	while (it != execs.end()) {
+		if (!*it) {
+			it = execs.erase(it);
+			continue;
+		}
+
+		(*it)->step();
+		if ((*it)->done) {
+			if ((*it)->self_destruct)
+				delete *it;
+			it = execs.erase(it);
 		} else {
-			e->step();
-			if(e->done) {
-				if(e->self_destruct)
-					delete e;
-				execs.remove(i);
-				i--;
-			}
+			++it;
 		}
 	}
-	if(execs.size() == 0)
+	
+	if (execs.empty())
 		done = true;
 }
 
 void Overmind::start(Executor* e) {
-	execs.add(e);
+	execs.push_back(e);
 	done = false;
 }
 
 void Overmind::stop(Executor* e) {
-	for(int i=0; i<execs.size(); i++) {
-		if(e == execs[i]) {
-			if(e->self_destruct)
-				delete e;
-			execs.replace(i, NULL);
-		}
-	}
+	list<Executor*>::iterator it = find(execs.begin(), execs.end(), e);
+	
+	if (it == execs.end())
+		return;
+	
+	if ((*it)->self_destruct)
+		delete *it;
+	
+	*it = NULL;
 }
 
 Executor::Executor(bool self_des) {
@@ -96,38 +105,39 @@ Executor::Executor(bool self_des) {
 }
 
 Executor::~Executor() {
-	while(modules.size())
+	while(!modules.empty())
 		remove();
 }
 
 void Executor::remove() {
-	delete modules.last();
-	modules.removelast();
+	delete modules.at(modules.size() - 1);
+	modules.pop_back();
 }
 
 void Executor::step() {
 	if(paused)
 		return;
-	if(modules.size()) {
-		if(!modules.last()->done) {
-			if(modules.last()->first_time) {
-				modules.last()->first_time = false;
-				modules.last()->init();
+	if(!modules.empty()) {
+		Module* last_module = modules.at(modules.size() - 1);
+		if(!last_module->done) {
+			if(last_module->first_time) {
+				last_module->first_time = false;
+				last_module->init();
 			} else {
-				modules.last()->step();
+				last_module->step();
 			}
 		}
-		while(modules.size() && modules.last()->done) {
+		while(!modules.empty() && modules.at(modules.size() - 1)->done) {
 			remove();
 		}
 	}
-	if(!modules.size())
+	if(modules.empty())
 		done=true;
 }
 
 void Executor::add(Module* m) {
-	modules.add(m);
-	m->parent=this;
+	modules.push_back(m);
+	m->parent = this;
 }
 
 Module::Module(): done(false) {
@@ -181,6 +191,7 @@ Menu::~Menu() {
 void Menu::init() {
 	old_ecran=ecran;
 	ecran = inter;
+	input->allow_key_repeat(true);
 }
 
 void Menu::step() {

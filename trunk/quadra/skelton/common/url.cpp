@@ -18,14 +18,13 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "url.h"
+
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
 // for isalpha:
 #include <ctype.h>
-#include "url.h"
-
-RCSID("$Id$")
 
 Url::Url(const char* u) {
 	setFull(u);

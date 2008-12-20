@@ -31,7 +31,6 @@ public:
 	const static int game_version;
 	static int net_version;
 	const static int major, minor, patchlevel;
-	static bool xtreme;
 	static char user_name[];
 	int warning;
 	/*
@@ -40,7 +39,7 @@ public:
    *          to change anything.
    */
 	struct {
-		int language;
+		int xlanguage;
 		int setup_player, cdmusic;
 		Byte multi_level, unlock_theme;
 		int port_number, mouse_speed;

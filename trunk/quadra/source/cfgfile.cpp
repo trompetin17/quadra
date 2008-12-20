@@ -29,8 +29,7 @@
 #include "video.h"
 #include "version.h"
 #include "unicode.h"
-
-RCSID("$Id$")
+#include "quadra.h"
 
 const int Config::game_version = 19;
 int Config::net_version = 24;
@@ -39,8 +38,6 @@ const int Config::major = VERSION_MAJOR;
 const int Config::minor = VERSION_MINOR;
 const int Config::patchlevel = VERSION_PATCHLEVEL;
 
-/* FIXME: we should remove all occurence of Config::xtreme */
-bool Config::xtreme = false;
 char Config::user_name[64] = {""};
 
 Config::Config() {
@@ -57,7 +54,7 @@ void Config::default_config() {
 	memset(player2, 0, sizeof(player2));
 	memset(&info2, 0, sizeof(info2));
 	memset(&info3, 0, sizeof(info3));
-	info.language = 0;
+	info.xlanguage = 0;
 	info.setup_player = 0;
 	info.cdmusic = 0; // 0=no music  1=auto-change  2=loop all
 	info.multi_level = 1;
@@ -84,13 +81,13 @@ void Config::default_config() {
 		player2[i].h_repeat = 2;
 		player2[i].v_repeat = 2;
 		player2[i].continuous = 1;
-		player[i].key[0] = KEY_LEFTARROW;
-		player[i].key[1] = KEY_RIGHTARROW;
-		player[i].key[2] = KEY_UPARROW;
-		player[i].key[3] = KEY_DOWNARROW;
-		player[i].key[4] = KEY_UPARROW;
-		player2[i].key[0] = KEY_RSHIFT;
-		player2[i].key[1] = KEY_SPACE;
+		player[i].key[0] = SDLK_LEFT;
+		player[i].key[1] = SDLK_RIGHT;
+		player[i].key[2] = SDLK_UP;
+		player[i].key[3] = SDLK_DOWN;
+		player[i].key[4] = SDLK_UP;
+		player2[i].key[0] = SDLK_RSHIFT;
+		player2[i].key[1] = SDLK_SPACE;
 	}
 }
 

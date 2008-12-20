@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "chat_text.h"
+
 #include <string.h>
 #include "cfgfile.h"
 #include "net_stuff.h"
@@ -25,9 +27,9 @@
 #include "canvas.h"
 #include "game.h"
 #include "nglog.h"
-#include "chat_text.h"
+#include "packets.h"
 
-RCSID("$Id$")
+using std::vector;
 
 Chat_text *chat_text=NULL;
 int Chat_text::quel_player=0;
@@ -83,8 +85,8 @@ void Chat_text::add_text(int team, const char *text, bool sound) {
 	} while(i == -1);
 	new_text = true;
 
-	if(game && !game->single && team != -1 && sound)
-		Sfx stmp(sons.fadeout, 0, -200, 0, 28000);
+	if(game && !game->single && team != -1)
+    sons.fadeout->play(-200, 0, 28000);
 }
 
 void Chat_text::scroll_up() {
@@ -121,7 +123,7 @@ void Chat_text::net_call(Packet *p2) {
 	if(ok || (game && game->server)) {
 		if(last_sound-overmind.framecount>=4) {
 			last_sound=overmind.framecount;
-			Sfx stmp(sons.msg, 0, 0, 0, 11025);
+      sons.msg->play(0, 0, 11025);
 		}
 		message(p->team|16, p->text, false, true, !ok);
 	}
@@ -140,13 +142,12 @@ void Chat_text::clear() {
 
 void message(int color, const char *text, bool sound, bool in_packet, bool trusted, Net_connection *but) {
 	chat_text->add_text(color, text, sound);
-	if(!game || !game->server)
+	if (!game || !game->server)
 		return;
-	int co;
-	for(co=0; co<net->connections.size(); co++) {
-		Net_connection *nc=net->connections[co];
-		if(nc && (nc->trusted || !trusted) && nc!=but && nc!=game->loopback_connection)
-			if(!in_packet || !nc->packet_based)
-				send_msg(nc, "%s", text);
+	vector<Net_connection*>::const_iterator it;
+	for (it = net->connections.begin(); it != net->connections.end(); ++it) {
+		if (*it && ((*it)->trusted || !trusted) && *it != but && *it != game->loopback_connection)
+			if (!in_packet || !(*it)->packet_based)
+				send_msg(*it, "%s", text);
 	}
 }

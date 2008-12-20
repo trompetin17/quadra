@@ -20,15 +20,12 @@
 
 #ifndef HEADER_INTER
 #define HEADER_INTER
-#include "error.h"
-#include "array.h"
-#include "types.h"
-#include "video.h"
-#include "bitmap.h"
+
+#include "SDL.h"
 #include "sprite.h"
+#include "video.h"
 
 class Zone;
-class Inter;
 
 class Inter {
 	Zone* in;
@@ -37,10 +34,9 @@ class Inter {
 	static int last_mouse_x, last_mouse_y;
 	static bool kb_visible;
 	int kb_x, kb_y, kb_anim;
-	bool kb_active;
 	int double_click_delay;
 	Zone *double_clicked_first;
-	Array<int> kb_keys;
+	std::vector<int> kb_keys;
 	Zone *kb_focus;
 	Zone *kb_find_upmost();
 	Zone *kb_find_downmost();
@@ -54,39 +50,35 @@ class Inter {
 	void kb_draw_focus();
 	void de_tag(Zone *z);
 	void tag(Zone *z);
-	bool kb_check_key(const int i) const;
+	bool kb_check_key(SDLKey i) const;
 public:
 	Font* font;
+private:
 	bool del_font;
-	Array<Zone *> zone;
+	std::vector<Zone*> zone;
+public:
 	Zone* focus;
-	Zone* clicked, *double_clicked;
+	Zone* clicked;
+  Zone* double_clicked;
 	Inter();
-	Inter(Inter *in);
-	void set_font(Font* f1, bool del=true); // del=true if we must delete 'font'
-	int nzone() const {
-		return zone.size();
-	}
+	explicit Inter(Inter *in);
+  // del=true if we must delete 'font'
+	void set_font(Font* f1, bool del=true);
 	void add(Zone* zon, bool back=false) {
 		if(back)
-			zone.add_before(zon, 0);
+			zone.insert(zone.begin(), zon);
 		else
-			zone.add(zon);
+			zone.push_back(zon);
 	}
-	void remove(int i);
+
 	void remove(Zone *z);
 	Zone* do_frame();
 	void dirt_all();
 	void draw_zone();
 	void flush();
 	virtual ~Inter();
-	void process();
-	void select_zone(Zone *z, int quel); // selects a zone (gives focus and/or click)
-	bool is_kb_visible() const {
-		return kb_visible;
-	}
-	void kb_deactivate();
-	void kb_reactivate();
+  // selects a zone (gives focus and/or click)
+	void select_zone(Zone *z, int quel);
 	void kb_alloc_key(const int i);
 	void kb_free_key(const int i);
 };
@@ -110,9 +102,9 @@ public:
 		enabled++;
 	}
 	virtual void dirt() {
-		dirty = 2;
+		dirty = 1;
 	}
-	virtual void draw() { } //called when the zone is dirty
+	virtual void draw() = 0; //called when the zone is dirty
 	virtual int in() const;
 	virtual void leaved();
 	virtual void entered();
@@ -125,7 +117,7 @@ public:
 };
 
 class Zone_sprite: public Zone {
-	Sprite *sp;
+	SDL_Surface *sp;
 public:
 	Zone_sprite(Inter *in, const char *nam, int px = -1, int py = -1);
 	virtual ~Zone_sprite();
@@ -135,12 +127,14 @@ public:
 class Zone_bitmap: public Zone {
 	bool del_bit;
 public:
-	Bitmap* bit_, *bit2_, *actual;
+  Bitmap* bit_; // OWNING if del_bit is set
+  Bitmap* bit2_; // NOT OWNING
+  Bitmap* actual; // NOT OWNING
 	Zone_bitmap(Inter* in, Bitmap* bit, int px, int py, Bitmap* bit2=NULL);
 	Zone_bitmap(Inter* in, Bitmap* bit, int px, int py, bool del);
 	virtual ~Zone_bitmap();
 	virtual void draw() {
-		actual->draw(video->vb, x, y);
+    video->vb.put_bitmap(*actual, x, y);
 	}
 	virtual void leaved() {
 		if(bit2_) {
@@ -178,16 +172,13 @@ public:
 };
 
 class Zone_state_bit: public Zone_state {
-	Bitmap *state[3];
 public:
 	Zone_state_bit(Inter* in, const char* b1, int *pval, int px, int py, const char* b2=NULL, const char* b3=NULL);
-	virtual ~Zone_state_bit() {
-		for(int i=0; i < nstate; i++)
-			delete state[i];
-	}
-	virtual void draw() {
-		state[last_val]->draw(video->vb, x, y);
-	}
+  virtual ~Zone_state_bit();
+  virtual void draw();
+
+private:
+	SDL_Surface *state[3];
 };
 
 class Zone_text: public Zone {
@@ -222,10 +213,11 @@ public:
 };
 
 class Zone_text_button: public Zone_text_select {
-protected:
-	Bitmap *bit;
-	bool high;
+private:
+	Bitmap *bit; // OWNING
 	void set_bit(Bitmap *fond);
+protected:
+	bool high;
 public:
 	Zone_text_button(Inter* in, Bitmap* fond, Font* f, const char* s, int px, int py);
 	Zone_text_button(Inter* in, Bitmap* fond, Font* f, const char* s, int py);
@@ -240,7 +232,7 @@ public:
 class Zone_clear: public Zone {
 	int color;
 public:
-	Zone_clear(Inter* in, int px=0, int py=0, int pw=video->width, int ph=video->height, int c=0);
+	Zone_clear(Inter* in);
 	virtual void draw();
 };
 
@@ -261,8 +253,8 @@ public:
 class Zone_state_text: public Zone_state {
 	Zone_panel* pan;
 public:
-	const char* state[256];
-	Font* fonts[256];
+	const char* state[SDLK_LAST];
+	Font* fonts[SDLK_LAST];
 	Zone_state_text(Inter* in, int *pval, int px, int py, int pw=50, int ph=20);
 	virtual ~Zone_state_text() {
 		delete pan;
@@ -279,7 +271,6 @@ protected:
 	char* val;
 	int focus, curpos, actual_len, maxlen, panx, maxwidth;
 	void input_char(const Byte c);
-	void check_clipboard();
 	Font *font_selected;
 	int select_start;
 	Byte curcolor;

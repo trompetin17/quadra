@@ -93,7 +93,7 @@ public:
 			return false;
 	}
 	void read_mem(void *v, int num) {
-		if(len() <= NETBUF_SIZE-num) {
+		if(len() <= NETBUF_SIZE - num) {
 			memcpy(v, point, num);
 			point += num;
 		}

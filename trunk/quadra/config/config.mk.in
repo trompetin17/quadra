@@ -40,17 +40,9 @@ libgamesdir:=$(libdir)/games
 datarootdir:=@datarootdir@
 datadir:=@datadir@
 datagamesdir:=$(datadir)/games
-CXXFLAGS:=@CXXFLAGS@ @CPPFLAGS@
-X_CFLAGS:=@X_CFLAGS@
-X_LIBS:=@X_LIBS@
+CXXFLAGS:=@CXXFLAGS@
+CPPFLAGS:=@CPPFLAGS@
 LDFLAGS:=@LDFLAGS@
-
-ifneq ("@enable_debug@", "yes")
-CXXFLAGS+=-DNDEBUG
-endif
-
-ifeq ("@with_x@", "yes")
-UGS_LINUX_X11=1
-CXXFLAGS+=-DUGS_LINUX_X11
-endif
+SDL_MAIN_OBJ:=@SDL_MAIN_OBJ@
+SDL_LIBS:=@SDL_LIBS@
 

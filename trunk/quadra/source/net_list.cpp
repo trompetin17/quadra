@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "net_list.h"
+
 #include "types.h"
 #include "error.h"
 #include "canvas.h"
@@ -25,23 +27,21 @@
 #include "chat_text.h"
 #include "game.h"
 #include "net_stuff.h"
-#include "texte.h"
 #include "global.h"
 #include "sons.h"
-#include "main.h" //For alt_tab
+#include "main.h"
 #include "recording.h"
 #include "net_server.h"
 #include "quadra.h"
 #include "nglog.h"
-#include "net_list.h"
+#include "packets.h"
 #include "version.h"
 
-RCSID("$Id$")
-
 using std::max;
+using std::vector;
 
-//Objectives are number of remaining goals to reach before it is
-//  announced. Must end with 0.
+// Objectives are number of remaining goals to reach before it is
+// announced. Must end with 0.
 static int frag_objectives[] = {
 	20, 10, 5, 4, 3, 2, 1, 0
 };
@@ -234,9 +234,19 @@ Net_list::~Net_list() {
 	for(int i=0; i<MAXPLAYERS; i++)
 		if(list[i])
 			delete list[i];
-	cmd_cache.deleteall();
-	deny_list.deleteall();
-	allow_list.deleteall();
+
+	while (!cmd_cache.empty()) {
+		delete cmd_cache.back();
+		cmd_cache.pop_back();
+	}
+	while (!deny_list.empty()) {
+		delete deny_list.back();
+		deny_list.pop_back();
+	}
+	while (!allow_list.empty()) {
+		delete allow_list.back();
+		allow_list.pop_back();
+	}
 	stepper->ret(); //overmind will delete it correcly
 }
 
@@ -286,18 +296,18 @@ void Net_list::set_player(Canvas *c, int pos, bool msg) {
 		if(c->handicap!=2) {
 			const char *h;
 			switch(c->handicap) {
-				case 0: h=ST_BEGINNER; break;
-				case 1: h=ST_APPRENTICE; break;
-				case 2: h=ST_INTERMEDIATE; break;
-				case 3: h=ST_MASTER; break;
+				case 0: h= "Beginner"; break;
+				case 1: h = "Apprentice"; break;
+				case 2: h = "Normal"; break;
+				case 3: h = "Master"; break;
 				default:
-				case 4: h=ST_GRANDMASTER; break;
+				case 4: h = "Grand Master"; break;
 			}
 			sprintf(name, "%s (%s)", c->name, h);
 		}
 		else
 			strcpy(name, c->name);
-		sprintf(st, ST_BOBJOIN, name, team_name[c->color]);
+		sprintf(st, "%s joined %s team.", name, team_name[c->color]);
 		message(-1, st);
 	}
 	//If a canvas was replaced, keep it's id for the new canvas
@@ -406,15 +416,14 @@ void Net_list::step_all() {
 		sendlines(p);
 		game->removepacket();
 	}
-	if(game->network || !alt_tab) {
-		game->count_playing_time();
-		for(i=0; i<MAXPLAYERS; i++) {
-			Canvas *c=get(i);
-			if(c) {
-				c->over->step();
-			}
+	game->count_playing_time();
+	for(i=0; i<MAXPLAYERS; i++) {
+		Canvas *c=get(i);
+		if(c) {
+			c->over->step();
 		}
 	}
+
 	score.updateFromGame();
 	if(playback && !playback->old_mode) {
 		Demo_packet dp=playback->next_packet();
@@ -430,8 +439,8 @@ void Net_list::step_all() {
 		}
 		else {
 			if(!demo_completed) {
-				message(-1, ST_DEMOCOMPLETED);
-				demo_completed=true;
+				message(-1, "·2 Demo completed");
+				demo_completed = true;
 			}
 			playback->verify_summary(game);
 		}
@@ -455,7 +464,7 @@ void Net_list::step_all() {
 	if(game->server) {
 		bool reset_timer=false;
 		stat_timer++;
-		for(i=0; i<net->connections.size(); i++) {
+		for(i = 0; i < static_cast<int>(net->connections.size()); ++i) {
 			Net_connection *nc=net->connections[i];
 			if(stat_timer>=(lag_limit? lag_limit/2 : 1500)) {
 				if(nc!=game->loopback_connection && nc->packet_based && nc->joined) {
@@ -487,7 +496,7 @@ void Net_list::step_all() {
 	}
 	//Drop laggy connections
 	if(game->server && lag_limit) {
-		for(i=0; i<net->connections.size(); i++) {
+		for (i = 0; i < static_cast<int>(net->connections.size()); ++i) {
 			Net_connection *nc=net->connections[i];
 			if(nc->incoming_inactive>lag_limit && nc!=game->loopback_connection && nc->packet_based && nc->joined && !nc->trusted) {
 				send_msg(nc, "Your connection has been dropped for exceeding the lag limit on this server.");
@@ -526,7 +535,7 @@ void Net_list::step_all() {
 	}
 	//Re-enable acceptconnects if dedicated and no connections
 	//  video_is_dumb==true is assumed to mean dedicated
-	if(video_is_dumb && net->connections.size()<=1)
+	if (video_is_dumb && net->connections.size() <= 1)
 		game->server_accept_connection = 0;
 
 	//notify_all if anybody has gone
@@ -575,9 +584,9 @@ void Net_list::check_end_game(bool end_it) {
 				}
 			}
 			else {
-				//Quit when -dedicated -once and all connections are gone
-				if(net->connections.size()==1 && video_is_dumb)
-					quit_fast();
+				// Quit when -dedicated -once and all connections are gone
+				if (net->connections.size() == 1 && video_is_dumb)
+          quitting = true;
 			}
 		}
 	}
@@ -587,33 +596,35 @@ void Net_list::check_end_game(bool end_it) {
 	if(!game->terminated && !end_signaled && !game->paused) {
 		if(game->game_end == END_TIME) {
 			time_left = game->game_end_value - gettimer();
-			switch(time_left) { //-roncli 4/29/01 Moved sound effects for countdown into this switch.
+      // 2001-04-29: Moved sound effects for countdown into this
+      // switch. -- roncli
+			switch(time_left) {
 				case 6000:
-					{ Sfx stmp(sons.minute, 0, 0, -1, 11025); }
+          sons.minute->play(0, -1, 11025);
 					break;
 				case 3000:
-					{ Sfx stmp(sons.thirty, 0, 0, -1, 11025); }
+					sons.thirty->play(0, -1, 11025);
 					break;
 				case 2000:
-					{ Sfx stmp(sons.twenty, 0, 0, -1, 11025); }
+					sons.twenty->play(0, -1, 11025);
 					break;
 				case 1000:
-					{ Sfx stmp(sons.ten, 0, 0, -1, 11025); }
+					sons.ten->play(0, -1, 11025);
 					break;
 				case 500:
-					{ Sfx stmp(sons.five, 0, 0, -1, 11025); }
+					sons.five->play(0, -1, 11025);
 					break;
 				case 400:
-					{ Sfx stmp(sons.four, 0, 0, -1, 11025); }
+					sons.four->play(0, -1, 11025);
 					break;
 				case 300:
-					{ Sfx stmp(sons.three, 0, 0, -1, 11025); }
+					sons.three->play(0, -1, 11025);
 					break;
 				case 200:
-					{ Sfx stmp(sons.two, 0, 0, -1, 11025); }
+					sons.two->play(0, -1, 11025);
 					break;
 				case 100:
-					{ Sfx stmp(sons.one, 0, 0, -1, 11025); }
+					sons.one->play(0, -1, 11025);
 					break;
 			}
 			switch(time_left) {
@@ -626,7 +637,7 @@ void Net_list::check_end_game(bool end_it) {
 				case 300:	
 				case 200:	
 				case 100:	
-					sprintf(st, ST_SECONDSREMAINING, time_left/100);
+					sprintf(st, "%i seconds remaining!", time_left/100);
 					message(-1, st);
 					break;
 			}
@@ -655,18 +666,24 @@ void Net_list::check_end_game(bool end_it) {
 				char unit[64];
 				int freq_change;
 				switch(game->game_end) {
-					case END_FRAG: strcpy(unit, ST_FRAG); freq_change = 100 * remaining; break;
-					case END_POINTS: strcpy(unit, ST_POINT); freq_change = (int)(0.01 * remaining); break;
-					case END_LINES: strcpy(unit, ST_LINE); freq_change = 10 * remaining; break;
+					case END_FRAG:
+            strcpy(unit, "frag"); freq_change = 100 * remaining;
+            break;
+					case END_POINTS:
+            strcpy(unit, "point"); freq_change = (int)(0.01 * remaining);
+            break;
+					case END_LINES:
+            strcpy(unit, "line"); freq_change = 10 * remaining;
+            break;
 					default: strcpy(unit, "frog"); freq_change = 0; break;
 				}
 				if(remaining!=1)
 					strcat(unit, "s");
 				char st2[256];
-				sprintf(st2, ST_BOBBOBSREMAINING, remaining, unit);
+				sprintf(st2, " is %i %s from victory!", remaining, unit);
 				strcat(st, st2);
 				message(-1, st);
-				{ Sfx stmp(sons.depose4, 0, -300, -1, 22500 - freq_change); }
+				sons.depose4->play(-300, -1, 22500 - freq_change);
 			}
 		}
 	}
@@ -690,32 +707,32 @@ void Net_list::check_end_game(bool end_it) {
 	if(could_end)
 		if(draw) {
 			if(something_changed || (game->game_end==END_TIME && time_left==0)) {
-				//Drawn at a total higher or equal to end_value: suspense!
-				//  or maybe timer just elapsed and the game is drawn
-				//  (still suspense! :))
-				sprintf(st, ST_GAMETIED);
+				// Drawn at a total higher or equal to end_value: suspense! Or
+				// maybe timer just elapsed and the game is drawn (still
+				// suspense! :))
+				sprintf(st, "Game tied!");
 				message(-1, st);
-				{ Sfx stmp(sons.levelup, 0, 0, -1, 18050); }
-				{ Sfx stmp(sons.levelup, 0, 0, -1, 18100); }
-				{ Sfx stmp(sons.levelup, 0, 0, -1, 18150); }
+				sons.levelup->play(0, -1, 18050);
+				sons.levelup->play(0, -1, 18100);
+				sons.levelup->play(0, -1, 18150);
 			}
 		}
 		else
-			should_end=true;
+			should_end = true;
 
 	if(!end_it) {
-		//Don't signal the end of the game if it's not a good time
-		//  (i.e. we're in the middle of a survivor round)
-		should_end=false;
+		// Don't signal the end of the game if it's not a good time
+		// (i.e. we're in the middle of a survivor round)
+		should_end = false;
 	}
 	if(!winner_signaled && game->terminated && all_gone()) {
-		//Winner found for the first time, declare winner
-		winner_signaled=true;
-		const char *team="none";
+		// Winner found for the first time, declare winner.
+		winner_signaled = true;
+		const char *team = "none";
 		if(score.team_stats[leading_team].stats[CS::SCORE].get_value()) {
 			char st[256];
 			team2name(leading_team, st);
-			strcat(st, ST_WINSGAME);
+			strcat(st, " wins the game!");
 			message(-1, st);
 			team=log_team(leading_team);
 		}
@@ -723,21 +740,6 @@ void Net_list::check_end_game(bool end_it) {
 		log.add(Packet_serverlog::Var("winning_team", team));
 		if(game->net_server)
 			game->net_server->record_packet(&log);
-/*		for(int i=0; i<MAXPLAYERS; i++) {
-			Canvas *c=get(i);
-			if(c) {
-				int total_cleared=c->stats[CS::LINESTOT].get_value();
-				int total_sent=0;
-				int s;
-				for(s=CS::CLEAR01; s<CS::CLEARMORE; s++)
-					total_sent+=(s-CS::CLEAR00)*c->stats[s].get_value();
-				for(s=CS::CLEAR14; s<CS::CLEAR20; s++)
-					total_sent+=(s-CS::CLEAR14+14)*c->stats[s].get_value();
-				char st[256];
-				sprintf(st, "%s: %.2f", c->name, total_sent*100.0/total_cleared);
-				message(c->color, st);
-			}
-		}*/
 	}
 	if(game->server)
 		if(should_end)
@@ -751,8 +753,8 @@ void Net_list::check_end_game(bool end_it) {
 			reason="manual";
 		game->removepacket();
 		game->endgame();
-		message(-1, ST_GAMEEND);
-		Sfx stmp(sons.start, 0, -300, 0, 11025);
+		message(-1, "·2 Game terminates.");
+    sons.start->play(-300, 0, 11025);
 		Packet_serverlog log("playing_end_signal");
 		log.add(Packet_serverlog::Var("reason", reason));
 		if(game->net_server)
@@ -876,8 +878,8 @@ bool Net_list::check_first_frag() {
 	if(alive_team!=-1)
 		team2name(alive_team, st1);
 	else
-		strcpy(st1, ST_NOBODY);
-	sprintf(st, ST_BOBWINSROUND, st1);
+		strcpy(st1, "Nobody");
+	sprintf(st, "%s wins the round!", st1);
 	if(syncpoint==Canvas::LAST) {
 		if(competitive()) {
 			if(!game->valid_frag) {
@@ -931,7 +933,7 @@ void Net_list::team2name(Byte team, char *st) {
 	if(count==1)
 		strcpy(st, c2->name);
 	else
-		sprintf(st, ST_BOBTEAM, team_name[team]);
+		sprintf(st, "%s team", team_name[team]);
 }
 
 void Net_list::update_team_names() {
@@ -1102,7 +1104,7 @@ void Net_list::check_pause() {
 	if(game->delay_start && game->delay_start != 500) {
 		game->delay_start--;
 		if(game->delay_start == 0) {
-			message(-1, ST_GAMESTARTNOW);
+			message(-1, "·2 Game starts!");
 			game->paused = false;
 		}
 	}
@@ -1193,10 +1195,9 @@ void Net_list::check_stat() {
 			Canvas *c=get(p->player);
 			if(c && !c->wait_download) {
 				if(!c->islocal()) {
-					for(int i=0; i<p->net_stats.size(); i++) {
-						Net_stat *ns=p->net_stats[i];
-						c->stats[ns->st].set_value(ns->value);
-					}
+					vector<Net_stat*>::const_iterator it;
+					for (it = p->net_stats.begin(); it != p->net_stats.end(); ++it)
+						c->stats[(*it)->st].set_value((*it)->value);
 					const int linescur = c->stats[CS::LINESCUR].get_value();
 					if(linescur) {
 						// adjust level considering game settings and the number of lines cleared
@@ -1218,10 +1219,9 @@ void Net_list::check_stat() {
 	{
 		Packet_gamestat *p=(Packet_gamestat *) game->peekpacket(P_GAMESTAT);
 		if(p) {
-			for(int i=0; i>p->net_stats.size(); i++) {
-				Net_stat *ns=p->net_stats[i];
-				*(game->stats[ns->st].get_address())=ns->value;
-			}
+			vector<Net_stat*>::const_iterator it;
+			for (it = p->net_stats.begin(); it != p->net_stats.end(); ++it)
+				*(game->stats[(*it)->st].get_address()) = (*it)->value;
 			game->removepacket();
 		}
 	}
@@ -1247,7 +1247,7 @@ void Net_list::drop_player(Packet_dropplayer *p, bool chat) {
 		return;
 
 	if(chat) {
-		sprintf(st, ST_BOBWASDROP, c->name);
+		sprintf(st, "%s was dropped by server!", c->name);
 		message(-1, st);
 	}
 
@@ -1364,8 +1364,7 @@ void Net_list::check_player() { // check for player joins
 void Net_list::check_admin() {
 	if(!game->server)
 		return;
-	int co;
-	for(co=0; co<net->connections.size(); co++) {
+	for (int co = 0; co < static_cast<int>(net->connections.size()); ++co) {
 		Net_connection *nc=net->connections[co];
 		if(!nc->packet_based && nc->incoming->size()) {
 			Byte *buf=nc->incoming->get();
@@ -1398,44 +1397,42 @@ void Net_list::check_admin() {
 }
 
 bool Net_list::accept_connection(Net_connection *nc) {
-	if(nc==game->loopback_connection)
+	if (nc == game->loopback_connection)
 		return true;
-	bool ret=true;
-	int i;
-	for(i=0; i<deny_list.size(); i++) {
-		IP_addr *ip=deny_list[i];
-		IP_addr c(nc->address());
-		if(*ip>=c) {
-			ret=false;
+
+	bool ret = true;
+	IP_addr ip_conn(nc->address());
+	vector<IP_addr*>::iterator it;
+	for (it = deny_list.begin(); it != deny_list.end(); ++it)
+		if (**it >= ip_conn) {
+			ret = false;
 			break;
 		}
-	}
-	for(i=0; i<allow_list.size(); i++) {
-		IP_addr *ip=allow_list[i];
-		IP_addr c(nc->address());
-		if(*ip>=c) {
-			ret=true;
+
+	for (it = allow_list.begin(); it != allow_list.end(); ++it)
+		if (**it >= ip_conn) {
+			ret = true;
 			break;
 		}
-	}
+
 	return ret;
 }
 
 void Net_list::client_deconnect(Net_connection *nc) {
-	int i;
-	//Clean up command cache
-	for(i=0; i<cmd_cache.size(); i++) {
-		if(cmd_cache[i]->nc == nc) {
-			//Remove cache entry
-			delete cmd_cache[i];
-			cmd_cache.remove(i);
-			i--;
-		}
+	// Clean up command cache
+	vector<Lastline*>::iterator it = cmd_cache.begin();
+	while (it != cmd_cache.end()) {
+		if ((*it)->nc == nc) {
+			delete *it;
+			it = cmd_cache.erase(it);
+		} else
+			++it;
 	}
-	//Clean up watchers
-	for(i=0; i<MAXPLAYERS; i++) {
-		Canvas *c=get(i);
-		if(c)
+
+	// Clean up watchers
+	for (int i = 0; i < MAXPLAYERS; ++i) {
+		Canvas* c = get(i);
+		if (c)
 			c->remove_watcher(nc);
 	}
 }
@@ -1473,37 +1470,38 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 	else {
 		params[0]=0;
 	}
-	int i;
-	if(!cmd[0]) {
-		//Repeat last command
-		for(i=0; i<cmd_cache.size(); i++)
-			if(cmd_cache[i]->nc == nc) {
-				strcpy(cmd, cmd_cache[i]->cmd);
-				if(!params[0])
-					strcpy(params, cmd_cache[i]->params);
+	if (!cmd[0]) {
+		// Repeat last command
+		vector<Lastline*>::iterator it;
+		for (it = cmd_cache.begin(); it != cmd_cache.end(); ++it)
+			if ((*it)->nc == nc) {
+				strcpy(cmd, (*it)->cmd);
+				if (!params[0])
+					strcpy(params, (*it)->params);
 			}
 	}
-	if(nc && strcmp(cmd, "admin") && strcmp(cmd, "setpasswd")) {
-		//Update cache if real connection and command not admin or
-		//  setpasswd
-		for(i=0; i<cmd_cache.size(); i++) {
-			if(cmd_cache[i]->nc == nc) {
-				//Update existing cache entry
-				cmd_cache[i]->set(cmd, params);
+	if (nc && strcmp(cmd, "admin") && strcmp(cmd, "setpasswd")) {
+		vector<Lastline*>::iterator it;
+
+		// Update cache if real connection and command not admin or
+		// setpasswd
+		for (it = cmd_cache.begin(); it != cmd_cache.end(); ++it)
+			if ((*it)->nc == nc) {
+				// Update existing cache entry
+				(*it)->set(cmd, params);
 				break;
 			}
-		}
-		if(i == cmd_cache.size()) {
-			//Not found, create new cache entry
-			cmd_cache.add(new Lastline(nc, cmd, params));
-		}
+
+		// If not found, create a new cache entry
+		if (it == cmd_cache.end())
+			cmd_cache.push_back(new Lastline(nc, cmd, params));
 	}
-	bool trusted=false;
-	if(!nc)
-		trusted=true;
-	if(nc && nc->trusted)
-		trusted=true;
-	if(!strcmp(cmd, "help")) {
+	bool trusted = false;
+	if (!nc)
+		trusted = true;
+	if (nc && nc->trusted)
+		trusted = true;
+	if (!strcmp(cmd, "help")) {
 		send_msg(nc, "/help                 This help text.");
 		send_msg(nc, "/admin <password>     Turn on administrator mode.");
 		send_msg(nc, "/setpasswd [password] Set admin password or disable remote admin.");
@@ -1561,7 +1559,7 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 				}
 				Dword frag, death;
 				if(score.player_count[team]) {
-					for(i=0; i<MAXPLAYERS; i++) {
+					for(int i=0; i<MAXPLAYERS; i++) {
 						Byte player=score.order[i];
 						Canvas *c=get(player);
 						if(c && c->color==team) {
@@ -1628,9 +1626,9 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 	}
 	if(!strcmp(cmd, "list") && trusted) {
 		//-1 so we don't count loopback connection
-		send_msg(nc, "Total connections: %i", net->connections.size()-1);
-		for(i=0; i<net->connections.size(); i++) {
-			Net_connection *nc2=net->connections[i];
+		send_msg(nc, "Total connections: %i", net->connections.size() - 1);
+		for(int i = 0; i < static_cast<int>(net->connections.size()); ++i) {
+			Net_connection* nc2 = net->connections[i];
 			if(nc2) {
 				char st[256];
 				if(nc2 == game->loopback_connection)
@@ -1685,8 +1683,8 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 		}
 		Dword ad=Net::dotted2addr(addr);
 		if(ad!=INADDR_NONE) {
-			for(i=0; i<net->connections.size(); i++) {
-				Net_connection *nc2=net->connections[i];
+			for (int i = 0; i < static_cast<int>(net->connections.size()); ++i) {
+				Net_connection* nc2 = net->connections[i];
 				if(game && nc2==game->loopback_connection)
 					continue; //Don't ever drop loopback connection
 				if(nc2->address()==ad) {
@@ -1703,7 +1701,7 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 		}
 		if(!dropped) {
 			//Haven't found a connection to drop, look for a player
-			for(i=0; i<MAXPLAYERS; i++) {
+			for(int i=0; i<MAXPLAYERS; i++) {
 				Canvas *c=get(i);
 				if(c && !strcasecmp(c->name, params)) {
 					send_msg(nc, "Dropping player %s", c->name);
@@ -1716,69 +1714,65 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 			send_msg(nc, "No match");
 	}
 	if(!strcmp(cmd, "acceptplayers")) {
-		if(params[0] && trusted) {
-			i=atoi(params);
-			game->server_accept_player=i? 0:1;
-		}
+		if(params[0] && trusted)
+			game->server_accept_player = atoi(params) ? 0 : 1;
 		send_msg(nc, "Accept player: %s", game->server_accept_player? "off":"on");
 	}
 	if(!strcmp(cmd, "maxplayers")) {
 		if(params[0] && trusted) {
-			i=atoi(params);
-			if(i) {
-				if(i>MAXPLAYERS)
-					i=MAXPLAYERS;
-				if(i<1)
-					i=1;
+			int i = atoi(params);
+			if (i) {
+				if (i > MAXPLAYERS)
+					i = MAXPLAYERS;
+				if (i < 1)
+					i = 1;
 			}
-			game->server_max_players=i;
+			game->server_max_players = i;
 		}
 		send_msg(nc, "Max players: %i", game->server_max_players);
 	}
 	if(!strcmp(cmd, "minplayers")) {
 		if(params[0] && trusted) {
-			i=atoi(params);
-			if(i) {
-				if(i>MAXPLAYERS)
-					i=MAXPLAYERS;
-				if(i<1)
-					i=1;
+			int i = atoi(params);
+			if (i) {
+				if (i > MAXPLAYERS)
+					i = MAXPLAYERS;
+				if (i < 1)
+					i = 1;
 			}
-			game->server_min_players=i;
+			game->server_min_players = i;
 		}
 		send_msg(nc, "Min players: %i", game->server_min_players);
 	}
 	if(!strcmp(cmd, "maxteams")) {
 		if(params[0] && trusted) {
-			i=atoi(params);
-			if(i) {
-				if(i>MAXTEAMS)
-					i=MAXTEAMS;
-				if(i<1)
-					i=1;
+			int i = atoi(params);
+			if (i) {
+				if (i > MAXTEAMS)
+					i = MAXTEAMS;
+				if (i < 1)
+					i = 1;
 			}
-			game->server_max_teams=i;
+			game->server_max_teams = i;
 		}
 		send_msg(nc, "Max teams: %i", game->server_max_teams);
 	}
 	if(!strcmp(cmd, "minteams")) {
 		if(params[0] && trusted) {
-			i=atoi(params);
-			if(i) {
-				if(i>MAXTEAMS)
-					i=MAXTEAMS;
-				if(i<1)
-					i=1;
+			int i = atoi(params);
+			if (i) {
+				if (i > MAXTEAMS)
+					i = MAXTEAMS;
+				if (i < 1)
+					i = 1;
 			}
-			game->server_min_teams=i;
+			game->server_min_teams = i;
 		}
 		send_msg(nc, "Min teams: %i", game->server_min_teams);
 	}
 	if(!strcmp(cmd, "acceptconnects")) {
-		if(params[0] && trusted) {
-			i=atoi(params);
-			game->server_accept_connection=i? 0:1;
-		}
+		if (params[0] && trusted)
+			game->server_accept_connection = atoi(params) ? 0 : 1;
 		send_msg(nc, "Accept connection: %s", game->server_accept_connection? "off":"on");
 	}
 	if(!strcmp(cmd, "ppmlimit")) {
@@ -1802,17 +1796,13 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 			send_msg(nc, "Lag limit: disabled");
 	}
 	if(!strcmp(cmd, "autorestart")) {
-		if(params[0] && trusted) {
-			i=atoi(params);
-			game->auto_restart=i? true:false;
-		}
+		if (params[0] && trusted)
+			game->auto_restart = atoi(params) ? true : false;
 		send_msg(nc, "Auto restart: %s", game->auto_restart? "on":"off");
 	}
 	if(!strcmp(cmd, "public")) {
-		if(params[0] && trusted) {
-			i=atoi(params);
-			game->game_public=i? true:false;
-		}
+		if (params[0] && trusted)
+			game->game_public = atoi(params) ? true : false;
 		send_msg(nc, "Public game: %s", game->game_public? "on":"off");
 	}
 	if(!strcmp(cmd, "autodrop")) {
@@ -1826,17 +1816,13 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 			send_msg(nc, "Auto drop: disabled");
 	}
 	if(!strcmp(cmd, "allowstart")) {
-		if(params[0] && trusted) {
-			i=atoi(params);
-			game->net_server->allow_start=i? true:false;
-		}
+		if (params[0] && trusted)
+			game->net_server->allow_start = atoi(params) ? true : false;
 		send_msg(nc, "Allow start: %s", game->net_server->allow_start? "on":"off");
 	}
 	if(!strcmp(cmd, "allowpause")) {
-		if(params[0] && trusted) {
-			i=atoi(params);
-			game->net_server->allow_pause=i? true:false;
-		}
+		if (params[0] && trusted)
+			game->net_server->allow_pause = atoi(params) ? true : false;
 		send_msg(nc, "Allow pause: %s", game->net_server->allow_pause? "on":"off");
 	}
 	if(!strcmp(cmd, "pause")) {
@@ -1845,14 +1831,14 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 		game->net_server->clientpause(&p);
 	}
 	if(!strcmp(cmd, "quit") && trusted) {
-		quit_fast();
+    quitting = true;
 		send_end_signal(false);
 		send_msg(nc, "Shutting down server");
 	}
 	if(!strcmp(cmd, "stack") && trusted) {
 		send_msg(nc, "Dumping game stack. overmind framecount is %i:", overmind.framecount);
 		send_msg(nc, "stack size=%i:", game->stack.size());
-		for(int j=0; j<game->stack.size(); j++) {
+		for (int j = 0; j < static_cast<int>(game->stack.size()); ++j) {
 			Packet *p = game->stack[j];
 			if(net && net->net_param) {
 				char st[4096];
@@ -1863,8 +1849,8 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 	}
 	if(!strcmp(cmd, "in") && trusted) {
 		int i, c=0;
-		for(i=0; i<net->connections.size(); i++) {
-			Net_connection *nc2=net->connections[i];
+		for(i = 0; i < static_cast<int>(net->connections.size()); ++i) {
+			Net_connection* nc2 = net->connections[i];
 			if(nc2 && nc2!=game->loopback_connection && nc2->packet_based && nc2->joined) {
 				char st[64];
 				net->stringaddress(st, nc2->address(), nc2->getdestport());
@@ -1877,8 +1863,8 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 	if(!strcmp(cmd, "netstat") && trusted) {
 		int i;
 		send_msg(nc, "Incoming (min, max, nz-avg):");
-		for(i=0; i<net->connections.size(); i++) {
-			Net_connection *nc2=net->connections[i];
+		for (i = 0; i < static_cast<int>(net->connections.size()); ++i) {
+			Net_connection* nc2 = net->connections[i];
 			if(nc2 && nc2!=game->loopback_connection) {
 				char st[64];
 				net->stringaddress(st, nc2->address(), nc2->getdestport());
@@ -1887,8 +1873,8 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 		}
 		send_msg(nc, "");
 		send_msg(nc, "Outgoing (min, max, nz-avg):");
-		for(i=0; i<net->connections.size(); i++) {
-			Net_connection *nc2=net->connections[i];
+		for (i = 0; i < static_cast<int>(net->connections.size()); ++i) {
+			Net_connection* nc2 = net->connections[i];
 			if(nc2 && nc2!=game->loopback_connection) {
 				char st[64];
 				net->stringaddress(st, nc2->address(), nc2->getdestport());
@@ -1899,57 +1885,55 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 	bool allow=!strcmp(cmd, "allow");
 	bool deny=!strcmp(cmd, "deny");
 	if((allow || deny) && trusted) {
-		int i;
 		char st[64];
 		if(params[0]) {
 			IP_addr ad(params);
-			if(ad.ip || ad.mask) {
-				IP_addr *ip;
-				bool would_be_denied=false;
-				for(i=0; i<deny_list.size(); i++) {
-					ip=deny_list[i];
-					if(ad>*ip) {
-						if(allow) {
-							ip->print(st);
+			if (ad.ip || ad.mask) {
+				bool would_be_denied = false;
+				vector<IP_addr*>::iterator it = deny_list.begin();
+				while (it != deny_list.end()) {
+					if (ad > **it) {
+						if (allow) {
+							(*it)->print(st);
 							send_msg(nc, "%15.15s no longer denied", st);
 						}
-						delete ip;
-						deny_list.remove(i);
-						i--;
-					}
-					if(*ip>=ad) {
-						would_be_denied=true;
-						if(deny && *ip>=ad) {
-							deny=false;
+						delete *it;
+						it = deny_list.erase(it);
+					} else {
+						would_be_denied = true;
+						if(deny && **it >= ad) {
+							deny = false;
 							break;
 						}
+						++it;
 					}
 				}
-				for(i=0; i<allow_list.size(); i++) {
-					ip=allow_list[i];
-					if(ad>*ip) {
-						if(deny) {
-							ip->print(st);
+				it = allow_list.begin();
+				while (it != allow_list.end()) {
+					if (ad > **it) {
+						if (deny) {
+							(*it)->print(st);
 							send_msg(nc, "%15.15s no longer allowed", st);
 						}
-						delete ip;
-						allow_list.remove(i);
-						i--;
-					}
-					if(allow && *ip>=ad) {
-						allow=false;
-						break;
+						delete *it;
+						it = allow_list.erase(it);
+					} else {
+						if (allow) {
+							allow = false;
+							break;
+						}
+						++it;
 					}
 				}
 				if(deny) {
-					ip=new IP_addr(ad);
-					deny_list.add(ip);
+					IP_addr* ip = new IP_addr(ad);
+					deny_list.push_back(ip);
 					ip->print(st);
 					send_msg(nc, "%15.15s denied", st);
 				}
 				if(allow && would_be_denied) {
-					ip=new IP_addr(ad);
-					allow_list.add(ip);
+					IP_addr* ip = new IP_addr(ad);
+					allow_list.push_back(ip);
 					ip->print(st);
 					send_msg(nc, "%15.15s allowed", st);
 				}
@@ -1957,19 +1941,18 @@ void Net_list::got_admin_line(const char *line, Net_connection *nc) {
 		}
 		else {
 			send_msg(nc, "Deny list:");
-			for(i=0; i<deny_list.size(); i++) {
-				IP_addr *ip=deny_list[i];
-				ip->print(st);
+			vector<IP_addr*>::iterator it;
+			for (it = deny_list.begin(); it != deny_list.end(); ++it) {
+				(*it)->print(st);
 				send_msg(nc, "%15.15s", st);
 			}
-			send_msg(nc, "Total: %i", i);
+			send_msg(nc, "Total: %i", deny_list.size());
 			send_msg(nc, "Allow list:");
-			for(i=0; i<allow_list.size(); i++) {
-				IP_addr *ip=allow_list[i];
-				ip->print(st);
+			for (it = allow_list.begin(); it != allow_list.end(); ++it) {
+				(*it)->print(st);
 				send_msg(nc, "%15.15s", st);
 			}
-			send_msg(nc, "Total: %i", i);
+			send_msg(nc, "Total: %i", allow_list.size());
 		}
 	}
 }

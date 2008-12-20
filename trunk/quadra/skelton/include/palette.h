@@ -23,55 +23,44 @@
 
 #include "config.h"
 
-#ifdef UGS_DIRECTX
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
 #include <stdio.h>
 #include "types.h"
 #include "error.h"
 #include "image.h"
-#include "utils.h"
-
-#ifndef UGS_DIRECTX
-typedef struct {
-  Byte peRed, peGreen, peBlue, peFlags;
-} PALETTEENTRY;
-#endif
 
 class Palette {
 private:
   friend class Fade;
   friend class Remap;
-  PALETTEENTRY pal[256];
-public:
+  friend class Video;
+  SDL_Color pal[256];
   int size;
+public:
   Palette() {
-    mset(pal, 0, sizeof(pal));
+    memset(pal, 0, sizeof(pal));
     size=256;
   }
   Palette(const Image& raw) {
-    mset(pal, 0, sizeof(pal));
+    memset(pal, 0, sizeof(pal));
     load(raw);
   }
   void set_size(int s) {
     size=s;
   }
   void load(const Image& raw);
-  void set();
   Byte r(Byte c) {
-    return pal[c].peRed;
+    return pal[c].r;
   }
   Byte g(Byte c) {
-    return pal[c].peGreen;
+    return pal[c].g;
   }
   Byte b(Byte c) {
-    return pal[c].peBlue;
+    return pal[c].b;
   }
   void setcolor(Byte c, Byte r, Byte g, Byte b) {
-    pal[c].peRed=r;
-    pal[c].peGreen=g;
-    pal[c].peBlue=b;
+    pal[c].r=r;
+    pal[c].g=g;
+    pal[c].b=b;
   }
 };
 

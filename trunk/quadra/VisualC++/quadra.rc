@@ -1,5 +1,4 @@
-#define WIN32_LEAN_AND_MEAN
-#include "windows.h"
+#include "winver.h"
 #include "version.h"
 
 WINDOW.ICO              ICON    DISCARDABLE     "..\\images\\window.ico"

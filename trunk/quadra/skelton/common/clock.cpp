@@ -18,13 +18,12 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "clock.h"
+
 #include <time.h>
 #include <sys/timeb.h>
 #include <stdio.h>
-#include "clock.h"
 #include "config.h"
-
-RCSID("$Id$")
 
 Clock::Clock() {
 }
@@ -51,15 +50,14 @@ char *Clock::time2char(int time) {
 char *Clock::absolute_time() {
 	/* FIXME: shouldn't we rather use asctime(3)? */
 	static char st[64];
-#ifdef UGS_LINUX
-	struct timeb time_info;
-	ftime(&time_info);
-	int tz=time_info.timezone;
-#endif
-#ifdef UGS_DIRECTX
+#ifdef WIN32
 	struct _timeb time_info;
 	_ftime(&time_info);
 	int tz=_timezone;
+#else
+	struct timeb time_info;
+	ftime(&time_info);
+	int tz=time_info.timezone;
 #endif
 	const time_t ti=get_time();
 	tm *t = localtime(&ti);

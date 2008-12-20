@@ -18,9 +18,36 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <assert.h>
 #include "image_png.h"
 
-RCSID("$Id$")
+SDL_Surface* Image::new_surface() const {
+  SDL_Surface* surface =
+    SDL_CreateRGBSurface(SDL_SWSURFACE, width(), height(), 8, 0, 0, 0, 0);
+  assert(surface);
+
+  int retval = SDL_LockSurface(surface);
+  assert(retval == 0);
+
+  for (int row = 0; row < height(); ++row)
+    memcpy(static_cast<char*>(surface->pixels) + (row * surface->pitch),
+           pic() + (row * width()), width());
+
+  SDL_UnlockSurface(surface);
+
+  SDL_Color* colors = new SDL_Color[palettesize()];
+  const Byte* palette = pal();
+  for (int i = 0; i < palettesize(); ++i) {
+    colors[i].r = palette[i * 3];
+    colors[i].g = palette[i * 3 + 1];
+    colors[i].b = palette[i * 3 + 2];
+  }
+
+  SDL_SetColors(surface, colors, 0, palettesize());
+  delete[] colors;
+
+  return surface;
+}
 
 static void res_read_func(png_structp png,
                           png_bytep data,
@@ -39,15 +66,15 @@ Png::Png(Res& res) : w(0), h(0), palsize(0), pal_(NULL), pic_(NULL) {
 
   png = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if(!png)
-    (void)new Error("Unable to initialize libpng");
+    fatal_msgbox("Unable to initialize libpng");
 
   info = png_create_info_struct(png);
   if(!info)
-    (void)new Error("Unable to create info of libpng");
+    fatal_msgbox("Unable to create info of libpng");
 
   end_info = png_create_info_struct(png);
   if(!end_info)
-    (void)new Error("Unable to create end_info of libpng");
+    fatal_msgbox("Unable to create end_info of libpng");
 
   png_set_read_fn(png, &res, res_read_func);
 
@@ -57,19 +84,19 @@ Png::Png(Res& res) : w(0), h(0), palsize(0), pal_(NULL), pic_(NULL) {
   h = png_get_image_height(png, info);
 
   if(png_get_bit_depth(png, info) != 8)
-    (void)new Error("png is not 8 bit depth");
+    fatal_msgbox("png is not 8 bit depth");
 
   if(png_get_color_type(png, info) != PNG_COLOR_TYPE_PALETTE)
-    (void)new Error("png is not paletted");
+    fatal_msgbox("png is not paletted");
 
   if(!png_get_valid(png, info, PNG_INFO_PLTE))
-    (void)new Error("png palette info chunk missing");
+    fatal_msgbox("png palette info chunk missing");
 
   png_get_PLTE(png, info, &pngpal, reinterpret_cast<int*>(&palsize));
 
   pal_ = new Byte[palsize * 3];
   if(!pal_)
-    (void)new Error("out of memory");
+    fatal_msgbox("out of memory");
 
   for(i = 0; i < palsize; i++)
     reinterpret_cast<png_color*>(pal_)[i] = pngpal[i];

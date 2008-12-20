@@ -18,97 +18,50 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include <assert.h>
+#include "sprite.h"
+
 #include "types.h"
 #include "bitmap.h"
 #include "video.h"
-#include "sprite.h"
-#include "byteorder.h"
-
-RCSID("$Id$")
+#include "SDL_endian.h"
 
 using std::max;
 
 #define FONT_SIZE (141-32)
 
-void Sprite::set_hotspot(const int hx, const int hy) {
-	if(hx == CENTER)
-		hot_x = width>>1;
-	else
-		if(hx == CORNER)
-			hot_x = width-1;
-		else
-			hot_x = hx;
-	if(hy == CENTER)
-		hot_y = height>>1;
-	else
-		if(hy == CORNER)
-			hot_y = height-1;
-		else
-			hot_y = hy;
-}
-
-Sprite::Sprite(const Bitmap& b, const int hx, const int hy, const bool dx):
-	Bitmap(b[0], b.width, b.height, b.realwidth, COPY)
-{
-	set_hotspot(hx, hy);
-}
-
-void Sprite::draw(const Bitmap& d, const int dx, const int dy) const {
-	int tx, ty;
-	tx = dx-hot_x;
-	ty = dy-hot_y;
-	if(d.clip(tx, ty, this))
-		return;
-	for(int y=clip_y1; y<=clip_y2; y++) {
-		for(int i=clip_x1; i<=clip_x2; i++) {
-			Byte pel = *(operator[](y-ty)+(i-tx));
-			// optimization since the mask is always 0
-			// because of Svgalib
-			if(pel)
-			  d.fast_pel(i, y, pel);
-		}
-	}
-}
-
-void Sprite::draw(const Video_bitmap* d, const int dx, const int dy) const {
-	d->put_sprite(*this, dx, dy);
-}
-
-/*void Sprite::color_draw(const Remap& remap, const Bitmap& d, int dx, int dy) const {
-	int x1, y1, x2, y2;
-	dx -= hot_x;
-	dy -= hot_y;
-	x1=max(0, dx);
-	x2=min(d.width-1, dx+width-1);
-	y1=max(0, dy);
-	y2=min(d.height-1, dy+height-1);
-	if(x1>=d.width || x2<0 || y1>=d.height || y2<0)
-		return;
-	for(int y(y1); y<=y2; y++)
-		for(int i=x1; i<=x2; i++) {
-			Byte pel = *(operator[](y-dy)+(i-dx));
-			if(pel != mask)
-				d.fast_pel(i, y, remap.map[pel]);
-		}
-}*/
-
 Fontdata::Fontdata(Res &res, int s) {
-	Bitmap *tmp;
 	shrink = s;
 	int w, h, rw;
+  memset(spr, 0, sizeof(spr));
 	for(int i=0; i<FONT_SIZE; i++) {
 		res.read(&w, sizeof(int));
-                w = INTELDWORD(w);
+                w = SDL_SwapLE32(w);
 		if(w != 0) {
 			res.read(&h, sizeof(int));
-                        h = INTELDWORD(h);
+                        h = SDL_SwapLE32(h);
 			res.read(&rw, sizeof(int));
-                        rw = INTELDWORD(rw);
-			tmp = new Bitmap(w, h, rw);
-			res.read((*tmp)[0], rw*h);
-			spr[i] = new Sprite(*tmp, 0, 0, 0);
-			pre_width[i] = max(spr[i]->width - shrink, 3);
-			delete tmp;
+                        rw = SDL_SwapLE32(rw);
+
+      char* buf = new char[h * rw];
+      res.read(buf, h * rw);
+
+      spr[i] = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 8, 0, 0, 0, 0);
+      assert(spr[i]);
+
+      int retval = SDL_LockSurface(spr[i]);
+      assert(retval == 0);
+
+      for (int row = 0; row < h; ++row)
+        memcpy(static_cast<char*>(spr[i]->pixels) + (row * spr[i]->pitch),
+               buf + (row * rw), w);
+
+      SDL_UnlockSurface(spr[i]);
+      SDL_SetColorKey(spr[i], SDL_SRCCOLORKEY, 0);
+
+      delete[] buf;
+
+			pre_width[i] = max(spr[i]->w - shrink, 3);
 		} else {
 			spr[i] = NULL;
 			pre_width[i] = 0;
@@ -117,10 +70,15 @@ Fontdata::Fontdata(Res &res, int s) {
 }
 
 Fontdata::Fontdata(const Fontdata &o) {
+  memset(spr, 0, sizeof(spr));
+
 	for(int i=0; i<FONT_SIZE; i++) {
-		if(o.spr[i]) 
-			spr[i] = new Sprite(*o.spr[i], o.spr[i]->hot_x, o.spr[i]->hot_y);
-		else
+		if(o.spr[i]) {
+		  spr[i] = SDL_CreateRGBSurface(SDL_SWSURFACE, o.spr[i]->w, o.spr[i]->h,
+		                                8, 0, 0, 0, 0);
+      SDL_SetColorKey(spr[i], SDL_SRCCOLORKEY, 0);
+      SDL_BlitSurface(o.spr[i], NULL, spr[i], NULL);
+		} else
 			spr[i] = NULL;
 		pre_width[i] = o.pre_width[i];
 	}
@@ -130,7 +88,7 @@ Fontdata::Fontdata(const Fontdata &o) {
 Fontdata::~Fontdata() {
 	for(int i=0; i<FONT_SIZE; i++)
 		if(spr[i])
-			delete spr[i];
+			SDL_FreeSurface(spr[i]);
 }
 
 int Fontdata::width(const char *m) const {
@@ -235,47 +193,45 @@ void Font::colorize(const Palette& dst, int r, int g, int b, int r2, int g2, int
 
 void Font::remap(const Remap *map) {
 	for(int i=0; i<FONT_SIZE; i++) {
-		Sprite *spr = fdata_original.spr[i];
+		SDL_Surface *spr = fdata_original.spr[i];
 		if(spr) {
-			for(int y=0; y<spr->height; y++)
-				for(int x=0; x<spr->width; x++) {
-					Byte pel = *((*spr)[y]+x);
-					if(pel != 0)
-						fdata.spr[i]->fast_pel(x, y, map->map[pel]);
-				}
+		  int retval = SDL_LockSurface(spr);
+		  assert(retval == 0);
+		  retval = SDL_LockSurface(fdata.spr[i]);
+		  assert(retval == 0);
+
+      Byte* srcpixels = static_cast<Byte*>(spr->pixels);
+      Byte* dstpixels = static_cast<Byte*>(fdata.spr[i]->pixels);
+      for (int row = 0; row < spr->h; ++row)
+        for (int x = 0; x < spr->w; ++x) {
+          Byte pixel = srcpixels[row * spr->pitch + x];
+          if (pixel != 0)
+            dstpixels[row * fdata.spr[i]->pitch + x] = map->map[pixel];
+        }
+
+      SDL_UnlockSurface(fdata.spr[i]);
+      SDL_UnlockSurface(spr);
 		}
 	}
 }
 
-void Font::draw(const char *m, const Bitmap& b, int x, int y) const {
+void Font::draw(const char *m, const Video_bitmap& b, int x, int y) const {
 	int c;
 	if(x == CENTER) {
 		x = (b.width - fdata.width(m)) >> 1;
 	}
-	while(*m) {
-		c = fdata.translate(&m);
-		if(c < 0) {
-			c = 'i'-33;
-		} else {
-			if(fdata.spr[c])
-				fdata.spr[c]->draw(b, x, y);
-		}
-		x += fdata.pre_width[c];
-	}
-}
 
-void Font::draw(const char *m, const Video_bitmap* b, int x, int y) const {
-	int c;
-	if(x == CENTER) {
-		x = (b->width - fdata.width(m)) >> 1;
-	}
+  for (int i = 0; i < 256; ++i)
+    if (fdata.spr[i])
+		video->clone_palette(fdata.spr[i]);
+
 	while(*m) {
 		c = fdata.translate(&m);
 		if(c < 0) {
 			c = 'i'-33;
 		} else {
 			if(fdata.spr[c])
-				fdata.spr[c]->draw(b, x, y);
+				b.put_surface(fdata.spr[c], x, y);
 		}
 		x += fdata.pre_width[c];
 	}

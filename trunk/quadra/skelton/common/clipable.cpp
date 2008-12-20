@@ -17,12 +17,11 @@
  * License along with this library; if not, write to the Free Software
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
-
-#include "array.h"
-#include "bitmap.h"
 #include "clipable.h"
 
-RCSID("$Id$")
+#include <algorithm>
+
+#include "bitmap.h"
 
 using std::max;
 using std::min;
@@ -50,10 +49,7 @@ bool Clipable::clip(const int x, const int y, const int w, const int h) const {
 	return false;
 }
 
-bool Clipable::clip(const int x, const int y, const Bitmap &b) const {
-	return clip(x, y, b.width, b.height);
-}
-
 bool Clipable::clip(const int x, const int y, const Bitmap *b) const {
 	return clip(x, y, b->width, b->height);
 }
+

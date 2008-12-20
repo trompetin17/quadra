@@ -18,16 +18,16 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "zone.h"
+
 #include "inter.h"
 #include "input.h"
 #include "cfgfile.h"
 #include "quadra.h"
 #include "sons.h"
-#include "texte.h"
 #include "canvas.h"
-#include "zone.h"
-
-RCSID("$Id$")
+#include "bloc.h"
+#include "game.h"
 
 Zone_next::~Zone_next() {
 	delete back;
@@ -36,13 +36,13 @@ Zone_next::~Zone_next() {
 Zone_next::Zone_next(Inter* in, const Bitmap& fond, int px, int py, int pw, int ph):
  Zone(in, px, py, pw, ph) {
 	next = NULL;
-	back = new Bitmap(fond[y]+x, w, h, fond.realwidth);
+	back = new Bitmap(fond[y]+x, w, h, fond.surface->pitch);
 }
 
 void Zone_next::draw() {
-	back->draw(video->vb, x, y);
+	video->vb.put_bitmap(*back, x, y);
 	if(next) {
-		next->draw(video->vb,x,y-18);
+		next->draw(video->vb, x, y - 18);
 	}
 }
 
@@ -56,14 +56,13 @@ Zone_small_next::Zone_small_next(Inter* in, const Bitmap& fond, int px, int py):
 }
 
 void Zone_small_next::draw() {
-	back->draw(video->vb, x, y);
+	video->vb.put_bitmap(*back, x, y);
 	if(next) {
 		next->small_draw(video->vb,x,y-6);
 	}
 }
 
 void Zone_canvas_bloc::draw() {
-	canvas->setscreen();
 	canvas->blit_back();
 	canvas->blit_bloc(canvas->bloc_shadow);
 	canvas->blit_bloc(canvas->bloc);
@@ -77,8 +76,9 @@ void Zone_canvas_bloc::draw() {
 Zone_canvas::Zone_canvas(Inter* in, Bitmap& bit, int px, int py, Canvas *can, int pw, int ph, bool small_watch):
 	Zone(in, px, py, pw, ph)
 {
-	fond = new Bitmap(bit[y]+x, w, h, bit.realwidth);
-	screen = Video_bitmap::New(x, y, w, h);
+	fond = new Bitmap(bit[y]+x, w, h, bit.surface->pitch);
+	video->clone_palette(fond->surface);
+	screen = new Video_bitmap(x, y, w, h);
 	canvas = can;
 	if(!small_watch) {
 		znext = new Zone_small_next(in,bit,x+5,2);
@@ -136,7 +136,7 @@ void Zone_combo::draw() {
 Zone_bonus::Zone_bonus(Inter* in, int px, int py, int *v, Canvas *c, const Bitmap& bit, int pw, int ph):
 Zone_watch_int(in, v, px, py, pw, ph) {
 	canvas = c;
-	back = new Bitmap(bit[y]+x, w, h, bit.realwidth);
+	back = new Bitmap(bit[y]+x, w, h, bit.surface->pitch);
 }
 
 Zone_bonus::~Zone_bonus() {
@@ -145,7 +145,7 @@ Zone_bonus::~Zone_bonus() {
 
 void Zone_bonus::draw() {
 	int i;
-	back->draw(video->vb,x,y);
+	video->vb.put_bitmap(*back, x, y);
 	bool first_done=false;
 	for(i=0; i<canvas->bonus; i++) {
 		Byte side=5; //Left and right
@@ -173,12 +173,12 @@ Zone_color_select::Zone_color_select(Inter* in, int *pv, int px, int py, Byte co
 }
 
 void Zone_color_select::draw() {
-	video->vb->hline(y, x, w, 255);
+	video->vb.hline(y, x, w, 255);
 	for(int i=1; i < h-1; i++)
-		video->vb->hline(y+i, x, w, col[last_val]);
-	video->vb->hline(y+h-1, x, w, 0);
-	video->vb->vline(x, y, h, 255);
-	video->vb->vline(x+w-1, y, h, 0);
+		video->vb.hline(y+i, x, w, col[last_val]);
+	video->vb.hline(y+h-1, x, w, 0);
+	video->vb.vline(x, y, h, 255);
+	video->vb.vline(x+w-1, y, h, 0);
 }
 
 Zone_color_select_noclick::Zone_color_select_noclick(Inter* in, int *pv, int px, int py, Byte co[MAXTEAMS]):
@@ -210,7 +210,7 @@ Zone_menu::Zone_menu(Inter* in, Bitmap* fond, const char* b1, int px, int py):
 {
 	bit2_ = bit_;
 
-	bit_ = new Bitmap((*fond)[py]+px, bit2_->width, bit2_->height, fond->realwidth);
+	bit_ = new Bitmap((*fond)[py]+px, bit2_->width, bit2_->height, fond->surface->pitch);
 	actual = bit_;
 	del_bit = 1;
 	kb_focusable = true;
@@ -224,58 +224,55 @@ Zone_menu::~Zone_menu() {
 }
 
 void Zone_menu::entered() {
-	Sfx stmp(sons.point, 0, -2000, 0, 22000+ugs_random.rnd(2047));
+  sons.point->play(-2000, 0, 22000 + ugs_random.rnd(2047));
 	Zone_bitmap::entered();
 }
 
 void Zone_menu::clicked(int quel) {
-	Sfx stmp(sons.click, 0, -1000, 0, 14000+ugs_random.rnd(511));
+  sons.click->play(-1000, 0, 14000 + ugs_random.rnd(511));
 	Zone_bitmap::clicked(quel);
 }
 
 void Zone_listbox2::clicked(int quel) {
-	Sfx stmp(sons.enter, 0, -800, 0, 28000+ugs_random.rnd(1023));
+  sons.enter->play(-800, 0, 28000 + ugs_random.rnd(1023));
 	Zone_listbox::clicked(quel);
 }
 
 void Zone_state_text2::clicked(int quel) {
-	Sfx stmp(sons.enter, 0, -800, 0, 26000+ugs_random.rnd(1023));
+  sons.enter->play(-800, 0, 26000 + ugs_random.rnd(1023));
 	Zone_state_text::clicked(quel);
 	notify_all();
 }
 
 void Zone_text_select2::entered() {
-	Sfx stmp(sons.enter, 0, -1000, 0, 22000+ugs_random.rnd(1023));
+  sons.enter->play(-1000, 0, 22000 + ugs_random.rnd(1023));
 	Zone_text_select::entered();
 }
 
 void Zone_text_select2::clicked(int quel) {
-	Sfx stmp(sons.glass, 0, -200, 0, 14000+ugs_random.rnd(511));
+  sons.glass->play(-200, 0, 14000 + ugs_random.rnd(511));
 	Zone_text_select::clicked(quel);
 }
 
 void Zone_text_button2::entered() {
-	Sfx stmp(sons.enter, 0, -1000, 0, 22000+ugs_random.rnd(1023));
+  sons.enter->play(-1000, 0, 22000 + ugs_random.rnd(1023));
 	Zone_text_button::entered();
 }
 
 void Zone_text_button2::clicked(int quel) {
-	Sfx stmp(sons.glass, 0, -200, 0, 14000+ugs_random.rnd(511));
+  sons.glass->play(-200, 0, 14000 + ugs_random.rnd(511));
 	Zone_text_button::clicked(quel);
 }
 
 Zone_set_key::Zone_set_key(Inter* in, int *pv, int px, int py):
 	Zone_state_text(in, pv, px, py) {
-	for(int i=0; i<256; i++) {
-		if(keynames[i][0] == 0)
-			add_string(ST_UNKNOWN);
-		else
-			add_string(keynames[i]);
+	for(int i = SDLK_FIRST; i < SDLK_LAST; ++i) {
+    char *keyname = SDL_GetKeyName(static_cast<SDLKey>(i));
+    add_string(keyname ? keyname : "<Unknown>");
 	}
 }
 
 void Zone_small_canvas_bloc::draw() {
-	canvas->setscreen();
 	canvas->small_blit_back();
 	canvas->small_blit_bloc(canvas->bloc);
 	if(canvas->color_flash)
@@ -302,7 +299,7 @@ Zone_bonus(in, px, py, v, c, bit, 6, 6*20) {
 
 void Zone_small_bonus::draw() {
 	int i;
-	back->draw(video->vb,x,y);
+	video->vb.put_bitmap(*back, x, y);
 	bool first_done=false;
 	for(i=0; i<canvas->bonus; i++) {
 		Byte side=5; //Left and right

@@ -49,18 +49,19 @@ public:
 	virtual void clicked(int quel) { }
 };
 
-class Multi_player: public Menu_fadein, Zone_list {
+class Multi_player: public Menu_fadein {
+	Zone_list list;
 	int *got_highscore;
 	Zone *b_quit;
 	int last_countdown;
 	Module **menu_stat;
 public:
-	bool stop;
+	bool stop;  // set to true to quit game
 	Bitmap *bit;
 	Font *font2, *courrier;
 	Executor *pane_exec[3];
 	Pane *pane[3];
-	Pane_info *pane_info[3];
+	const Pane_info *pane_info[3];
 	bool pause;
 	Zone_sprite *zone_pause;
 	int time_demo;

@@ -19,12 +19,10 @@
  */
 
 // "bloc" is simply "block" in french.
+#include "bloc.h"
 
 #include "color.h"
 #include "quadra.h"
-#include "bloc.h"
-
-RCSID("$Id$")
 
 Bloc::Bloc(int q, int c, int px, int py) {
 	quel=q;
@@ -39,7 +37,7 @@ Bloc::Bloc(int q, int c, int px, int py) {
 	rot=0;
 }
 
-void Bloc::draw(const Video_bitmap* b, int tx, int ty) const {
+void Bloc::draw(const Video_bitmap& b, int tx, int ty) const {
 	int i,j;
 	Byte t, to[4];
 	if(tx == -1)
@@ -71,7 +69,7 @@ void Bloc::draw(const Video_bitmap* b, int tx, int ty) const {
 		}
 }
 
-void Bloc::small_draw(const Video_bitmap* b, int tx, int ty) const {
+void Bloc::small_draw(const Video_bitmap& b, int tx, int ty) const {
 	int i,j;
 	Byte t;
 	if(tx == -1)

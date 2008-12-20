@@ -18,6 +18,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
  */
 
+#include "recording.h"
+
 #include <string.h>
 #include "res_compress.h"
 #include "game.h"
@@ -30,10 +32,7 @@
 #include "stringtable.h"
 #include "clock.h"
 #include "chat_text.h"
-#include "recording.h"
-#include "byteorder.h"
-
-RCSID("$Id$")
+#include "SDL_endian.h"
 
 Recording *recording = NULL;
 Playback *playback = NULL;
@@ -56,7 +55,7 @@ void Recording::write_hunk(Byte h) {
 	int i;
 	if(!res)
 		return;
-	i = INTELDWORD(h);
+	i = SDL_SwapLE32(h);
 	res->write(&i, sizeof(h));
 }
 
@@ -73,12 +72,12 @@ void Recording::write_packet(Packet* p) {
 	if(!res)
 		return;
 	write_hunk(11);
-	Dword d = INTELDWORD(frame);
+	Dword d = SDL_SwapLE32(frame);
 	res->write(&d, sizeof(d));
 	Net_buf n;
 	p->write(&n);
 	Word size=n.len();
-	Word w = INTELWORD(size);
+	Word w = SDL_SwapLE16(size);
 	res->write(&w, sizeof(w));
 	res->write(n.buf, size);
 }
@@ -95,11 +94,11 @@ void Recording::end_single(Canvas* c) {
 	lines=c->stats[CS::LINESCUR].get_value();
 	level=c->level;
 	res->write(playername, sizeof(playername));
-	Dword d = INTELDWORD(score);
+	Dword d = SDL_SwapLE32(score);
 	res->write(&d, sizeof(d));
-	d = INTELDWORD(lines);
+	d = SDL_SwapLE32(lines);
 	res->write(&d, sizeof(d));
-	d = INTELDWORD(level);
+	d = SDL_SwapLE32(level);
 	res->write(&d, sizeof(d));
 }
 
@@ -125,7 +124,7 @@ void Recording::write_summary() {
 
 	Dword size=buf.len();
 	write_hunk(13);
-	Dword d = INTELDWORD(size);
+	Dword d = SDL_SwapLE32(size);
 	res->write(&d, sizeof(d));
 	res->write(buf.get(), size);
 }
@@ -152,10 +151,10 @@ Playback::Playback(Res* r): data(0, 1024) {
 }
 
 Playback::~Playback() {
-	while(packets.size()) {
-		Demo_packet *dp=packets.last();
-		packets.removelast();
-		if(dp->p)
+	while (!packets.empty()) {
+		Demo_packet* dp = packets.back();
+		packets.pop_back();
+		if (dp->p)
 			delete dp->p;
 		delete dp;
 	}
@@ -267,10 +266,10 @@ void Playback::read_all() {
 
 void Playback::read_seed() {
 	res->read(&seed, sizeof(seed));
-	seed = INTELDWORD(seed);
+	seed = SDL_SwapLE32(seed);
 	for(int i=0; i<3; i++) {
 		res->read(&player[i].repeat, sizeof(player[0].repeat));
-		player[i].repeat = INTELDWORD(player[i].repeat);
+		player[i].repeat = SDL_SwapLE32(player[i].repeat);
 	}
 }
 
@@ -293,11 +292,11 @@ void Playback::read_info() {
 	res->read(&player[0].name, sizeof(player[0].name));
 	player[0].name[sizeof(player[0].name)-1]=0;
 	res->read(&score, sizeof(score));
-	score = INTELDWORD(score);
+	score = SDL_SwapLE32(score);
 	res->read(&lines, sizeof(lines));
-	lines = INTELDWORD(lines);
+	lines = SDL_SwapLE32(lines);
 	res->read(&level, sizeof(level));
-	level = INTELDWORD(level);
+	level = SDL_SwapLE32(level);
 }
 
 void Playback::read_packet() {
@@ -305,9 +304,9 @@ void Playback::read_packet() {
 	Word size=0;
 	Net_buf n;
 	res->read(&frame, sizeof(frame));
-	frame = INTELDWORD(frame);
+	frame = SDL_SwapLE32(frame);
 	res->read(&size, sizeof(size));
-	size = INTELWORD(size);
+	size = SDL_SwapLE16(size);
 	if(size>sizeof(n.buf))
 		return;
 	res->read(n.buf, size);
@@ -339,14 +338,14 @@ void Playback::read_packet() {
 			return;
 		}
 		Demo_packet *demo_packet=new Demo_packet(frame, p);
-		packets.add(demo_packet);
+		packets.push_back(demo_packet);
 	}
 }
 
 void Playback::read_summary() {
 	Dword size;
 	res->read(&size, sizeof(size));
-	size = INTELDWORD(size);
+	size = SDL_SwapLE32(size);
 	Buf buf(size+1);
 	res->read(buf.get(), size);
 	buf[size]=0;
@@ -374,17 +373,17 @@ void Playback::create_game() {
 }
 
 Demo_packet Playback::next_packet() {
-	if(packets.size())
+	if (!packets.empty())
 		return *packets[0];
 	else
 		return Demo_packet(0xFFFFFFFF, NULL);
 }
 
 void Playback::remove_packet() {
-	if(packets.size()) {
-		Demo_packet *dp=packets[0];
-		packets.remove(0);
-		//Caller will delete the packet
+	if (!packets.empty()) {
+		Demo_packet* dp = packets[0];
+		packets.erase(packets.begin());
+		// Caller will delete the packet, crazy!
 		delete dp;
 	}
 }
@@ -395,43 +394,39 @@ void Playback::shit_skipper2000(bool remove_chat) {
 	//  multiplayer demo: it removes innane chatter at the
 	//  beginning and correct all packet times so that the
 	//  game starts immediatly. Best used with auto_demo==true
-	Dword shit_skipper_bias=0;
-	bool got_pause=false;
-	bool got_player=false;
+	Dword shit_skipper_bias = 0;
+	bool got_pause = false;
+	bool got_player = false;
 	int i;
-	for(i=0; i<packets.size(); i++) {
-		Demo_packet *dp=packets[i];
-		if(dp->p && dp->p->packet_id==P_PLAYER) {
-			if(got_pause) {
-				shit_skipper_bias=dp->frame;
+	for (i = 0; i < static_cast<int>(packets.size()); ++i) {
+		if (packets[i]->p && packets[i]->p->packet_id == P_PLAYER) {
+			if (got_pause) {
+				shit_skipper_bias = packets[i]->frame;
 				break;
-			}
-			else
-				got_player=true;
+			} else
+				got_player = true;
 		}
-		if(dp->p && dp->p->packet_id==P_PAUSE) {
-			if(got_player) {
-				shit_skipper_bias=dp->frame;
+		if (packets[i]->p && packets[i]->p->packet_id == P_PAUSE) {
+			if (got_player) {
+				shit_skipper_bias = packets[i]->frame;
 				break;
-			}
-			else
-				got_pause=true;
+			} else
+				got_pause = true;
 		}
 	}
-	if(i<packets.size()) {
-		for(i=0; i<packets.size(); i++) {
-			Demo_packet *dp=packets[i];
-			if((remove_chat || dp->frame<=shit_skipper_bias) && dp->p && dp->p->packet_id==P_CHAT) {
-				delete dp->p;
-				delete dp;
-				packets.remove(i);
-				i--;
+	if (i < static_cast<int>(packets.size())) {
+		for (i = 0; i < static_cast<int>(packets.size()); ++i) {
+			if ((remove_chat || packets[i]->frame <= shit_skipper_bias) && packets[i]->p && packets[i]->p->packet_id == P_CHAT) {
+				delete packets[i]->p;
+				delete packets[i];
+				packets.erase(packets.begin() + i);
+				--i;
 			}
 			else {
-				if(dp->frame<=shit_skipper_bias)
-					dp->frame=0;
+				if (packets[i]->frame <= shit_skipper_bias)
+					packets[i]->frame = 0;
 				else
-					dp->frame-=shit_skipper_bias;
+					packets[i]->frame -= shit_skipper_bias;
 			}
 		}
 	}

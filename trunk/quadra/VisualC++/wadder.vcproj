@@ -44,7 +44,7 @@
 				Name="VCCLCompilerTool"
 				Optimization="2"
 				InlineFunctionExpansion="2"
-				AdditionalIncludeDirectories="..\skelton\include;..\include"
+				AdditionalIncludeDirectories="..\include,..\skelton\include"
 				PreprocessorDefinitions="WIN32;NDEBUG;_CONSOLE"
 				StringPooling="true"
 				RuntimeLibrary="0"
@@ -70,12 +70,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="user32.lib winmm.lib ddraw.lib dxguid.lib dinput.lib dsound.lib skelton.lib wsock32.lib zlib.lib libpng.lib"
+				AdditionalDependencies="winmm.lib wsock32.lib zlib.lib libpng.lib"
 				OutputFile=".\Release/wadder.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="release"
-				IgnoreDefaultLibraryNames="libc.lib, msvcrt.lib, libcd.lib, libcmtd.lib, msvcrtd.lib"
 				ProgramDatabaseFile=".\Release/wadder.pdb"
 				MapFileName=""
 				SubSystem="1"
@@ -167,12 +166,12 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="user32.lib winmm.lib ddraw.lib dxguid.lib dinput.lib dsound.lib skelton.lib wsock32.lib zlib.lib libpng.lib"
+				AdditionalDependencies="winmm.lib wsock32.lib zlib.lib libpng.lib"
 				OutputFile=".\Debug/wadder.exe"
 				LinkIncremental="1"
 				SuppressStartupBanner="true"
 				AdditionalLibraryDirectories="debug"
-				IgnoreDefaultLibraryNames="libc.lib, libcmt.lib, msvcrt.lib, libcd.lib, msvcrtd.lib"
+				IgnoreDefaultLibraryNames=""
 				GenerateDebugInformation="true"
 				ProgramDatabaseFile=".\Debug/wadder.pdb"
 				SubSystem="1"
@@ -209,6 +208,30 @@
 	<References>
 	</References>
 	<Files>
+		<File
+			RelativePath="..\skelton\win32\error.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\skelton\win32\res.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\skelton\common\resfile.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\skelton\common\resmanager.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\skelton\common\reswriter.cpp"
+			>
+		</File>
+		<File
+			RelativePath="..\skelton\common\stringtable.cpp"
+			>
+		</File>
 		<File
 			RelativePath="..\skelton\tools\wadder\wadder.cpp"
 			>

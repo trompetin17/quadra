@@ -18,6 +18,8 @@
 #
 # $Id$
 
+LINK.o=$(LINK.cc)
+
 CLEAN+=config/depends.mk
 DISTCLEAN+=config/config.mk ChangeLog.bak gmon.out
 REALCLEAN+=ChangeLog
@@ -37,7 +39,4 @@ VERSION_EXTRA:=$(shell grep 'VERSION_EXTRA' include/version.h | cut -d" " -f3 | 
 VERSION:=$(MAJOR).$(MINOR).$(PATCHLEVEL)$(VERSION_EXTRA)
 
 CXXFLAGS+=-DVERSION="$(VERSION)" -DVERSION_MAJOR=$(MAJOR) -DVERSION_MINOR=$(MINOR) -DVERSION_PATCHLEVEL=$(PATCHLEVEL)
-
-# FIXME: temporary hack, until we properly detect stuff
-CXXFLAGS+=-DUGS_LINUX
 
