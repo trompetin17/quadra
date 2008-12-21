@@ -65,7 +65,6 @@ source/quadra_SOURCES += source/net_stuff.cpp
 source/quadra_SOURCES += source/nglog.cpp
 source/quadra_SOURCES += source/packets.cpp
 source/quadra_SOURCES += source/pane.cpp
-source/quadra_SOURCES += source/player.cpp
 source/quadra_SOURCES += source/qserv.cpp
 source/quadra_SOURCES += source/quadra.cpp
 source/quadra_SOURCES += source/recording.cpp
