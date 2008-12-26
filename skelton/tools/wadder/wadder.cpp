@@ -24,7 +24,7 @@
  * ranting. Better yet: I'll cut it out for you :).
  * 
  * This is Dada, one of the original Quadra programmers. I saw some
- * interrest in making Quadra themes so I'd like to clarify some stuff
+ * interest in making Quadra themes so I'd like to clarify some stuff
  * and answer questions. First of all, I'd like to apologize for not
  * providing this information earlier. Somehow I thought people would
  * like to figure things out for themselves by digging thru 25000
@@ -133,7 +133,7 @@ void addfile(const char* fname) {
 }
 
 int main(int ARGC, char **ARGV, char **ENV) {
-	Res_dos *res;
+	Res_dos *reslist;
 	Byte* data;
 
 	if(ARGC < 4) {
@@ -141,32 +141,26 @@ int main(int ARGC, char **ARGV, char **ENV) {
 		exit(1);
 	}
 
-	char wad_file[256];
-	sprintf(wad_file, "%s%s", ARGV[1], ARGV[2]);
-
-	wad = new Resfile(wad_file, false);
+	wad = new Resfile(ARGV[2], false);
 
 	wad->clear();
 
-	char res_file[256];
-	sprintf(res_file, "%s%s", ARGV[1], ARGV[3]);
+	reslist = new Res_dos(ARGV[3], RES_READ);
+	data = new Byte[reslist->size()+1];
 
-	res = new Res_dos(res_file, RES_READ);
-	data = new Byte[res->size()+1];
+	memcpy(data, reslist->buf(), reslist->size());
 
-	memcpy(data, res->buf(), res->size());
-
-	Stringtable st(data, res->size());
+	Stringtable st(data, reslist->size());
 
 	for(int i=0; i<st.size(); i++)
 	{
 		char temp[256];
-		sprintf(temp, "%s%s", ARGV[1], st.get(i));
+		sprintf(temp, "%s/%s", ARGV[1], st.get(i));
 		addfile(temp);
 	}
 
 	delete data;
-	delete res;
+	delete reslist;
 
 	wad->freeze();
 
