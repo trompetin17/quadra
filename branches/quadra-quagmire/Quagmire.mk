@@ -4,10 +4,10 @@ bin_PROGRAMS = source/quadra
 noinst_PROGRAMS += skelton/tools/wadder/wadder
 dataroot_DATA = quadra.res
 
-CPPFLAGS+=-I$(srcdir)/include -I$(srcdir)/skelton/include
+CPPFLAGS+=-Iinclude -I$(srcdir)/include -I$(srcdir)/skelton/include
 
 quadra.res: $(srcdir)/resources.txt skelton/tools/wadder/wadder $(shell cat $(srcdir)/resources.txt)
-	skelton/tools/wadder/wadder ./ $@ $<
+	skelton/tools/wadder/wadder $(srcdir) $@ $<
 
 source/quadra: CPPFLAGS+=-DDATAGAMESDIR=\"$(datadir)/games\"
 source/quadra: LDFLAGS+=-framework SDL -framework Cocoa -lz -lpng
