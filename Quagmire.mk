@@ -1,8 +1,15 @@
 # -*- makefile-gmake -*-
 
 bin_PROGRAMS = source/quadra
+noinst_PROGRAMS += skelton/tools/wadder/wadder
+dataroot_DATA = quadra.res
 
-source/quadra: CPPFLAGS+=-I$(srcdir)/include -I$(srcdir)/skelton/include -DDATAGAMESDIR=\"$(datadir)/games\"
+CPPFLAGS+=-I$(srcdir)/include -I$(srcdir)/skelton/include
+
+quadra.res: $(srcdir)/resources.txt skelton/tools/wadder/wadder $(shell cat $(srcdir)/resources.txt)
+	skelton/tools/wadder/wadder ./ $@ $<
+
+source/quadra: CPPFLAGS+=-DDATAGAMESDIR=\"$(datadir)/games\"
 source/quadra: LDFLAGS+=-framework SDL -framework Cocoa -lz -lpng
 
 source/quadra_SOURCES += source/macosx/SDLMain.m
@@ -73,3 +80,12 @@ source/quadra_SOURCES += source/sons.cpp
 source/quadra_SOURCES += source/stats.cpp
 source/quadra_SOURCES += source/update.cpp
 source/quadra_SOURCES += source/zone.cpp
+
+skelton/tools/wadder/wadder_SOURCES += skelton/common/resfile.cpp
+skelton/tools/wadder/wadder_SOURCES += skelton/common/resmanager.cpp
+skelton/tools/wadder/wadder_SOURCES += skelton/common/reswriter.cpp
+skelton/tools/wadder/wadder_SOURCES += skelton/common/stringtable.cpp
+skelton/tools/wadder/wadder_SOURCES += skelton/svgalib/error.cpp
+skelton/tools/wadder/wadder_SOURCES += skelton/svgalib/res.cpp
+skelton/tools/wadder/wadder_SOURCES += skelton/tools/wadder/wadder.cpp
+
