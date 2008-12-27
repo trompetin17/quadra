@@ -10,9 +10,9 @@ quadra.res: $(srcdir)/resources.txt skelton/tools/wadder/wadder $(shell cat $(sr
 	skelton/tools/wadder/wadder $(srcdir) $@ $<
 
 source/quadra: CPPFLAGS+=-DDATAGAMESDIR=\"$(datadir)/games\"
-source/quadra: LDFLAGS+=-framework SDL -framework Cocoa -lz -lpng
+source/quadra: LDFLAGS+=$(SDL_LIBS) -lz -lpng
 
-source/quadra_SOURCES += source/macosx/SDLMain.m
+source/quadra_SOURCES += $(SDL_MAIN_SRCS)
 
 source/quadra_SOURCES += skelton/common/bitmap.cpp
 source/quadra_SOURCES += skelton/common/buf.cpp
