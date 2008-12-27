@@ -13,18 +13,21 @@ AC_ARG_ENABLE(version-check,
 AC_LANG(C++)
 AC_ARG_PROGRAM
 AC_PROG_CXX
-AC_PROG_OBJC
-AC_LANG_PUSH([Objective C])
-AC_CHECK_HEADER(Cocoa/Cocoa.h, withcocoa=1)
-AC_LANG_POP([Objective C])
-if test -n "$withcocoa"; then
-	# If we're on a Cocoa platform, we'll rely on just the header check, and
-	# assume the linker options, since autoconf does not have tests for Darwin
-	# frameworks.
-	SDL_MAIN_SRCS=source/macosx/SDLMain.m
-	SDL_LIBS="-framework SDL -framework Cocoa"
-else
-	AC_CHECK_LIB(SDL, SDL_Init, SDL_LIBS="-lSDL", nosdl=1)	
+
+AC_CHECK_LIB(SDL, SDL_Init, SDL_LIBS="-lSDL", nosdl=1)	
+if test -n "$nosdl"; then
+	AC_LANG_PUSH([Objective C])
+	AC_CHECK_HEADER(Cocoa/Cocoa.h, withcocoa=1)
+	AC_LANG_POP([Objective C])
+	if test -n "$withcocoa"; then
+		# If we're on a Cocoa platform, we'll rely on just the header check, and
+		# assume the linker options, since autoconf does not have tests for Darwin
+		# frameworks.
+		AC_PROG_OBJC
+		SDL_MAIN_SRCS=source/macosx/SDLMain.m
+		SDL_LIBS="-framework SDL -framework Cocoa"
+		unset nosdl
+	fi
 fi
 AC_CHECK_LIB(z, compress,, nozlib=1)
 AC_CHECK_LIB(png, png_create_read_struct,, nolibpng=1)
