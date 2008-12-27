@@ -2,6 +2,7 @@
 
 bin_PROGRAMS = source/quadra
 noinst_PROGRAMS += skelton/tools/wadder/wadder
+noinst_PROGRAMS += skelton/tools/dumpwad
 dataroot_DATA = quadra.res
 
 CPPFLAGS+=-Iinclude -I$(srcdir)/include -I$(srcdir)/skelton/include
@@ -88,4 +89,10 @@ skelton/tools/wadder/wadder_SOURCES += skelton/common/stringtable.cpp
 skelton/tools/wadder/wadder_SOURCES += skelton/svgalib/error.cpp
 skelton/tools/wadder/wadder_SOURCES += skelton/svgalib/res.cpp
 skelton/tools/wadder/wadder_SOURCES += skelton/tools/wadder/wadder.cpp
+
+skelton/tools/dumpwad_SOURCES += skelton/common/resfile.cpp
+skelton/tools/dumpwad_SOURCES += skelton/common/reswriter.cpp
+skelton/tools/dumpwad_SOURCES += skelton/svgalib/error.cpp
+skelton/tools/dumpwad_SOURCES += skelton/svgalib/res.cpp
+skelton/tools/dumpwad_SOURCES += skelton/tools/dumpwad.cpp
 
