@@ -38,10 +38,6 @@ AC_CHECK_HEADERS([sys/utsname.h])
 AC_CHECK_FUNCS([uname])
 
 if test -n "$nosdl"; then
-	AC_MSG_WARN([are we ok?])
-fi
-
-if test -n "$nosdl"; then
 	AC_MSG_WARN([SDL is required and could not be found!])
 	missing_required=yes
 fi
