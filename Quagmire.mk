@@ -3,6 +3,8 @@
 PACKAGE_TARNAME=quadra
 PACKAGE_VERSION=$(lastword $(shell grep VERSION_MAJOR include/version.h)).$(lastword $(shell grep VERSION_MINOR include/version.h)).$(lastword $(shell grep VERSION_PATCHLEVEL include/version.h))$(patsubst "%",%,$(lastword $(shell grep VERSION_EXTRA include/version.h)))
 
+EXTRA_DIST=include/autoconf.h.in resources.txt source/macosx/SDLMain.h
+
 bin_PROGRAMS = source/quadra
 noinst_PROGRAMS += skelton/tools/wadder/wadder
 noinst_PROGRAMS += skelton/tools/dumpwad
