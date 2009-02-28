@@ -10,7 +10,7 @@ noinst_PROGRAMS += skelton/tools/wadder/wadder
 noinst_PROGRAMS += skelton/tools/dumpwad
 dataroot_DATA = quadra.res
 
-CPPFLAGS+=-Iinclude -I$(srcdir)/include -I$(srcdir)/skelton/include
+CPPFLAGS+=-Iinclude -I$(srcdir)/include -I$(srcdir)/skelton/include $(SDL_CFLAGS)
 
 quadra.res: $(srcdir)/resources.txt skelton/tools/wadder/wadder $(shell cat $(srcdir)/resources.txt)
 	skelton/tools/wadder/wadder $(srcdir) $@ $<
