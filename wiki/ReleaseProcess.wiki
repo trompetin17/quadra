@@ -27,6 +27,7 @@ svn export https://quadra.googlecode.com/svn/tags/quadra-1.0.42
 cd quadra-1.0.42
 autoheader
 make dist
+svn log -v https://quadra.googlecode.com/svn/tags/quadra-1.0.42
 }}}
 
  This step will prepare not only the Autoconf parts of the build system, but also `quadra.rc` and various README and RPM spec files.
