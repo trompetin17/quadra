@@ -112,7 +112,7 @@ class QServHandler(webapp.RequestHandler):
 
 	def gethighscores(self):
 		scores = self.get_scores()
-		num = self.params.get('num', self.default_demos)
+		num = int(self.params.get('num', self.default_demos))
 		scores_list = scores.keys()
 		scores_list.sort(None, None, True)
 
